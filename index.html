@@ -774,7 +774,15 @@
                 filter: true,
                 tryItOutEnabled: true,
                 requestSnippetsEnabled: true,
-                persistAuthorization: true
+                persistAuthorization: true,
+                requestInterceptor: (req) => {
+                    // Automatically add Authorization header with the same apikey value
+                    const apikey = req.headers.apikey;
+                    if (apikey && !req.headers.Authorization) {
+                        req.headers.Authorization = `Bearer ${apikey}`;
+                    }
+                    return req;
+                }
             });
         };
     </script>
