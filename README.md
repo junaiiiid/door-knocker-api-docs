@@ -317,7 +317,7 @@ In `swagger.html`, modify the spec's info section:
 
 ## Security Notes
 
-- The documentation is public - don't include sensitive data
+- The documentation is public (don't include sensitive data)
 - Don't include real API keys or tokens in examples
 - The "Try it out" feature sends real requests to your API
 - Consider adding authentication to your docs hosting if needed
