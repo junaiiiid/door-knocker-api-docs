@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Door Knocker Authentication API</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        .topbar {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            const spec = {
+                "openapi": "3.0.3",
+                "info": {
+                    "title": "Door Knocker Authentication API",
+                    "description": "Complete authentication system built with Supabase Edge Functions, featuring JWT access tokens and refresh token rotation.\n\n## Features\n- User registration with email validation\n- Secure password hashing with bcrypt\n- JWT access tokens (15-minute expiry)\n- Refresh token rotation (30-day expiry)\n- Password reset flow with one-time tokens\n- Multi-project support via `project_id`\n- CORS support\n- Comprehensive error handling",
+                    "version": "1.0.0",
+                    "contact": {
+                        "name": "Door Knocker API Support",
+                        "email": "support@doorknocker.example.com"
+                    }
+                },
+                "servers": [
+                    {
+                        "url": "https://your-project.supabase.co/functions/v1",
+                        "description": "Production server"
+                    },
+                    {
+                        "url": "http://localhost:54321/functions/v1",
+                        "description": "Local development server"
+                    }
+                ],
+                "tags": [
+                    {
+                        "name": "Authentication",
+                        "description": "User authentication operations"
+                    },
+                    {
+                        "name": "Password Management",
+                        "description": "Password reset operations"
+                    }
+                ],
+                "paths": {
+                    "/signUp": {
+                        "post": {
+                            "tags": ["Authentication"],
+                            "summary": "Register a new user",
+                            "description": "Creates a new user account with email and password. Returns JWT access token and refresh token upon successful registration.",
+                            "operationId": "signUp",
+                            "requestBody": {
+                                "required": true,
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "$ref": "#/components/schemas/SignUpRequest"
+                                        },
+                                        "examples": {
+                                            "basic": {
+                                                "summary": "Basic sign up",
+                                                "value": {
+                                                    "email": "user@example.com",
+                                                    "password": "SecurePass123!"
+                                                }
+                                            },
+                                            "complete": {
+                                                "summary": "Sign up with all fields",
+                                                "value": {
+                                                    "email": "john.doe@example.com",
+                                                    "password": "SecurePass123!",
+                                                    "name": "John Doe",
+                                                    "project_id": "my-project-123"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "responses": {
+                                "201": {
+                                    "description": "User created successfully",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/AuthResponse"
+                                            }
+                                        }
+                                    }
+                                },
+                                "400": {
+                                    "description": "Invalid input",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Error"
+                                            },
+                                            "examples": {
+                                                "missingFields": {
+                                                    "summary": "Missing required fields",
+                                                    "value": {
+                                                        "error": "INVALID_INPUT",
+                                                        "message": "Email and password are required"
+                                                    }
+                                                },
+                                                "invalidEmail": {
+                                                    "summary": "Invalid email format",
+                                                    "value": {
+                                                        "error": "INVALID_EMAIL",
+                                                        "message": "Invalid email format"
+                                                    }
+                                                },
+                                                "weakPassword": {
+                                                    "summary": "Password too weak",
+                                                    "value": {
+                                                        "error": "WEAK_PASSWORD",
+                                                        "message": "Password must be at least 8 characters long"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "409": {
+                                    "description": "Email already exists",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Error"
+                                            },
+                                            "example": {
+                                                "error": "EMAIL_EXISTS",
+                                                "message": "An account with this email already exists"
+                                            }
+                                        }
+                                    }
+                                },
+                                "500": {
+                                    "description": "Internal server error",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Error"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "/login": {
+                        "post": {
+                            "tags": ["Authentication"],
+                            "summary": "Login existing user",
+                            "description": "Authenticates a user with email and password. Returns JWT access token and refresh token upon successful login.",
+                            "operationId": "login",
+                            "requestBody": {
+                                "required": true,
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "$ref": "#/components/schemas/LoginRequest"
+                                        },
+                                        "example": {
+                                            "email": "user@example.com",
+                                            "password": "SecurePass123!"
+                                        }
+                                    }
+                                }
+                            },
+                            "responses": {
+                                "200": {
+                                    "description": "Login successful",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/AuthResponse"
+                                            }
+                                        }
+                                    }
+                                },
+                                "400": {
+                                    "description": "Invalid input",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Error"
+                                            },
+                                            "example": {
+                                                "error": "INVALID_INPUT",
+                                                "message": "Email and password are required"
+                                            }
+                                        }
+                                    }
+                                },
+                                "401": {
+                                    "description": "Invalid credentials",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Error"
+                                            },
+                                            "example": {
+                                                "error": "INVALID_CREDENTIALS",
+                                                "message": "Invalid email or password"
+                                            }
+                                        }
+                                    }
+                                },
+                                "500": {
+                                    "description": "Internal server error",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Error"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "/refreshToken": {
+                        "post": {
+                            "tags": ["Authentication"],
+                            "summary": "Refresh access token",
+                            "description": "Exchanges a valid refresh token for a new access token and refresh token. Implements token rotation where the old refresh token is revoked.",
+                            "operationId": "refreshToken",
+                            "requestBody": {
+                                "required": true,
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "$ref": "#/components/schemas/RefreshTokenRequest"
+                                        },
+                                        "example": {
+                                            "refreshToken": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+                                        }
+                                    }
+                                }
+                            },
+                            "responses": {
+                                "200": {
+                                    "description": "Token refreshed successfully",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/RefreshTokenResponse"
+                                            }
+                                        }
+                                    }
+                                },
+                                "400": {
+                                    "description": "Invalid input",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Error"
+                                            },
+                                            "example": {
+                                                "error": "INVALID_INPUT",
+                                                "message": "Refresh token is required"
+                                            }
+                                        }
+                                    }
+                                },
+                                "401": {
+                                    "description": "Invalid, expired, or revoked token",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Error"
+                                            },
+                                            "examples": {
+                                                "invalid": {
+                                                    "summary": "Invalid token",
+                                                    "value": {
+                                                        "error": "INVALID_TOKEN",
+                                                        "message": "Invalid refresh token"
+                                                    }
+                                                },
+                                                "revoked": {
+                                                    "summary": "Token revoked",
+                                                    "value": {
+                                                        "error": "TOKEN_REVOKED",
+                                                        "message": "Refresh token has been revoked"
+                                                    }
+                                                },
+                                                "expired": {
+                                                    "summary": "Token expired",
+                                                    "value": {
+                                                        "error": "TOKEN_EXPIRED",
+                                                        "message": "Refresh token has expired"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "500": {
+                                    "description": "Internal server error",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Error"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "/logout": {
+                        "post": {
+                            "tags": ["Authentication"],
+                            "summary": "Logout user",
+                            "description": "Revokes the refresh token, effectively logging out the user. The access token will expire naturally.",
+                            "operationId": "logout",
+                            "requestBody": {
+                                "required": true,
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "$ref": "#/components/schemas/RefreshTokenRequest"
+                                        },
+                                        "example": {
+                                            "refreshToken": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+                                        }
+                                    }
+                                }
+                            },
+                            "responses": {
+                                "200": {
+                                    "description": "Logout successful",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/MessageResponse"
+                                            },
+                                            "example": {
+                                                "message": "Logout successful"
+                                            }
+                                        }
+                                    }
+                                },
+                                "400": {
+                                    "description": "Invalid input",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Error"
+                                            },
+                                            "example": {
+                                                "error": "INVALID_INPUT",
+                                                "message": "Refresh token is required"
+                                            }
+                                        }
+                                    }
+                                },
+                                "401": {
+                                    "description": "Invalid token",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Error"
+                                            },
+                                            "example": {
+                                                "error": "INVALID_TOKEN",
+                                                "message": "Invalid refresh token"
+                                            }
+                                        }
+                                    }
+                                },
+                                "500": {
+                                    "description": "Internal server error",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Error"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "/forgotPassword": {
+                        "post": {
+                            "tags": ["Password Management"],
+                            "summary": "Request password reset",
+                            "description": "Generates a password reset token and sends it to the user's email. Always returns success to prevent email enumeration.",
+                            "operationId": "forgotPassword",
+                            "requestBody": {
+                                "required": true,
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "$ref": "#/components/schemas/ForgotPasswordRequest"
+                                        },
+                                        "example": {
+                                            "email": "user@example.com"
+                                        }
+                                    }
+                                }
+                            },
+                            "responses": {
+                                "200": {
+                                    "description": "Request processed",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/MessageResponse"
+                                            },
+                                            "example": {
+                                                "message": "If the email exists, a password reset link has been sent"
+                                            }
+                                        }
+                                    }
+                                },
+                                "400": {
+                                    "description": "Invalid input",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Error"
+                                            },
+                                            "example": {
+                                                "error": "INVALID_INPUT",
+                                                "message": "Email is required"
+                                            }
+                                        }
+                                    }
+                                },
+                                "500": {
+                                    "description": "Internal server error",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Error"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "/resetPassword": {
+                        "post": {
+                            "tags": ["Password Management"],
+                            "summary": "Reset password",
+                            "description": "Resets the user's password using a valid reset token. All existing refresh tokens are revoked for security.",
+                            "operationId": "resetPassword",
+                            "requestBody": {
+                                "required": true,
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "$ref": "#/components/schemas/ResetPasswordRequest"
+                                        },
+                                        "example": {
+                                            "token": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
+                                            "newPassword": "NewSecurePass123!"
+                                        }
+                                    }
+                                }
+                            },
+                            "responses": {
+                                "200": {
+                                    "description": "Password reset successful",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/MessageResponse"
+                                            },
+                                            "example": {
+                                                "message": "Password has been reset successfully"
+                                            }
+                                        }
+                                    }
+                                },
+                                "400": {
+                                    "description": "Invalid input or weak password",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Error"
+                                            },
+                                            "examples": {
+                                                "missingFields": {
+                                                    "summary": "Missing required fields",
+                                                    "value": {
+                                                        "error": "INVALID_INPUT",
+                                                        "message": "Token and new password are required"
+                                                    }
+                                                },
+                                                "weakPassword": {
+                                                    "summary": "Password too weak",
+                                                    "value": {
+                                                        "error": "WEAK_PASSWORD",
+                                                        "message": "Password must be at least 8 characters long"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "401": {
+                                    "description": "Invalid, expired, or used token",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Error"
+                                            },
+                                            "examples": {
+                                                "invalid": {
+                                                    "summary": "Invalid token",
+                                                    "value": {
+                                                        "error": "INVALID_TOKEN",
+                                                        "message": "Invalid or expired reset token"
+                                                    }
+                                                },
+                                                "used": {
+                                                    "summary": "Token already used",
+                                                    "value": {
+                                                        "error": "TOKEN_USED",
+                                                        "message": "This reset token has already been used"
+                                                    }
+                                                },
+                                                "expired": {
+                                                    "summary": "Token expired",
+                                                    "value": {
+                                                        "error": "TOKEN_EXPIRED",
+                                                        "message": "Reset token has expired"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "500": {
+                                    "description": "Internal server error",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Error"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "components": {
+                    "schemas": {
+                        "SignUpRequest": {
+                            "type": "object",
+                            "required": ["email", "password"],
+                            "properties": {
+                                "email": {
+                                    "type": "string",
+                                    "format": "email",
+                                    "description": "User's email address",
+                                    "example": "user@example.com"
+                                },
+                                "password": {
+                                    "type": "string",
+                                    "format": "password",
+                                    "minLength": 8,
+                                    "description": "User's password (minimum 8 characters)",
+                                    "example": "SecurePass123!"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "User's display name (optional)",
+                                    "example": "John Doe"
+                                },
+                                "project_id": {
+                                    "type": "string",
+                                    "description": "Project identifier for multi-project support (optional)",
+                                    "example": "project-123"
+                                }
+                            }
+                        },
+                        "LoginRequest": {
+                            "type": "object",
+                            "required": ["email", "password"],
+                            "properties": {
+                                "email": {
+                                    "type": "string",
+                                    "format": "email",
+                                    "description": "User's email address",
+                                    "example": "user@example.com"
+                                },
+                                "password": {
+                                    "type": "string",
+                                    "format": "password",
+                                    "description": "User's password",
+                                    "example": "SecurePass123!"
+                                }
+                            }
+                        },
+                        "RefreshTokenRequest": {
+                            "type": "object",
+                            "required": ["refreshToken"],
+                            "properties": {
+                                "refreshToken": {
+                                    "type": "string",
+                                    "description": "Valid refresh token",
+                                    "example": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+                                }
+                            }
+                        },
+                        "ForgotPasswordRequest": {
+                            "type": "object",
+                            "required": ["email"],
+                            "properties": {
+                                "email": {
+                                    "type": "string",
+                                    "format": "email",
+                                    "description": "User's email address",
+                                    "example": "user@example.com"
+                                }
+                            }
+                        },
+                        "ResetPasswordRequest": {
+                            "type": "object",
+                            "required": ["token", "newPassword"],
+                            "properties": {
+                                "token": {
+                                    "type": "string",
+                                    "description": "Password reset token from email",
+                                    "example": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+                                },
+                                "newPassword": {
+                                    "type": "string",
+                                    "format": "password",
+                                    "minLength": 8,
+                                    "description": "New password (minimum 8 characters)",
+                                    "example": "NewSecurePass123!"
+                                }
+                            }
+                        },
+                        "AuthResponse": {
+                            "type": "object",
+                            "properties": {
+                                "accessToken": {
+                                    "type": "string",
+                                    "description": "JWT access token (15-minute expiry)",
+                                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJwcm9qZWN0SWQiOiJwcm9qZWN0LTEyMyIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzAwMDA5MDAwfQ.signature"
+                                },
+                                "refreshToken": {
+                                    "type": "string",
+                                    "description": "Refresh token (30-day expiry)",
+                                    "example": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6"
+                                },
+                                "user": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "description": "User's unique identifier",
+                                            "example": "550e8400-e29b-41d4-a716-446655440000"
+                                        },
+                                        "email": {
+                                            "type": "string",
+                                            "format": "email",
+                                            "description": "User's email address",
+                                            "example": "user@example.com"
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "nullable": true,
+                                            "description": "User's display name",
+                                            "example": "John Doe"
+                                        },
+                                        "projectId": {
+                                            "type": "string",
+                                            "nullable": true,
+                                            "description": "User's project identifier",
+                                            "example": "project-123"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "RefreshTokenResponse": {
+                            "type": "object",
+                            "properties": {
+                                "accessToken": {
+                                    "type": "string",
+                                    "description": "New JWT access token (15-minute expiry)",
+                                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJwcm9qZWN0SWQiOiJwcm9qZWN0LTEyMyIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzAwMDA5MDAwfQ.signature"
+                                },
+                                "refreshToken": {
+                                    "type": "string",
+                                    "description": "New refresh token (30-day expiry)",
+                                    "example": "z6y5x4w3v2u1t0s9r8q7p6o5n4m3l2k1j0i9h8g7f6e5d4c3b2a1"
+                                }
+                            }
+                        },
+                        "MessageResponse": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Success message",
+                                    "example": "Operation completed successfully"
+                                }
+                            }
+                        },
+                        "Error": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "description": "Error code",
+                                    "example": "INVALID_INPUT"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Human-readable error message",
+                                    "example": "Email and password are required"
+                                }
+                            }
+                        }
+                    },
+                    "securitySchemes": {
+                        "BearerAuth": {
+                            "type": "http",
+                            "scheme": "bearer",
+                            "bearerFormat": "JWT",
+                            "description": "JWT access token for authenticated requests. Include in Authorization header as: Bearer <token>"
+                        }
+                    }
+                }
+            };
+
+            window.ui = SwaggerUIBundle({
+                spec: spec,
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                displayRequestDuration: true,
+                filter: true,
+                tryItOutEnabled: true,
+                requestSnippetsEnabled: true,
+                persistAuthorization: true
+            });
+        };
+    </script>
+</body>
+</html>
