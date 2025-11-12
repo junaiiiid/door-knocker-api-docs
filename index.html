@@ -25,7 +25,7 @@
                 "openapi": "3.0.3",
                 "info": {
                     "title": "Door Knocker Authentication API",
-                    "description": "Complete authentication system built with Supabase Edge Functions, featuring JWT access tokens and refresh token rotation.\n\n## Features\n- User registration with email validation\n- Secure password hashing with bcrypt\n- JWT access tokens (15-minute expiry)\n- Refresh token rotation (30-day expiry)\n- Password reset flow with one-time tokens\n- Multi-project support via `project_id`\n- CORS support\n- Comprehensive error handling",
+                    "description": "Complete authentication system built with Supabase Edge Functions, featuring JWT access tokens and refresh token rotation.\n\n## Getting Started\n**IMPORTANT**: Click the 'Authorize' button (🔓) at the top and enter your Supabase anon/public key before testing endpoints.\n\nGet your key from: [Supabase Dashboard](https://supabase.com/dashboard/project/yjdzuzhzurhzjoopdlez/settings/api) > Project Settings > API > anon/public key\n\n## Features\n- User registration with email validation\n- Secure password hashing with bcrypt\n- JWT access tokens (15-minute expiry)\n- Refresh token rotation (30-day expiry)\n- Password reset flow with one-time tokens\n- Multi-project support via `project_id`\n- CORS support\n- Comprehensive error handling",
                     "version": "1.0.0",
                     "contact": {
                         "name": "Door Knocker API Support",
@@ -40,6 +40,11 @@
                     {
                         "url": "http://localhost:54321/functions/v1",
                         "description": "Local development server"
+                    }
+                ],
+                "security": [
+                    {
+                        "SupabaseAuth": []
                     }
                 ],
                 "tags": [
@@ -737,6 +742,12 @@
                         }
                     },
                     "securitySchemes": {
+                        "SupabaseAuth": {
+                            "type": "apiKey",
+                            "in": "header",
+                            "name": "apikey",
+                            "description": "Supabase anon/public key. Required for all requests to Supabase Edge Functions. Get this from your Supabase Dashboard > Project Settings > API > anon/public key."
+                        },
                         "BearerAuth": {
                             "type": "http",
                             "scheme": "bearer",

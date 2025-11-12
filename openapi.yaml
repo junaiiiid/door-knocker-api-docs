@@ -31,6 +31,9 @@ servers:
   - url: http://localhost:54321/functions/v1
     description: Local development server
 
+security:
+  - SupabaseAuth: []
+
 tags:
   - name: Authentication
     description: User authentication operations
@@ -528,6 +531,11 @@ components:
           example: Email and password are required
 
   securitySchemes:
+    SupabaseAuth:
+      type: apiKey
+      in: header
+      name: apikey
+      description: Supabase anon/public key. Required for all requests to Supabase Edge Functions. Get this from your Supabase Dashboard > Project Settings > API > anon/public key.
     BearerAuth:
       type: http
       scheme: bearer
