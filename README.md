@@ -1,18 +1,235 @@
-# API Documentation
+# Door Knocker Role-Based Authentication API
 
-This directory contains the API documentation for the Door Knocker Authentication System.
+Complete role-based authentication system built with Supabase Edge Functions and Supabase Auth.
+
+## Overview
+
+This API provides a secure authentication system with three user roles:
+- **ADMIN**: Full system access, can manage all users and create other ADMINs
+- **MARKETER**: Marketing-specific permissions
+- **TECHNICIAN**: Technical operations permissions (default role)
 
 ## Files
 
-- **swagger.html** - Standalone Swagger UI documentation (single HTML file)
-- **openapi.yaml** - OpenAPI 3.0 specification (for CI/CD and tooling)
+- **index.html** - Swagger UI documentation
+- **openapi.yaml** - OpenAPI 3.0 specification (updated for role-based auth)
 - **README.md** - This file
+
+## Architecture
+
+### Database Schema
+- **profiles table**: Stores user roles and profile information (linked to auth.users)
+- **Row Level Security (RLS)**: Enforces role-based access control
+- **Enum type**: `user_role` for ADMIN, MARKETER, TECHNICIAN
+
+### API Endpoints
+1. **POST /signUp** - Register new users with role assignment
+2. **POST /login** - Authenticate users and get JWT token
+3. **GET /getUser** - Fetch user profile and role information
+4. **POST /logout** - Invalidate user session
+5. **POST /forgotPassword** - Request password reset email
+6. **POST /resetPassword** - Reset password with token
+
+## Setup Instructions
+
+### 1. Prerequisites
+- Supabase project created
+- Supabase CLI installed: `npm install -g supabase`
+- Project linked to Supabase
+
+### 2. Apply Database Migration
+
+Run the SQL migration to create the profiles table and RLS policies:
+
+```bash
+# Push migrations to your Supabase project
+supabase db push
+```
+
+Or manually apply in Supabase Dashboard > SQL Editor:
+```sql
+-- Copy contents of: supabase/migrations/20250113000001_create_profiles_table.sql
+```
+
+### 3. Deploy Edge Functions
+
+Deploy all authentication functions:
+
+```bash
+# Deploy all functions
+supabase functions deploy signUp
+supabase functions deploy login
+supabase functions deploy getUser
+supabase functions deploy logout
+supabase functions deploy forgotPassword
+supabase functions deploy resetPassword
+```
+
+### 4. Create First ADMIN User
+
+Since creating ADMIN users requires ADMIN authentication, manually create the first ADMIN:
+
+**Option A: Via Supabase Dashboard**
+1. Go to Authentication > Users
+2. Create a new user with email/password
+3. Copy the user's UUID
+4. Go to Table Editor > profiles
+5. Insert: `id` = UUID, `role` = ADMIN, `full_name` = "Admin User"
+
+**Option B: Via SQL**
+```sql
+-- First create the auth user in Dashboard, then:
+INSERT INTO profiles (id, role, full_name)
+VALUES ('USER_UUID_HERE', 'ADMIN', 'Admin User');
+```
+
+Now this user can create other ADMIN users via the API.
+
+## API Usage Examples
+
+### 1. Sign Up (Create Account)
+
+**Default Role (TECHNICIAN)**
+```bash
+curl -X POST https://YOUR-PROJECT.supabase.co/functions/v1/signUp \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "tech@example.com",
+    "password": "SecurePass123!",
+    "fullName": "John Technician"
+  }'
+```
+
+**Create ADMIN User (Requires ADMIN Token)**
+```bash
+curl -X POST https://YOUR-PROJECT.supabase.co/functions/v1/signUp \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Authorization: Bearer YOUR_ADMIN_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@example.com",
+    "password": "SecurePass123!",
+    "fullName": "Admin User",
+    "role": "ADMIN"
+  }'
+```
+
+### 2. Login
+
+```bash
+curl -X POST https://YOUR-PROJECT.supabase.co/functions/v1/login \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "tech@example.com",
+    "password": "SecurePass123!"
+  }'
+```
+
+Response:
+```json
+{
+  "status": "success",
+  "message": "Login successful",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "role": "TECHNICIAN",
+  "user": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "tech@example.com",
+    "fullName": "John Technician"
+  }
+}
+```
+
+### 3. Get User Profile
+
+**Get Own Profile**
+```bash
+curl -X GET https://YOUR-PROJECT.supabase.co/functions/v1/getUser \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Response:
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "tech@example.com",
+    "role": "TECHNICIAN",
+    "full_name": "John Technician",
+    "created_at": "2025-01-13T10:00:00.000Z"
+  }
+}
+```
+
+**Get Another User's Profile (ADMIN only)**
+```bash
+curl -X GET "https://YOUR-PROJECT.supabase.co/functions/v1/getUser?user_id=660e8400-e29b-41d4-a716-446655440001" \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN"
+```
+
+### 4. Logout
+
+```bash
+curl -X POST https://YOUR-PROJECT.supabase.co/functions/v1/logout \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### 5. Forgot Password
+
+```bash
+curl -X POST https://YOUR-PROJECT.supabase.co/functions/v1/forgotPassword \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "tech@example.com"}'
+```
+
+### 6. Reset Password
+
+```bash
+curl -X POST https://YOUR-PROJECT.supabase.co/functions/v1/resetPassword \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "access_token": "TOKEN_FROM_EMAIL",
+    "newPassword": "NewSecurePass123!"
+  }'
+```
+
+## Security Features
+
+- **Role-Based Access Control**: Only ADMINs can create other ADMINs
+- **Row Level Security**: Database-level access control
+- **Password Security**: Managed by Supabase Auth (bcrypt)
+- **JWT Tokens**: Secure session management
+- **Email Enumeration Prevention**: Forgot password always returns success
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| INVALID_INPUT | Missing or invalid parameters |
+| INVALID_EMAIL | Invalid email format |
+| WEAK_PASSWORD | Password < 8 characters |
+| INVALID_ROLE | Invalid role specified |
+| EMAIL_EXISTS | Email already registered |
+| INVALID_CREDENTIALS | Wrong email/password |
+| UNAUTHORIZED | Missing/invalid auth |
+| FORBIDDEN | Insufficient permissions |
+| INVALID_TOKEN | Token invalid/expired |
+| USER_NOT_FOUND | Requested user does not exist |
+| PROFILE_NOT_FOUND | User profile not found |
 
 ## Viewing the Documentation
 
 ### Option 1: Open Locally
 
-Simply open `swagger.html` in your web browser:
+Simply open the Swagger UI in your browser:
 
 ```bash
 # macOS

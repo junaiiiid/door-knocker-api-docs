@@ -1,32 +1,38 @@
 openapi: 3.0.3
 info:
-  title: Door Knocker Authentication API
+  title: Door Knocker Role-Based Authentication API
   description: |
-    Complete authentication system built with Supabase Edge Functions, featuring JWT access tokens and refresh token rotation.
+    Complete role-based authentication system built with Supabase Edge Functions and Supabase Auth.
 
     ## Features
-    - User registration with email validation
-    - Secure password hashing with bcrypt
-    - JWT access tokens (15-minute expiry)
-    - Refresh token rotation (30-day expiry)
-    - Password reset flow with one-time tokens
-    - Multi-project support via `project_id`
+    - Role-based access control (ADMIN, MARKETER, TECHNICIAN)
+    - User registration with role assignment
+    - Secure authentication using Supabase Auth
+    - JWT-based session management
+    - Password reset flow
+    - Row Level Security (RLS) policies
     - CORS support
     - Comprehensive error handling
 
+    ## User Roles
+    - **ADMIN**: Full system access, can manage all users and create other ADMINs
+    - **MARKETER**: Marketing-specific permissions
+    - **TECHNICIAN**: Technical operations permissions (default role)
+
     ## Security
-    - Passwords hashed with bcrypt (10 rounds)
-    - JWT access tokens (stateless, 15-minute expiry)
-    - Refresh tokens (stored in DB, 30-day expiry)
-    - Token rotation on refresh
-    - One-time password reset tokens (1-hour expiry)
-  version: 1.0.0
+    - Passwords managed by Supabase Auth
+    - JWT access tokens for authentication
+    - Row Level Security (RLS) on database tables
+    - Only ADMINs can create other ADMIN users
+    - Secure password reset with one-time tokens
+
+  version: 2.0.0
   contact:
     name: Door Knocker API Support
     email: support@doorknocker.example.com
 
 servers:
-  - url: https://yjdzuzhzurhzjoopdlez.supabase.co/functions/v1
+  - url: https://iywivotqnphrjijztxtu.supabase.co/functions/v1
     description: Production server
   - url: http://localhost:54321/functions/v1
     description: Local development server
@@ -36,7 +42,9 @@ security:
 
 tags:
   - name: Authentication
-    description: User authentication operations
+    description: User authentication and registration operations
+  - name: User Management
+    description: User profile and information operations
   - name: Password Management
     description: Password reset operations
 
@@ -46,7 +54,14 @@ paths:
       tags:
         - Authentication
       summary: Register a new user
-      description: Creates a new user account with email and password. Returns JWT access token and refresh token upon successful registration.
+      description: |
+        Creates a new user account with email, password, and role assignment.
+
+        **Role Assignment Rules:**
+        - Default role is TECHNICIAN
+        - Only authenticated ADMIN users can create other ADMIN users
+        - MARKETER and TECHNICIAN roles can be assigned without admin privileges (for initial setup)
+        - For production, consider restricting all role assignments to ADMIN users only
       operationId: signUp
       requestBody:
         required: true
@@ -55,25 +70,41 @@ paths:
             schema:
               $ref: '#/components/schemas/SignUpRequest'
             examples:
-              basic:
-                summary: Basic sign up
+              technician:
+                summary: Sign up as technician (default)
                 value:
-                  email: user@example.com
+                  email: tech@example.com
                   password: SecurePass123!
-              complete:
-                summary: Sign up with all fields
+                  fullName: John Technician
+              marketer:
+                summary: Sign up as marketer
                 value:
-                  email: john.doe@example.com
+                  email: marketer@example.com
                   password: SecurePass123!
-                  name: John Doe
-                  project_id: my-project-123
+                  fullName: Jane Marketer
+                  role: MARKETER
+              admin:
+                summary: Create admin user (requires admin auth)
+                value:
+                  email: admin@example.com
+                  password: SecurePass123!
+                  fullName: Admin User
+                  role: ADMIN
       responses:
         '201':
           description: User created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
+                $ref: '#/components/schemas/SignUpResponse'
+              example:
+                status: success
+                message: User created successfully
+                user:
+                  id: 550e8400-e29b-41d4-a716-446655440000
+                  email: tech@example.com
+                  fullName: John Technician
+                  role: TECHNICIAN
         '400':
           description: Invalid input
           content:
@@ -96,6 +127,29 @@ paths:
                   value:
                     error: WEAK_PASSWORD
                     message: Password must be at least 8 characters long
+                invalidRole:
+                  summary: Invalid role
+                  value:
+                    error: INVALID_ROLE
+                    message: Invalid role. Must be ADMIN, MARKETER, or TECHNICIAN
+        '401':
+          description: Unauthorized - Invalid authentication token when creating ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: UNAUTHORIZED
+                message: Invalid authentication token
+        '403':
+          description: Forbidden - Only ADMINs can create other ADMINs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: FORBIDDEN
+                message: Only ADMIN users can create other ADMIN users
         '409':
           description: Email already exists
           content:
@@ -111,13 +165,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+      security:
+        - SupabaseAuth: []
+        - BearerAuth: []
 
   /login:
     post:
       tags:
         - Authentication
       summary: Login existing user
-      description: Authenticates a user with email and password. Returns JWT access token and refresh token upon successful login.
+      description: |
+        Authenticates a user with email and password using Supabase Auth.
+        Returns JWT access token and user information including their role.
       operationId: login
       requestBody:
         required: true
@@ -134,16 +193,33 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
+                $ref: '#/components/schemas/LoginResponse'
+              example:
+                status: success
+                message: Login successful
+                token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                role: TECHNICIAN
+                user:
+                  id: 550e8400-e29b-41d4-a716-446655440000
+                  email: user@example.com
+                  fullName: John Doe
         '400':
           description: Invalid input
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              example:
-                error: INVALID_INPUT
-                message: Email and password are required
+              examples:
+                missingFields:
+                  summary: Missing required fields
+                  value:
+                    error: INVALID_INPUT
+                    message: Email and password are required
+                invalidEmail:
+                  summary: Invalid email format
+                  value:
+                    error: INVALID_EMAIL
+                    message: Invalid email format
         '401':
           description: Invalid credentials
           content:
@@ -153,66 +229,15 @@ paths:
               example:
                 error: INVALID_CREDENTIALS
                 message: Invalid email or password
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /refreshToken:
-    post:
-      tags:
-        - Authentication
-      summary: Refresh access token
-      description: Exchanges a valid refresh token for a new access token and refresh token. Implements token rotation where the old refresh token is revoked.
-      operationId: refreshToken
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RefreshTokenRequest'
-            example:
-              refreshToken: a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
-      responses:
-        '200':
-          description: Token refreshed successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RefreshTokenResponse'
-        '400':
-          description: Invalid input
+        '404':
+          description: User profile not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: INVALID_INPUT
-                message: Refresh token is required
-        '401':
-          description: Invalid, expired, or revoked token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              examples:
-                invalid:
-                  summary: Invalid token
-                  value:
-                    error: INVALID_TOKEN
-                    message: Invalid refresh token
-                revoked:
-                  summary: Token revoked
-                  value:
-                    error: TOKEN_REVOKED
-                    message: Refresh token has been revoked
-                expired:
-                  summary: Token expired
-                  value:
-                    error: TOKEN_EXPIRED
-                    message: Refresh token has expired
+                error: PROFILE_NOT_FOUND
+                message: User profile not found. Please contact support.
         '500':
           description: Internal server error
           content:
@@ -225,16 +250,14 @@ paths:
       tags:
         - Authentication
       summary: Logout user
-      description: Revokes the refresh token, effectively logging out the user. The access token will expire naturally.
+      description: |
+        Invalidates the user's current session.
+        Requires a valid JWT token in the Authorization header.
+        Client should also clear local storage/cookies after logout.
       operationId: logout
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RefreshTokenRequest'
-            example:
-              refreshToken: a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+      security:
+        - SupabaseAuth: []
+        - BearerAuth: []
       responses:
         '200':
           description: Logout successful
@@ -243,25 +266,130 @@ paths:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
               example:
+                status: success
                 message: Logout successful
-        '400':
-          description: Invalid input
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: INVALID_INPUT
-                message: Refresh token is required
         '401':
-          description: Invalid token
+          description: Unauthorized - Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingAuth:
+                  summary: Missing authorization header
+                  value:
+                    error: UNAUTHORIZED
+                    message: Authorization header is required
+                invalidToken:
+                  summary: Invalid token
+                  value:
+                    error: INVALID_TOKEN
+                    message: Invalid or expired token
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /getUser:
+    get:
+      tags:
+        - User Management
+      summary: Fetch user profile and role
+      description: |
+        Retrieves the authenticated user's profile information including role, email, and full name.
+
+        **Admin Access:**
+        - ADMIN users can fetch any user's profile by providing the `user_id` query parameter
+        - Non-admin users can only fetch their own profile
+
+        **Returns:**
+        - User ID, email, role, full name, and account creation date
+      operationId: getUser
+      security:
+        - SupabaseAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: query
+          required: false
+          description: User ID to fetch (ADMIN only). If omitted, returns the authenticated user's profile.
+          schema:
+            type: string
+            format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUserResponse'
+              examples:
+                ownProfile:
+                  summary: Get own profile
+                  value:
+                    status: success
+                    data:
+                      id: 550e8400-e29b-41d4-a716-446655440000
+                      email: tech@example.com
+                      role: TECHNICIAN
+                      full_name: John Technician
+                      created_at: '2025-01-13T10:00:00.000Z'
+                adminViewingOther:
+                  summary: Admin viewing another user (with user_id param)
+                  value:
+                    status: success
+                    data:
+                      id: 660e8400-e29b-41d4-a716-446655440001
+                      email: marketer@example.com
+                      role: MARKETER
+                      full_name: Jane Marketer
+                      created_at: '2025-01-12T15:30:00.000Z'
+        '401':
+          description: Unauthorized - Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingAuth:
+                  summary: Missing authorization header
+                  value:
+                    error: UNAUTHORIZED
+                    message: Authorization header is required
+                invalidToken:
+                  summary: Invalid token
+                  value:
+                    error: INVALID_TOKEN
+                    message: Invalid or expired token
+        '403':
+          description: Forbidden - Non-admin trying to access another user's profile
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: INVALID_TOKEN
-                message: Invalid refresh token
+                error: FORBIDDEN
+                message: Only ADMIN users can view other users' profiles
+        '404':
+          description: User or profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                userNotFound:
+                  summary: User not found
+                  value:
+                    error: USER_NOT_FOUND
+                    message: User not found
+                profileNotFound:
+                  summary: Profile not found
+                  value:
+                    error: PROFILE_NOT_FOUND
+                    message: User profile not found. Please contact support.
         '500':
           description: Internal server error
           content:
@@ -274,7 +402,12 @@ paths:
       tags:
         - Password Management
       summary: Request password reset
-      description: Generates a password reset token and sends it to the user's email. Always returns success to prevent email enumeration.
+      description: |
+        Sends a password reset email to the user using Supabase Auth.
+        Always returns success to prevent email enumeration attacks.
+
+        The reset email contains a secure link with an access token that can be used
+        with the /resetPassword endpoint.
       operationId: forgotPassword
       requestBody:
         required: true
@@ -286,22 +419,31 @@ paths:
               email: user@example.com
       responses:
         '200':
-          description: Request processed
+          description: Request processed (always returns success)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
               example:
-                message: If the email exists, a password reset link has been sent
+                status: success
+                message: If the email exists in our system, a password reset link has been sent
         '400':
           description: Invalid input
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              example:
-                error: INVALID_INPUT
-                message: Email is required
+              examples:
+                missingEmail:
+                  summary: Missing email
+                  value:
+                    error: INVALID_INPUT
+                    message: Email is required
+                invalidEmail:
+                  summary: Invalid email format
+                  value:
+                    error: INVALID_EMAIL
+                    message: Invalid email format
         '500':
           description: Internal server error
           content:
@@ -313,8 +455,15 @@ paths:
     post:
       tags:
         - Password Management
-      summary: Reset password
-      description: Resets the user's password using a valid reset token. All existing refresh tokens are revoked for security.
+      summary: Reset password with token
+      description: |
+        Resets the user's password using the access token from the password reset email.
+
+        **Flow:**
+        1. User receives password reset email from /forgotPassword
+        2. User clicks the reset link (contains access_token in URL)
+        3. Frontend extracts the access_token and calls this endpoint with new password
+        4. Password is updated and user can login with new credentials
       operationId: resetPassword
       requestBody:
         required: true
@@ -323,7 +472,7 @@ paths:
             schema:
               $ref: '#/components/schemas/ResetPasswordRequest'
             example:
-              token: a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+              access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
               newPassword: NewSecurePass123!
       responses:
         '200':
@@ -333,6 +482,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
               example:
+                status: success
                 message: Password has been reset successfully
         '400':
           description: Invalid input or weak password
@@ -345,34 +495,21 @@ paths:
                   summary: Missing required fields
                   value:
                     error: INVALID_INPUT
-                    message: Token and new password are required
+                    message: Access token and new password are required
                 weakPassword:
                   summary: Password too weak
                   value:
                     error: WEAK_PASSWORD
                     message: Password must be at least 8 characters long
         '401':
-          description: Invalid, expired, or used token
+          description: Invalid or expired token
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              examples:
-                invalid:
-                  summary: Invalid token
-                  value:
-                    error: INVALID_TOKEN
-                    message: Invalid or expired reset token
-                used:
-                  summary: Token already used
-                  value:
-                    error: TOKEN_USED
-                    message: This reset token has already been used
-                expired:
-                  summary: Token expired
-                  value:
-                    error: TOKEN_EXPIRED
-                    message: Reset token has expired
+              example:
+                error: INVALID_TOKEN
+                message: Invalid or expired reset token
         '500':
           description: Internal server error
           content:
@@ -399,14 +536,44 @@ components:
           minLength: 8
           description: User's password (minimum 8 characters)
           example: SecurePass123!
-        name:
+        fullName:
           type: string
-          description: User's display name (optional)
+          description: User's full name (optional)
           example: John Doe
-        project_id:
+        role:
           type: string
-          description: Project identifier for multi-project support (optional)
-          example: project-123
+          enum: [ADMIN, MARKETER, TECHNICIAN]
+          description: User role (default is TECHNICIAN). ADMIN role requires authenticated ADMIN user.
+          example: TECHNICIAN
+
+    SignUpResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+          example: User created successfully
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              example: 550e8400-e29b-41d4-a716-446655440000
+            email:
+              type: string
+              format: email
+              example: user@example.com
+            fullName:
+              type: string
+              nullable: true
+              example: John Doe
+            role:
+              type: string
+              enum: [ADMIN, MARKETER, TECHNICIAN]
+              example: TECHNICIAN
 
     LoginRequest:
       type: object
@@ -425,15 +592,39 @@ components:
           description: User's password
           example: SecurePass123!
 
-    RefreshTokenRequest:
+    LoginResponse:
       type: object
-      required:
-        - refreshToken
       properties:
-        refreshToken:
+        status:
           type: string
-          description: Valid refresh token
-          example: a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+          example: success
+        message:
+          type: string
+          example: Login successful
+        token:
+          type: string
+          description: JWT access token from Supabase Auth
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MTcwMDAwMzYwMH0.signature
+        role:
+          type: string
+          enum: [ADMIN, MARKETER, TECHNICIAN]
+          description: User's assigned role
+          example: TECHNICIAN
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              example: 550e8400-e29b-41d4-a716-446655440000
+            email:
+              type: string
+              format: email
+              example: user@example.com
+            fullName:
+              type: string
+              nullable: true
+              example: John Doe
 
     ForgotPasswordRequest:
       type: object
@@ -449,13 +640,13 @@ components:
     ResetPasswordRequest:
       type: object
       required:
-        - token
+        - access_token
         - newPassword
       properties:
-        token:
+        access_token:
           type: string
-          description: Password reset token from email
-          example: a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+          description: Access token from password reset email URL
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         newPassword:
           type: string
           format: password
@@ -463,18 +654,13 @@ components:
           description: New password (minimum 8 characters)
           example: NewSecurePass123!
 
-    AuthResponse:
+    GetUserResponse:
       type: object
       properties:
-        accessToken:
+        status:
           type: string
-          description: JWT access token (15-minute expiry)
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJwcm9qZWN0SWQiOiJwcm9qZWN0LTEyMyIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzAwMDA5MDAwfQ.signature
-        refreshToken:
-          type: string
-          description: Refresh token (30-day expiry)
-          example: a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6
-        user:
+          example: success
+        data:
           type: object
           properties:
             id:
@@ -486,33 +672,29 @@ components:
               type: string
               format: email
               description: User's email address
-              example: user@example.com
-            name:
+              example: tech@example.com
+            role:
+              type: string
+              enum: [ADMIN, MARKETER, TECHNICIAN]
+              description: User's assigned role
+              example: TECHNICIAN
+            full_name:
               type: string
               nullable: true
-              description: User's display name
-              example: John Doe
-            projectId:
+              description: User's full name
+              example: John Technician
+            created_at:
               type: string
-              nullable: true
-              description: User's project identifier
-              example: project-123
-
-    RefreshTokenResponse:
-      type: object
-      properties:
-        accessToken:
-          type: string
-          description: New JWT access token (15-minute expiry)
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJwcm9qZWN0SWQiOiJwcm9qZWN0LTEyMyIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzAwMDA5MDAwfQ.signature
-        refreshToken:
-          type: string
-          description: New refresh token (30-day expiry)
-          example: z6y5x4w3v2u1t0s9r8q7p6o5n4m3l2k1j0i9h8g7f6e5d4c3b2a1
+              format: date-time
+              description: Account creation timestamp
+              example: '2025-01-13T10:00:00.000Z'
 
     MessageResponse:
       type: object
       properties:
+        status:
+          type: string
+          example: success
         message:
           type: string
           description: Success message
@@ -535,9 +717,14 @@ components:
       type: apiKey
       in: header
       name: apikey
-      description: Supabase anon/public key. Required for all requests to Supabase Edge Functions. Get this from your Supabase Dashboard > Project Settings > API > anon/public key.
+      description: |
+        Supabase anon/public key. Required for all requests to Supabase Edge Functions.
+        Get this from your Supabase Dashboard > Project Settings > API > anon/public key.
     BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: JWT access token for authenticated requests. Include in Authorization header as Bearer <token>
+      description: |
+        JWT access token obtained from /login endpoint.
+        Include in Authorization header as: Bearer <token>
+        Required for authenticated endpoints like /logout and creating ADMIN users.
