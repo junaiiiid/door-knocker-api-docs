@@ -53,43 +53,39 @@ paths:
     post:
       tags:
         - Authentication
-      summary: Register a new user
+      summary: Register a new ADMIN user
       description: |
-        Creates a new user account with email, password, and role assignment.
+        Creates a new ADMIN user account with email and password.
 
-        **Role Assignment Rules:**
-        - Default role is TECHNICIAN
-        - Only authenticated ADMIN users can create other ADMIN users
-        - MARKETER and TECHNICIAN roles can be assigned without admin privileges (for initial setup)
-        - For production, consider restricting all role assignments to ADMIN users only
+        **Important:**
+        - This endpoint is for public ADMIN user registration only
+        - Role is always set to ADMIN (cannot be changed)
+        - MARKETER and TECHNICIAN users must be created by ADMIN via /createUser endpoint
+        - No authentication required for ADMIN signup
       operationId: signUp
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SignUpRequest'
-            examples:
-              technician:
-                summary: Sign up as technician (default)
-                value:
-                  email: tech@example.com
-                  password: SecurePass123!
-                  fullName: John Technician
-              marketer:
-                summary: Sign up as marketer
-                value:
-                  email: marketer@example.com
-                  password: SecurePass123!
-                  fullName: Jane Marketer
-                  role: MARKETER
-              admin:
-                summary: Create admin user (requires admin auth)
-                value:
-                  email: admin@example.com
-                  password: SecurePass123!
-                  fullName: Admin User
-                  role: ADMIN
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                fullName:
+                  type: string
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+            example:
+              email: admin@example.com
+              password: SecurePass123!
+              fullName: Admin User
       responses:
         '201':
           description: User created successfully
@@ -102,9 +98,9 @@ paths:
                 message: User created successfully
                 user:
                   id: 550e8400-e29b-41d4-a716-446655440000
-                  email: tech@example.com
-                  fullName: John Technician
-                  role: TECHNICIAN
+                  email: admin@example.com
+                  fullName: Admin User
+                  role: ADMIN
         '400':
           description: Invalid input
           content:
@@ -128,28 +124,10 @@ paths:
                     error: WEAK_PASSWORD
                     message: Password must be at least 8 characters long
                 invalidRole:
-                  summary: Invalid role
+                  summary: Invalid role - trying to create non-ADMIN user
                   value:
                     error: INVALID_ROLE
-                    message: Invalid role. Must be ADMIN, MARKETER, or TECHNICIAN
-        '401':
-          description: Unauthorized - Invalid authentication token when creating ADMIN
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: UNAUTHORIZED
-                message: Invalid authentication token
-        '403':
-          description: Forbidden - Only ADMINs can create other ADMINs
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: FORBIDDEN
-                message: Only ADMIN users can create other ADMIN users
+                    message: signUp endpoint only creates ADMIN users. Use /createUser endpoint for MARKETER and TECHNICIAN roles.
         '409':
           description: Email already exists
           content:
@@ -165,9 +143,156 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  /createUser:
+    post:
+      tags:
+        - User Management
+      summary: Create MARKETER or TECHNICIAN user (ADMIN only)
+      description: |
+        Allows ADMIN users to create new MARKETER or TECHNICIAN users.
+
+        **Access Control:**
+        - Only authenticated ADMIN users can access this endpoint
+        - Cannot create ADMIN users via this endpoint (use /signUp for ADMIN creation)
+        - Requires valid JWT Bearer token from an ADMIN user
+
+        **Created User Roles:**
+        - MARKETER: Marketing-specific dashboard access
+        - TECHNICIAN: Technical operations dashboard access
+      operationId: createUser
       security:
-        - SupabaseAuth: []
         - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - role
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Email address for the new user
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  description: Password (minimum 8 characters)
+                fullName:
+                  type: string
+                  description: Full name of the user
+                role:
+                  type: string
+                  enum: [MARKETER, TECHNICIAN]
+                  description: Role to assign (MARKETER or TECHNICIAN only)
+            examples:
+              marketer:
+                summary: Create marketer user
+                value:
+                  email: marketer@example.com
+                  password: SecurePass123!
+                  fullName: Jane Marketer
+                  role: MARKETER
+              technician:
+                summary: Create technician user
+                value:
+                  email: tech@example.com
+                  password: SecurePass123!
+                  fullName: John Technician
+                  role: TECHNICIAN
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignUpResponse'
+              example:
+                status: success
+                message: User created successfully
+                user:
+                  id: 660e8400-e29b-41d4-a716-446655440001
+                  email: marketer@example.com
+                  fullName: Jane Marketer
+                  role: MARKETER
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingFields:
+                  summary: Missing required fields
+                  value:
+                    error: INVALID_INPUT
+                    message: Email, password, and role are required
+                invalidEmail:
+                  summary: Invalid email format
+                  value:
+                    error: INVALID_EMAIL
+                    message: Invalid email format
+                weakPassword:
+                  summary: Password too weak
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must be at least 8 characters long
+                invalidRole:
+                  summary: Invalid role
+                  value:
+                    error: INVALID_ROLE
+                    message: Invalid role. Must be MARKETER or TECHNICIAN
+                adminRole:
+                  summary: Attempting to create ADMIN user
+                  value:
+                    error: INVALID_ROLE
+                    message: Cannot create ADMIN users via this endpoint. ADMIN users should use /signUp endpoint.
+        '401':
+          description: Unauthorized - Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingAuth:
+                  summary: Missing authorization header
+                  value:
+                    error: UNAUTHORIZED
+                    message: Authorization header is required. Only ADMIN users can create users.
+                invalidToken:
+                  summary: Invalid token
+                  value:
+                    error: INVALID_TOKEN
+                    message: Invalid or expired token
+        '403':
+          description: Forbidden - Non-admin user attempting to create users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: FORBIDDEN
+                message: Only ADMIN users can create new users
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: EMAIL_EXISTS
+                message: An account with this email already exists
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /login:
     post:
