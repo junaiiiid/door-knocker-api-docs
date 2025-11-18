@@ -2,11 +2,14 @@ openapi: 3.0.3
 info:
   title: Door Knocker Role-Based Authentication API
   description: |
-    Complete role-based authentication system built with Supabase Edge Functions and Supabase Auth.
+    Complete role-based authentication and organization management system built with Supabase Edge Functions and Supabase Auth.
 
     ## Features
     - Role-based access control (ADMIN, MARKETER, TECHNICIAN)
     - User registration with role assignment
+    - Organization management with multi-user support
+    - Automatic organization creation on ADMIN signup
+    - Organization member tracking
     - Secure authentication using Supabase Auth
     - JWT-based session management
     - Password reset flow
@@ -15,18 +18,24 @@ info:
     - Comprehensive error handling
 
     ## User Roles
-    - **ADMIN**: Full system access, can manage all users and create other ADMINs
-    - **MARKETER**: Marketing-specific permissions
-    - **TECHNICIAN**: Technical operations permissions (default role)
+    - **ADMIN**: Full system access, owns organization, can manage all users and create team members
+    - **MARKETER**: Marketing team member, associated with an organization
+    - **TECHNICIAN**: Technical operations team member, associated with an organization
+
+    ## Organization Management
+    - ADMIN users automatically get an organization on signup
+    - Organization stores business information (name, address, contact details)
+    - Team members (MARKETER/TECHNICIAN) are automatically added to organization_members
+    - Role-based organization retrieval (owner vs member access)
 
     ## Security
     - Passwords managed by Supabase Auth
     - JWT access tokens for authentication
     - Row Level Security (RLS) on database tables
-    - Only ADMINs can create other ADMIN users
+    - Only ADMINs can create other users and manage organizations
     - Secure password reset with one-time tokens
 
-  version: 2.0.0
+  version: 3.0.0
   contact:
     name: Door Knocker API Support
     email: support@doorknocker.example.com
@@ -47,19 +56,23 @@ tags:
     description: User profile and information operations
   - name: Password Management
     description: Password reset operations
+  - name: Organization Management
+    description: Organization information and management operations
 
 paths:
   /signUp:
     post:
       tags:
         - Authentication
-      summary: Register a new ADMIN user
+      summary: Register a new ADMIN user and create organization
       description: |
-        Creates a new ADMIN user account with email and password.
+        Creates a new ADMIN user account with email and password, and automatically creates an associated organization.
 
         **Important:**
         - This endpoint is for public ADMIN user registration only
         - Role is always set to ADMIN (cannot be changed)
+        - Automatically creates an empty organization entry for the ADMIN
+        - Organization can be updated later via /saveOrganization endpoint
         - MARKETER and TECHNICIAN users must be created by ADMIN via /createUser endpoint
         - No authentication required for ADMIN signup
       operationId: signUp
@@ -148,18 +161,22 @@ paths:
     post:
       tags:
         - User Management
-      summary: Create MARKETER or TECHNICIAN user (ADMIN only)
+      summary: Create MARKETER or TECHNICIAN user and add to organization (ADMIN only)
       description: |
-        Allows ADMIN users to create new MARKETER or TECHNICIAN users.
+        Allows ADMIN users to create new MARKETER or TECHNICIAN users and automatically adds them to the organization.
 
         **Access Control:**
         - Only authenticated ADMIN users can access this endpoint
         - Cannot create ADMIN users via this endpoint (use /signUp for ADMIN creation)
         - Requires valid JWT Bearer token from an ADMIN user
 
+        **Automatic Organization Membership:**
+        - Created user is automatically added to the ADMIN's organization_members array
+        - Includes member_uid and member_role in the organization record
+
         **Created User Roles:**
-        - MARKETER: Marketing-specific dashboard access
-        - TECHNICIAN: Technical operations dashboard access
+        - MARKETER: Marketing-specific dashboard access, member of organization
+        - TECHNICIAN: Technical operations dashboard access, member of organization
       operationId: createUser
       security:
         - BearerAuth: []
@@ -735,6 +752,247 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /saveOrganization:
+    post:
+      tags:
+        - Organization Management
+      summary: Save/update organization information
+      description: |
+        Allows authenticated users (typically ADMIN) to update their organization information.
+
+        **Access Control:**
+        - Only organization owners can update their organization
+        - Updates the organization where owner_id matches the authenticated user's UID
+
+        **Required Fields:**
+        - business_name
+        - business_address
+        - business_email
+
+        **Optional Fields:**
+        - registration_number
+        - industry
+        - phone_number
+        - website_url
+
+        **Note:** This endpoint updates an existing organization entry that was created during ADMIN signup.
+      operationId: saveOrganization
+      security:
+        - SupabaseAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveOrganizationRequest'
+            example:
+              business_name: Tech Solutions Inc
+              business_address: 123 Main Street, Silicon Valley, CA 94025
+              business_email: contact@techsolutions.com
+              registration_number: REG-2025-12345
+              industry: Technology
+              phone_number: +1-555-123-4567
+              website_url: https://techsolutions.com
+      responses:
+        '200':
+          description: Organization updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Organization updated successfully
+                  data:
+                    $ref: '#/components/schemas/Organization'
+              example:
+                status: success
+                message: Organization updated successfully
+                data:
+                  id: 770e8400-e29b-41d4-a716-446655440003
+                  owner_id: 550e8400-e29b-41d4-a716-446655440000
+                  business_name: Tech Solutions Inc
+                  business_address: 123 Main Street, Silicon Valley, CA 94025
+                  business_email: contact@techsolutions.com
+                  registration_number: REG-2025-12345
+                  industry: Technology
+                  phone_number: +1-555-123-4567
+                  website_url: https://techsolutions.com
+                  organization_members:
+                    - member_uid: 660e8400-e29b-41d4-a716-446655440001
+                      member_role: MARKETER
+                    - member_uid: 660e8400-e29b-41d4-a716-446655440002
+                      member_role: TECHNICIAN
+                  created_at: '2025-01-18T10:00:00.000Z'
+                  updated_at: '2025-01-18T15:30:00.000Z'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingFields:
+                  summary: Missing required fields
+                  value:
+                    error: INVALID_INPUT
+                    message: business_name, business_address, and business_email are required
+                invalidEmail:
+                  summary: Invalid business email format
+                  value:
+                    error: INVALID_EMAIL
+                    message: Invalid business email format
+        '401':
+          description: Unauthorized - Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingAuth:
+                  summary: Missing authorization header
+                  value:
+                    error: UNAUTHORIZED
+                    message: Authorization header is required
+                invalidToken:
+                  summary: Invalid token
+                  value:
+                    error: INVALID_TOKEN
+                    message: Invalid or expired token
+        '404':
+          description: Organization not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: ORGANIZATION_NOT_FOUND
+                message: Organization not found. Please contact support.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /getOrganization:
+    get:
+      tags:
+        - Organization Management
+      summary: Get organization information
+      description: |
+        Retrieves organization information based on the authenticated user's role.
+
+        **Intelligent Role-Based Retrieval:**
+        - **ADMIN users:** Returns the organization where they are the owner (owner_id = their UID)
+        - **MARKETER users:** Returns the organization where they are listed as a member
+        - **TECHNICIAN users:** Returns the organization where they are listed as a member
+
+        **Returns:**
+        - Complete organization details including business information
+        - List of all organization members (with their UIDs and roles)
+        - Organization owner information
+        - Timestamps for creation and last update
+      operationId: getOrganization
+      security:
+        - SupabaseAuth: []
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Organization retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetOrganizationResponse'
+              examples:
+                adminView:
+                  summary: Admin viewing their organization
+                  value:
+                    status: success
+                    data:
+                      id: 770e8400-e29b-41d4-a716-446655440003
+                      owner_id: 550e8400-e29b-41d4-a716-446655440000
+                      business_name: Tech Solutions Inc
+                      business_address: 123 Main Street, Silicon Valley, CA 94025
+                      business_email: contact@techsolutions.com
+                      registration_number: REG-2025-12345
+                      industry: Technology
+                      phone_number: +1-555-123-4567
+                      website_url: https://techsolutions.com
+                      organization_members:
+                        - member_uid: 660e8400-e29b-41d4-a716-446655440001
+                          member_role: MARKETER
+                        - member_uid: 660e8400-e29b-41d4-a716-446655440002
+                          member_role: TECHNICIAN
+                      created_at: '2025-01-18T10:00:00.000Z'
+                      updated_at: '2025-01-18T15:30:00.000Z'
+                memberView:
+                  summary: MARKETER/TECHNICIAN viewing their organization
+                  value:
+                    status: success
+                    data:
+                      id: 770e8400-e29b-41d4-a716-446655440003
+                      owner_id: 550e8400-e29b-41d4-a716-446655440000
+                      business_name: Tech Solutions Inc
+                      business_address: 123 Main Street, Silicon Valley, CA 94025
+                      business_email: contact@techsolutions.com
+                      registration_number: REG-2025-12345
+                      industry: Technology
+                      phone_number: +1-555-123-4567
+                      website_url: https://techsolutions.com
+                      organization_members:
+                        - member_uid: 660e8400-e29b-41d4-a716-446655440001
+                          member_role: MARKETER
+                        - member_uid: 660e8400-e29b-41d4-a716-446655440002
+                          member_role: TECHNICIAN
+                      created_at: '2025-01-18T10:00:00.000Z'
+                      updated_at: '2025-01-18T15:30:00.000Z'
+        '401':
+          description: Unauthorized - Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingAuth:
+                  summary: Missing authorization header
+                  value:
+                    error: UNAUTHORIZED
+                    message: Authorization header is required
+                invalidToken:
+                  summary: Invalid token
+                  value:
+                    error: INVALID_TOKEN
+                    message: Invalid or expired token
+        '404':
+          description: Organization not found or user not associated with any organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFound:
+                  summary: Organization not found
+                  value:
+                    error: ORGANIZATION_NOT_FOUND
+                    message: Organization not found
+                notMember:
+                  summary: User not associated with organization
+                  value:
+                    error: ORGANIZATION_NOT_FOUND
+                    message: You are not associated with any organization
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 components:
   schemas:
     SignUpRequest:
@@ -937,6 +1195,133 @@ components:
           type: string
           description: Human-readable error message
           example: Email and password are required
+
+    OrganizationMember:
+      type: object
+      properties:
+        member_uid:
+          type: string
+          format: uuid
+          description: User ID of the organization member
+          example: 660e8400-e29b-41d4-a716-446655440001
+        member_role:
+          type: string
+          enum: [ADMIN, MARKETER, TECHNICIAN]
+          description: Role of the member in the organization
+          example: MARKETER
+
+    Organization:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Organization's unique identifier
+          example: 770e8400-e29b-41d4-a716-446655440003
+        owner_id:
+          type: string
+          format: uuid
+          description: User ID of the organization owner (ADMIN)
+          example: 550e8400-e29b-41d4-a716-446655440000
+        business_name:
+          type: string
+          nullable: true
+          description: Name of the business/organization
+          example: Tech Solutions Inc
+        registration_number:
+          type: string
+          nullable: true
+          description: Business registration number
+          example: REG-2025-12345
+        industry:
+          type: string
+          nullable: true
+          description: Industry sector
+          example: Technology
+        business_address:
+          type: string
+          nullable: true
+          description: Business physical address
+          example: 123 Main Street, Silicon Valley, CA 94025
+        business_email:
+          type: string
+          format: email
+          nullable: true
+          description: Business contact email
+          example: contact@techsolutions.com
+        phone_number:
+          type: string
+          nullable: true
+          description: Business phone number
+          example: +1-555-123-4567
+        website_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Business website URL
+          example: https://techsolutions.com
+        organization_members:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationMember'
+          description: List of organization members (MARKETER and TECHNICIAN users)
+        created_at:
+          type: string
+          format: date-time
+          description: Organization creation timestamp
+          example: '2025-01-18T10:00:00.000Z'
+        updated_at:
+          type: string
+          format: date-time
+          description: Organization last update timestamp
+          example: '2025-01-18T15:30:00.000Z'
+
+    SaveOrganizationRequest:
+      type: object
+      required:
+        - business_name
+        - business_address
+        - business_email
+      properties:
+        business_name:
+          type: string
+          description: Name of the business/organization (required)
+          example: Tech Solutions Inc
+        registration_number:
+          type: string
+          description: Business registration number (optional)
+          example: REG-2025-12345
+        industry:
+          type: string
+          description: Industry sector (optional)
+          example: Technology
+        business_address:
+          type: string
+          description: Business physical address (required)
+          example: 123 Main Street, Silicon Valley, CA 94025
+        business_email:
+          type: string
+          format: email
+          description: Business contact email (required)
+          example: contact@techsolutions.com
+        phone_number:
+          type: string
+          description: Business phone number (optional)
+          example: +1-555-123-4567
+        website_url:
+          type: string
+          format: uri
+          description: Business website URL (optional)
+          example: https://techsolutions.com
+
+    GetOrganizationResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        data:
+          $ref: '#/components/schemas/Organization'
 
   securitySchemes:
     SupabaseAuth:
