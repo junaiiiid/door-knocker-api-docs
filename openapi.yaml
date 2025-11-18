@@ -880,6 +880,115 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /getIndustry:
+    get:
+      tags:
+        - Organization Management
+      summary: Get list of available industries
+      description: |
+        Returns a predefined list of business industries for dropdown selection.
+
+        **Use Case:**
+        - Used when users are filling out organization details
+        - Provides a standardized list of industry options
+        - No authentication required - public endpoint
+
+        **Returns:**
+        - Sorted alphabetical list of industries
+        - Total count of available industries
+      operationId: getIndustry
+      responses:
+        '200':
+          description: Industries retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      industries:
+                        type: array
+                        items:
+                          type: string
+                        description: Sorted list of industry names
+                        example:
+                          - Accounting
+                          - Advertising & Marketing
+                          - Aerospace & Defense
+                          - Agriculture & Farming
+                          - Information Technology
+                          - Software Development
+                      total:
+                        type: number
+                        description: Total number of industries
+                        example: 40
+              example:
+                status: success
+                data:
+                  industries:
+                    - Accounting
+                    - Advertising & Marketing
+                    - Aerospace & Defense
+                    - Agriculture & Farming
+                    - Architecture & Planning
+                    - Automotive
+                    - Banking & Financial Services
+                    - Biotechnology
+                    - Construction
+                    - Consulting
+                    - Consumer Electronics
+                    - Consumer Goods
+                    - E-commerce
+                    - Education & Training
+                    - Energy & Utilities
+                    - Engineering
+                    - Entertainment & Media
+                    - Environmental Services
+                    - Fashion & Apparel
+                    - Food & Beverage
+                    - Government & Public Sector
+                    - Healthcare & Medical
+                    - Hospitality & Tourism
+                    - Human Resources
+                    - Information Technology
+                    - Insurance
+                    - Legal Services
+                    - Logistics & Supply Chain
+                    - Manufacturing
+                    - Mining & Metals
+                    - Non-Profit & NGO
+                    - Oil & Gas
+                    - Other
+                    - Pharmaceuticals
+                    - Real Estate
+                    - Retail
+                    - Security Services
+                    - Software Development
+                    - Sports & Recreation
+                    - Telecommunications
+                    - Transportation
+                  total: 40
+        '405':
+          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: METHOD_NOT_ALLOWED
+                message: Only GET method is allowed
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /getOrganization:
     get:
       tags:
