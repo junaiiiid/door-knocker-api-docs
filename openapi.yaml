@@ -758,6 +758,10 @@ paths:
         2. User clicks the reset link (contains access_token in URL)
         3. Frontend extracts the access_token and calls this endpoint with new password
         4. Password is updated and user can login with new credentials
+
+        **Security:**
+        - New password must meet all password requirements
+        - New password cannot be the same as the current password
       operationId: resetPassword
       requestBody:
         required: true
@@ -815,6 +819,11 @@ paths:
                   value:
                     error: WEAK_PASSWORD
                     message: Password must contain at least one special character (!@#$%^&* etc.)
+                samePassword:
+                  summary: New password same as current password
+                  value:
+                    error: SAME_PASSWORD
+                    message: New password cannot be the same as your current password
         '401':
           description: Invalid or expired token
           content:
