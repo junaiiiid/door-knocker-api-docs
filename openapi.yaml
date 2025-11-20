@@ -700,6 +700,11 @@ paths:
         Sends a password reset email to the user using Supabase Auth.
         Always returns success to prevent email enumeration attacks.
 
+        **Reset Flow:**
+        - User receives email with a reset link pointing to: `https://door-knocker-web-app.vercel.app/reset-password`
+        - The link contains an access token in the URL parameters
+        - Frontend extracts the token and calls /resetPassword endpoint
+
         The reset email contains a secure link with an access token that can be used
         with the /resetPassword endpoint.
       operationId: forgotPassword
