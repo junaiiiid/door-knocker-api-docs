@@ -29,6 +29,12 @@ info:
     - Role-based organization retrieval (owner vs member access)
 
     ## Security
+    - Strong password requirements enforced:
+      - Minimum 8 characters
+      - At least one uppercase letter (A-Z)
+      - At least one lowercase letter (a-z)
+      - At least one number (0-9)
+      - At least one special character (!@#$%^&* etc.)
     - Passwords managed by Supabase Auth
     - JWT access tokens for authentication
     - Row Level Security (RLS) on database tables
@@ -95,6 +101,13 @@ paths:
                   type: string
                   format: password
                   minLength: 8
+                  description: |
+                    Password must meet the following requirements:
+                    - At least 8 characters long
+                    - At least one uppercase letter (A-Z)
+                    - At least one lowercase letter (a-z)
+                    - At least one number (0-9)
+                    - At least one special character (!@#$%^&* etc.)
             example:
               email: admin@example.com
               password: SecurePass123!
@@ -132,10 +145,30 @@ paths:
                     error: INVALID_EMAIL
                     message: Invalid email format
                 weakPassword:
-                  summary: Password too weak
+                  summary: Password too weak - too short
                   value:
                     error: WEAK_PASSWORD
                     message: Password must be at least 8 characters long
+                missingUppercase:
+                  summary: Password missing uppercase letter
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must contain at least one uppercase letter
+                missingLowercase:
+                  summary: Password missing lowercase letter
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must contain at least one lowercase letter
+                missingNumber:
+                  summary: Password missing number
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must contain at least one number
+                missingSpecialChar:
+                  summary: Password missing special character
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must contain at least one special character (!@#$%^&* etc.)
                 invalidRole:
                   summary: Invalid role - trying to create non-ADMIN user
                   value:
@@ -199,7 +232,13 @@ paths:
                   type: string
                   format: password
                   minLength: 8
-                  description: Password (minimum 8 characters)
+                  description: |
+                    Password must meet the following requirements:
+                    - At least 8 characters long
+                    - At least one uppercase letter (A-Z)
+                    - At least one lowercase letter (a-z)
+                    - At least one number (0-9)
+                    - At least one special character (!@#$%^&* etc.)
                 fullName:
                   type: string
                   description: Full name of the user
@@ -255,10 +294,30 @@ paths:
                     error: INVALID_EMAIL
                     message: Invalid email format
                 weakPassword:
-                  summary: Password too weak
+                  summary: Password too weak - too short
                   value:
                     error: WEAK_PASSWORD
                     message: Password must be at least 8 characters long
+                missingUppercase:
+                  summary: Password missing uppercase letter
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must contain at least one uppercase letter
+                missingLowercase:
+                  summary: Password missing lowercase letter
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must contain at least one lowercase letter
+                missingNumber:
+                  summary: Password missing number
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must contain at least one number
+                missingSpecialChar:
+                  summary: Password missing special character
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must contain at least one special character (!@#$%^&* etc.)
                 invalidRole:
                   summary: Invalid role
                   value:
@@ -732,10 +791,30 @@ paths:
                     error: INVALID_INPUT
                     message: Access token and new password are required
                 weakPassword:
-                  summary: Password too weak
+                  summary: Password too weak - too short
                   value:
                     error: WEAK_PASSWORD
                     message: Password must be at least 8 characters long
+                missingUppercase:
+                  summary: Password missing uppercase letter
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must contain at least one uppercase letter
+                missingLowercase:
+                  summary: Password missing lowercase letter
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must contain at least one lowercase letter
+                missingNumber:
+                  summary: Password missing number
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must contain at least one number
+                missingSpecialChar:
+                  summary: Password missing special character
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must contain at least one special character (!@#$%^&* etc.)
         '401':
           description: Invalid or expired token
           content:
@@ -1119,7 +1198,13 @@ components:
           type: string
           format: password
           minLength: 8
-          description: User's password (minimum 8 characters)
+          description: |
+            User's password must meet the following requirements:
+            - At least 8 characters long
+            - At least one uppercase letter (A-Z)
+            - At least one lowercase letter (a-z)
+            - At least one number (0-9)
+            - At least one special character (!@#$%^&* etc.)
           example: SecurePass123!
         fullName:
           type: string
@@ -1174,7 +1259,13 @@ components:
         password:
           type: string
           format: password
-          description: User's password
+          description: |
+            User's password must meet the following requirements:
+            - At least 8 characters long
+            - At least one uppercase letter (A-Z)
+            - At least one lowercase letter (a-z)
+            - At least one number (0-9)
+            - At least one special character (!@#$%^&* etc.)
           example: SecurePass123!
 
     LoginResponse:
@@ -1244,7 +1335,13 @@ components:
           type: string
           format: password
           minLength: 8
-          description: New password (minimum 8 characters)
+          description: |
+            New password must meet the following requirements:
+            - At least 8 characters long
+            - At least one uppercase letter (A-Z)
+            - At least one lowercase letter (a-z)
+            - At least one number (0-9)
+            - At least one special character (!@#$%^&* etc.)
           example: NewSecurePass123!
 
     GetUserResponse:
