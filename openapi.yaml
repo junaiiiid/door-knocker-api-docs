@@ -68,6 +68,8 @@ tags:
     description: Job types and job-related operations
   - name: Referral Management
     description: Referral creation, retrieval, and management operations
+  - name: Gallery Management
+    description: Photo gallery and image management operations for referrals
 
 paths:
   /signUp:
@@ -1800,6 +1802,363 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /uploadImage:
+    post:
+      tags:
+        - Gallery Management
+      summary: Upload image to referral gallery
+      description: |
+        Uploads an image to a referral's photo gallery.
+
+        **Business Rules:**
+        - Requires referral_id and image file in multipart/form-data
+        - If no gallery exists for the referral, creates one automatically
+        - Uploads image to Supabase Storage in folder: gallery/{gallery_id}
+        - Default image type is "none" (can be changed later with changePhotoTypeById)
+        - Supported formats: JPEG, PNG, WebP, HEIC, HEIF
+        - Maximum file size: 4MB
+
+        **Returns:** Updated gallery with the newly uploaded image
+      operationId: uploadImage
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - referral_id
+                - image
+              properties:
+                referral_id:
+                  type: string
+                  format: uuid
+                  description: Referral ID to upload image for
+                image:
+                  type: string
+                  format: binary
+                  description: Image file to upload (max 4MB, formats: JPEG, PNG, WebP, HEIC, HEIF)
+      responses:
+        '201':
+          description: Image uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Image uploaded successfully
+                  data:
+                    type: object
+                    properties:
+                      gallery:
+                        $ref: '#/components/schemas/Gallery'
+                      uploaded_image:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          url:
+                            type: string
+                            format: uri
+                          type:
+                            type: string
+                            enum: [before, after, none]
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingReferralId:
+                  summary: Missing referral_id
+                  value:
+                    error: INVALID_INPUT
+                    message: referral_id is required and must be a string
+                missingImage:
+                  summary: Missing image file
+                  value:
+                    error: INVALID_INPUT
+                    message: image file is required
+                invalidFileType:
+                  summary: Invalid file type
+                  value:
+                    error: INVALID_INPUT
+                    message: Only image files (JPEG, PNG, WebP, HEIC, HEIF) are allowed
+                fileTooLarge:
+                  summary: File size exceeds limit
+                  value:
+                    error: INVALID_INPUT
+                    message: Image file size must not exceed 4MB
+        '404':
+          description: Referral not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: REFERRAL_NOT_FOUND
+                message: Referral not found
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /getPhotoGallery:
+    post:
+      tags:
+        - Gallery Management
+      summary: Get photo gallery for referral
+      description: |
+        Retrieves the photo gallery for a specific referral.
+
+        **Business Rules:**
+        - Requires referral_id in request body
+        - Returns gallery with all images (before/after/none types)
+        - Returns empty gallery structure if no gallery exists for the referral
+
+        **Returns:** Gallery object with images array
+      operationId: getPhotoGallery
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - referral_id
+              properties:
+                referral_id:
+                  type: string
+                  format: uuid
+                  description: Referral ID to get gallery for
+            example:
+              referral_id: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Gallery retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Gallery retrieved successfully
+                  data:
+                    $ref: '#/components/schemas/Gallery'
+              examples:
+                withImages:
+                  summary: Gallery with images
+                  value:
+                    status: success
+                    message: Gallery retrieved successfully
+                    data:
+                      id: 660e8400-e29b-41d4-a716-446655440001
+                      referral_id: 550e8400-e29b-41d4-a716-446655440000
+                      images:
+                        - id: 770e8400-e29b-41d4-a716-446655440002
+                          url: https://example.supabase.co/storage/v1/object/public/images/gallery/660e8400/image1.jpg
+                          type: before
+                        - id: 880e8400-e29b-41d4-a716-446655440003
+                          url: https://example.supabase.co/storage/v1/object/public/images/gallery/660e8400/image2.jpg
+                          type: after
+                        - id: 990e8400-e29b-41d4-a716-446655440004
+                          url: https://example.supabase.co/storage/v1/object/public/images/gallery/660e8400/image3.jpg
+                          type: none
+                      created_at: "2025-01-19T10:00:00.000Z"
+                      updated_at: "2025-01-19T11:30:00.000Z"
+                emptyGallery:
+                  summary: No gallery found
+                  value:
+                    status: success
+                    message: No gallery found for this referral
+                    data:
+                      id: null
+                      referral_id: 550e8400-e29b-41d4-a716-446655440000
+                      images: []
+                      created_at: null
+                      updated_at: null
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: INVALID_INPUT
+                message: referral_id is required
+        '404':
+          description: Referral not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: REFERRAL_NOT_FOUND
+                message: Referral not found
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /changePhotoTypeById:
+    patch:
+      tags:
+        - Gallery Management
+      summary: Change photo type by ID
+      description: |
+        Updates the type of a specific photo in a gallery.
+
+        **Business Rules:**
+        - Requires id (photo ID) and type in request body
+        - Valid types: "before", "after", "none"
+        - Type is case-insensitive (automatically converted to lowercase)
+        - Searches across all galleries to find the photo
+        - Updates the photo type in the gallery's images array
+
+        **Returns:** Updated gallery with modified photo
+      operationId: changePhotoTypeById
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - type
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: Photo ID to update
+                type:
+                  type: string
+                  enum: [before, after, none, BEFORE, AFTER, NONE]
+                  description: New type for the photo (case-insensitive)
+            examples:
+              changeToBefore:
+                summary: Change to before type
+                value:
+                  id: 770e8400-e29b-41d4-a716-446655440002
+                  type: before
+              changeToAfter:
+                summary: Change to after type
+                value:
+                  id: 880e8400-e29b-41d4-a716-446655440003
+                  type: AFTER
+              changeToNone:
+                summary: Change to none type
+                value:
+                  id: 990e8400-e29b-41d4-a716-446655440004
+                  type: none
+      responses:
+        '200':
+          description: Photo type updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Photo type updated successfully
+                  data:
+                    type: object
+                    properties:
+                      gallery:
+                        $ref: '#/components/schemas/Gallery'
+                      updated_photo:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          url:
+                            type: string
+                            format: uri
+                          type:
+                            type: string
+                            enum: [before, after, none]
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingId:
+                  summary: Missing photo ID
+                  value:
+                    error: INVALID_INPUT
+                    message: Photo ID is required
+                missingType:
+                  summary: Missing type
+                  value:
+                    error: INVALID_INPUT
+                    message: Type is required
+                invalidType:
+                  summary: Invalid type value
+                  value:
+                    error: INVALID_INPUT
+                    message: "Invalid type. Must be one of: before, after, none"
+        '404':
+          description: Photo not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: PHOTO_NOT_FOUND
+                message: Photo not found in any gallery
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /getOrganization:
     get:
       tags:
@@ -2364,6 +2723,51 @@ components:
           format: date-time
           description: Last update timestamp
           example: '2025-01-19T10:00:00.000Z'
+
+    Gallery:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Gallery unique identifier
+          example: 660e8400-e29b-41d4-a716-446655440001
+        referral_id:
+          type: string
+          format: uuid
+          description: Referral ID linked to this gallery
+          example: 550e8400-e29b-41d4-a716-446655440000
+        images:
+          type: array
+          description: Array of images in the gallery
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+                description: Image unique identifier
+                example: 770e8400-e29b-41d4-a716-446655440002
+              url:
+                type: string
+                format: uri
+                description: Public URL of the image
+                example: https://example.supabase.co/storage/v1/object/public/images/gallery/660e8400/image1.jpg
+              type:
+                type: string
+                enum: [before, after, none]
+                description: Image type classification
+                example: before
+        created_at:
+          type: string
+          format: date-time
+          description: Gallery creation timestamp
+          example: '2025-01-19T10:00:00.000Z'
+        updated_at:
+          type: string
+          format: date-time
+          description: Gallery last update timestamp
+          example: '2025-01-19T11:30:00.000Z'
 
   securitySchemes:
     SupabaseAuth:
