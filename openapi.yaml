@@ -1174,6 +1174,70 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /getAllJobStatus:
+    get:
+      tags:
+        - Job Management
+      summary: Get all available job status types
+      description: |
+        Returns a list of all available job status types for job workflow management.
+
+        **Use Case:**
+        - Used for dropdown/selection in job management and tracking forms
+        - Provides standardized list of job status stages
+        - No authentication required - public endpoint
+        - Three status types: Draft, In Use, Ready
+
+        **Returns:**
+        - Array of job status types with id and name
+        - Sorted alphabetically by name
+      operationId: getAllJobStatus
+      responses:
+        '200':
+          description: Job status types retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: Unique identifier for the job status type
+                          example: 550e8400-e29b-41d4-a716-446655440000
+                        name:
+                          type: string
+                          description: Name of the job status type
+                          example: Draft
+              example:
+                data:
+                  - id: 550e8400-e29b-41d4-a716-446655440000
+                    name: Draft
+                  - id: 660e8400-e29b-41d4-a716-446655440001
+                    name: In Use
+                  - id: 770e8400-e29b-41d4-a716-446655440002
+                    name: Ready
+        '405':
+          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: METHOD_NOT_ALLOWED
+                message: Only GET method is allowed
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /getOrganization:
     get:
       tags:
