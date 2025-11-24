@@ -66,6 +66,8 @@ tags:
     description: Organization information and management operations
   - name: Job Management
     description: Job types and job-related operations
+  - name: Referral Management
+    description: Referral creation, retrieval, and management operations
 
 paths:
   /signUp:
@@ -1238,6 +1240,364 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /getAllStates:
+    get:
+      tags:
+        - Referral Management
+      summary: Get all US states
+      description: |
+        Returns a list of all 50 US states with their standard abbreviations.
+
+        **Use Case:**
+        - Used for dropdown/selection in address forms
+        - Provides standardized list of US states
+        - No authentication required - public endpoint
+
+        **Returns:**
+        - Array of states with name and abbreviation
+        - Sorted alphabetically by name
+      operationId: getAllStates
+      responses:
+        '200':
+          description: States retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: Full state name
+                          example: California
+                        abbreviation:
+                          type: string
+                          description: Two-letter state abbreviation
+                          example: CA
+              example:
+                data:
+                  - name: Alabama
+                    abbreviation: AL
+                  - name: Alaska
+                    abbreviation: AK
+                  - name: California
+                    abbreviation: CA
+        '405':
+          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /createReferral:
+    post:
+      tags:
+        - Referral Management
+      summary: Create a new referral
+      description: |
+        Creates a new referral with Draft status. All fields are optional - if no data is provided, creates an empty referral with default values.
+
+        **Business Rules:**
+        - Status is always set to "Draft" on creation
+        - All fields have default empty values
+        - Returns the complete created referral object
+      operationId: createReferral
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              description: All fields are optional
+      responses:
+        '201':
+          description: Referral created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Referral created successfully
+                  data:
+                    $ref: '#/components/schemas/Referral'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /getReferralById:
+    post:
+      tags:
+        - Referral Management
+      summary: Get referral by ID
+      description: |
+        Retrieves a specific referral by its ID.
+
+        **Required:**
+        - id: UUID of the referral
+      operationId: getReferralById
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: Referral ID
+                  example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Referral retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/Referral'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Referral not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /getAllReferrals:
+    get:
+      tags:
+        - Referral Management
+      summary: Get all referrals
+      description: |
+        Returns a list of all referrals from the database, ordered by creation date (newest first).
+
+        **Returns:**
+        - Array of complete referral objects
+        - Includes all referral details
+      operationId: getAllReferrals
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Referrals retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Referral'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /updateReferralById:
+    patch:
+      tags:
+        - Referral Management
+      summary: Update referral by ID
+      description: |
+        Updates a specific referral by its ID. Can update any field except the ID itself.
+
+        **Validation:**
+        - address must be a JSON object
+        - job_details must be a JSON object
+        - job_type must be a JSON object with id and name
+        - status can be passed as string ("Draft", "In Use", "Ready") or JSON object
+
+        **Supported Fields:**
+        - name, phone, email (home_owner_info)
+        - address, street, city, state, zip (address fields)
+        - job_type, value, currency, referral_percentage, notes (job_details)
+        - status
+
+        **Note:** Automatically updates the updated_at timestamp
+      operationId: updateReferralById
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: Referral ID (required)
+                name:
+                  type: string
+                  description: Home owner name
+                phone:
+                  type: string
+                  description: Home owner phone
+                email:
+                  type: string
+                  format: email
+                  description: Home owner email
+                address:
+                  type: object
+                  description: Complete address object
+                street:
+                  type: string
+                  description: Street address
+                city:
+                  type: string
+                  description: City name
+                state:
+                  description: State (string abbreviation or object)
+                  oneOf:
+                    - type: string
+                    - type: object
+                zip:
+                  type: string
+                  description: ZIP code
+                job_type:
+                  type: object
+                  description: Job type object with id and name
+                value:
+                  type: number
+                  description: Job value
+                currency:
+                  type: string
+                  description: Currency code
+                referral_percentage:
+                  type: number
+                  description: Referral percentage
+                notes:
+                  type: string
+                  description: Job notes
+                status:
+                  description: Status (string name or object)
+                  oneOf:
+                    - type: string
+                    - type: object
+            examples:
+              updateName:
+                summary: Update home owner name
+                value:
+                  id: 550e8400-e29b-41d4-a716-446655440000
+                  name: Jane Smith
+              updateStatus:
+                summary: Update status (string)
+                value:
+                  id: 550e8400-e29b-41d4-a716-446655440000
+                  status: In Use
+              updateMultipleFields:
+                summary: Update multiple fields
+                value:
+                  id: 550e8400-e29b-41d4-a716-446655440000
+                  name: John Doe
+                  phone: +1-555-987-6543
+                  city: San Francisco
+                  value: 3500
+      responses:
+        '200':
+          description: Referral updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Referral updated successfully
+                  data:
+                    $ref: '#/components/schemas/Referral'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Referral not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /getOrganization:
     get:
       tags:
@@ -1698,6 +2058,110 @@ components:
           example: success
         data:
           $ref: '#/components/schemas/Organization'
+
+    Referral:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Referral unique identifier
+          example: 550e8400-e29b-41d4-a716-446655440000
+        home_owner_info:
+          type: object
+          properties:
+            name:
+              type: string
+              description: Home owner name
+              example: John Doe
+            address:
+              type: object
+              properties:
+                street:
+                  type: string
+                  description: Street address
+                  example: 123 Main St
+                city:
+                  type: string
+                  description: City name
+                  example: Anytown
+                state:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: Full state name
+                      example: California
+                    abbreviation:
+                      type: string
+                      description: State abbreviation
+                      example: CA
+                zip:
+                  type: string
+                  description: ZIP code
+                  example: '90210'
+            phone:
+              type: string
+              description: Phone number
+              example: +1-555-123-4567
+            email:
+              type: string
+              format: email
+              description: Email address
+              example: john@example.com
+        job_details:
+          type: object
+          properties:
+            job_type:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: Job type ID
+                  example: 3
+                name:
+                  type: string
+                  description: Job type name
+                  example: Plumbing
+            value:
+              type: number
+              description: Job value
+              example: 2500
+            currency:
+              type: string
+              description: Currency code
+              example: USD
+            referral_percentage:
+              type: number
+              description: Referral percentage
+              example: 10
+            notes:
+              type: string
+              description: Additional notes
+              example: Customer requested urgent service.
+        status:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Status ID
+              example: d7db3360-6d15-4379-989c-560ae96bfa28
+            name:
+              type: string
+              description: Status name
+              example: Draft
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: '2025-01-19T10:00:00.000Z'
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: '2025-01-19T10:00:00.000Z'
 
   securitySchemes:
     SupabaseAuth:
