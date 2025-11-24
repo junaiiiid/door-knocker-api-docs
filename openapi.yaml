@@ -64,6 +64,8 @@ tags:
     description: Password reset operations
   - name: Organization Management
     description: Organization information and management operations
+  - name: Job Management
+    description: Job types and job-related operations
 
 paths:
   /signUp:
@@ -1066,6 +1068,96 @@ paths:
                     - Telecommunications
                     - Transportation
                   total: 40
+        '405':
+          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: METHOD_NOT_ALLOWED
+                message: Only GET method is allowed
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /getAllJobs:
+    get:
+      tags:
+        - Job Management
+      summary: Get all available job types
+      description: |
+        Returns a comprehensive list of all available job types for construction and home services.
+
+        **Use Case:**
+        - Used for dropdown/selection in job creation or scheduling forms
+        - Provides standardized list of service types
+        - No authentication required - public endpoint
+        - Includes 200+ job types across categories: HVAC, Plumbing, Electrical, Roofing, Carpentry, etc.
+
+        **Returns:**
+        - Array of job types with id and name
+        - Sorted alphabetically by name
+      operationId: getAllJobs
+      responses:
+        '200':
+          description: Job types retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: Unique identifier for the job type
+                          example: 550e8400-e29b-41d4-a716-446655440000
+                        name:
+                          type: string
+                          description: Name of the job type
+                          example: HVAC Installation
+              example:
+                data:
+                  - id: 550e8400-e29b-41d4-a716-446655440000
+                    name: AC Installation
+                  - id: 660e8400-e29b-41d4-a716-446655440001
+                    name: AC Maintenance
+                  - id: 770e8400-e29b-41d4-a716-446655440002
+                    name: AC Repair
+                  - id: 880e8400-e29b-41d4-a716-446655440003
+                    name: Appliance Installation
+                  - id: 990e8400-e29b-41d4-a716-446655440004
+                    name: Appliance Repair
+                  - id: aa0e8400-e29b-41d4-a716-446655440005
+                    name: Attic Conversion
+                  - id: bb0e8400-e29b-41d4-a716-446655440006
+                    name: Bathroom Remodeling
+                  - id: cc0e8400-e29b-41d4-a716-446655440007
+                    name: Carpet Cleaning
+                  - id: dd0e8400-e29b-41d4-a716-446655440008
+                    name: Concrete Installation
+                  - id: ee0e8400-e29b-41d4-a716-446655440009
+                    name: Door Installation
+                  - id: ff0e8400-e29b-41d4-a716-446655440010
+                    name: Drain Cleaning
+                  - id: 110e8400-e29b-41d4-a716-446655440011
+                    name: Duct Cleaning
+                  - id: 220e8400-e29b-41d4-a716-446655440012
+                    name: Electrical Installation
+                  - id: 330e8400-e29b-41d4-a716-446655440013
+                    name: Furnace Tune-Up
+                  - id: 440e8400-e29b-41d4-a716-446655440014
+                    name: HVAC Installation
+                  - id: 5550e8400-e29b-41d4-a716-446655440015
+                    name: Other
         '405':
           description: Method not allowed
           content:
