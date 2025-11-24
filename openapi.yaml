@@ -2159,6 +2159,178 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /deleteImage:
+    delete:
+      tags:
+        - Gallery Management
+      summary: Delete image from gallery
+      description: |
+        Deletes a specific image from a gallery.
+
+        **Business Rules:**
+        - Requires image ID in request body
+        - Removes image from gallery's images array
+        - Deletes image file from Supabase Storage
+        - Searches across all galleries to find the image
+
+        **Returns:** Updated gallery after image deletion
+      operationId: deleteImage
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: Image ID to delete
+            example:
+              id: 770e8400-e29b-41d4-a716-446655440002
+      responses:
+        '200':
+          description: Image deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Image deleted successfully
+                  data:
+                    type: object
+                    properties:
+                      gallery:
+                        $ref: '#/components/schemas/Gallery'
+                      deleted_image_id:
+                        type: string
+                        format: uuid
+                        example: 770e8400-e29b-41d4-a716-446655440002
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: INVALID_INPUT
+                message: Image ID is required
+        '404':
+          description: Image not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: IMAGE_NOT_FOUND
+                message: Image not found in any gallery
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /deleteReferral:
+    delete:
+      tags:
+        - Referral Management
+      summary: Delete referral by ID
+      description: |
+        Deletes a specific referral by its ID.
+
+        **Business Rules:**
+        - Requires referral ID in request body
+        - Cascades deletion to associated gallery (ON DELETE CASCADE)
+        - Deletes all gallery images from Supabase Storage
+        - Permanent deletion - cannot be undone
+
+        **Returns:** Success message with deleted referral ID
+      operationId: deleteReferral
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: Referral ID to delete
+            example:
+              id: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Referral deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Referral deleted successfully
+                  data:
+                    type: object
+                    properties:
+                      deleted_referral_id:
+                        type: string
+                        format: uuid
+                        example: 550e8400-e29b-41d4-a716-446655440000
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: INVALID_INPUT
+                message: Referral ID is required
+        '404':
+          description: Referral not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: REFERRAL_NOT_FOUND
+                message: Referral not found
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /getOrganization:
     get:
       tags:
