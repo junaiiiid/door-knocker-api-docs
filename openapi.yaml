@@ -1598,6 +1598,208 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /searchReferral:
+    post:
+      tags:
+        - Referral Management
+      summary: Search referrals
+      description: |
+        Searches referrals based on query and/or filters.
+
+        **Business Rules:**
+        - Either `query` or `filters` must be provided (at least one is mandatory)
+        - Query searches by home owner name or phone number (case-insensitive, partial match)
+        - Filters can include: job_type, status, and/or value
+        - If both query and filters are provided, all criteria are combined (AND logic)
+
+        **Query:**
+        - Searches in home_owner_info.name and home_owner_info.phone
+        - Partial string matching, case-insensitive
+
+        **Filters:**
+        - job_type: Must be a JSON object with id and/or name
+        - status: Must be a JSON object with id and/or name
+        - value: Must be a number (exact match)
+        - At least one filter field must be provided if using filters
+
+        **Returns:** Array of matching referrals ordered by created_at (newest first)
+      operationId: searchReferral
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: Search term for home owner name or phone number
+                filters:
+                  type: object
+                  description: Filter criteria
+                  properties:
+                    job_type:
+                      type: object
+                      description: Filter by job type
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                    status:
+                      type: object
+                      description: Filter by status
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                    value:
+                      type: number
+                      description: Filter by exact job value
+            examples:
+              searchByName:
+                summary: Search by home owner name
+                value:
+                  query: John Doe
+              searchByPhone:
+                summary: Search by phone number
+                value:
+                  query: "555-123"
+              filterByStatus:
+                summary: Filter by status only
+                value:
+                  filters:
+                    status:
+                      name: Draft
+              filterByJobType:
+                summary: Filter by job type
+                value:
+                  filters:
+                    job_type:
+                      id: 3
+                      name: Plumbing
+              filterByValue:
+                summary: Filter by job value
+                value:
+                  filters:
+                    value: 2500
+              combinedSearch:
+                summary: Query with multiple filters
+                value:
+                  query: John
+                  filters:
+                    status:
+                      id: d7db3360-6d15-4379-989c-560ae96bfa28
+                      name: Draft
+                    job_type:
+                      id: 3
+                      name: Plumbing
+                    value: 2500
+      responses:
+        '200':
+          description: Search results returned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Found 5 referral(s)
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Referral'
+              examples:
+                foundResults:
+                  summary: Results found
+                  value:
+                    status: success
+                    message: Found 2 referral(s)
+                    data:
+                      - id: 550e8400-e29b-41d4-a716-446655440000
+                        home_owner_info:
+                          name: John Doe
+                          address:
+                            street: 123 Main St
+                            city: Anytown
+                            state:
+                              name: California
+                              abbreviation: CA
+                            zip: "90210"
+                          phone: +1-555-123-4567
+                          email: john@example.com
+                        job_details:
+                          job_type:
+                            id: 3
+                            name: Plumbing
+                          value: 2500
+                          currency: USD
+                          referral_percentage: 10
+                          notes: Customer requested urgent service
+                        status:
+                          id: d7db3360-6d15-4379-989c-560ae96bfa28
+                          name: Draft
+                        created_at: "2025-01-19T10:00:00.000Z"
+                        updated_at: "2025-01-19T10:00:00.000Z"
+                noResults:
+                  summary: No results found
+                  value:
+                    status: success
+                    message: Found 0 referral(s)
+                    data: []
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingBoth:
+                  summary: Neither query nor filters provided
+                  value:
+                    error: INVALID_INPUT
+                    message: Either 'query' or 'filters' must be provided
+                invalidFilters:
+                  summary: Filters not an object
+                  value:
+                    error: INVALID_INPUT
+                    message: filters must be a JSON object
+                noFilterFields:
+                  summary: Empty filters object
+                  value:
+                    error: INVALID_INPUT
+                    message: At least one filter (job_type, status, or value) must be provided
+                invalidJobType:
+                  summary: Invalid job_type format
+                  value:
+                    error: INVALID_INPUT
+                    message: job_type must be a JSON object with id and name
+                invalidValue:
+                  summary: Invalid value type
+                  value:
+                    error: INVALID_INPUT
+                    message: value must be a number
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /getOrganization:
     get:
       tags:
