@@ -614,7 +614,7 @@ paths:
         - name: user_id
           in: query
           required: false
-          description: "User ID to fetch (ADMIN only). If omitted, returns the authenticated user's profile."
+          description: User ID to fetch (ADMIN only). If omitted, returns the authenticated user's profile.
           schema:
             type: string
             format: uuid
@@ -724,7 +724,7 @@ paths:
               email: user@example.com
       responses:
         '200':
-          description: "Request processed (always returns success)"
+          description: Request processed (always returns success)
           content:
             application/json:
               schema:
@@ -1492,7 +1492,7 @@ paths:
                 id:
                   type: string
                   format: uuid
-                  description: "Referral ID (required)"
+                  description: Referral ID (required)
                 name:
                   type: string
                   description: Home owner name
@@ -1513,7 +1513,7 @@ paths:
                   type: string
                   description: City name
                 state:
-                  description: "State (string abbreviation or object)"
+                  description: State (string abbreviation or object)
                   oneOf:
                     - type: string
                     - type: object
@@ -1536,7 +1536,7 @@ paths:
                   type: string
                   description: Job notes
                 status:
-                  description: "Status (string name or object)"
+                  description: Status (string name or object)
                   oneOf:
                     - type: string
                     - type: object
@@ -2067,7 +2067,7 @@ paths:
                 type:
                   type: string
                   enum: [before, after, none, BEFORE, AFTER, NONE]
-                  description: "New type for the photo (case-insensitive)"
+                  description: New type for the photo (case-insensitive)
             examples:
               changeToBefore:
                 summary: Change to before type
@@ -2299,12 +2299,12 @@ components:
           example: SecurePass123!
         fullName:
           type: string
-          description: "User's full name (optional)"
+          description: User's full name (optional)
           example: John Doe
         role:
           type: string
           enum: [ADMIN, MARKETER, TECHNICIAN]
-          description: "User role (default is TECHNICIAN). ADMIN role requires authenticated ADMIN user."
+          description: User role (default is TECHNICIAN). ADMIN role requires authenticated ADMIN user.
           example: TECHNICIAN
 
     SignUpResponse:
@@ -2370,7 +2370,7 @@ components:
           example: Login successful
         token:
           type: string
-          description: "JWT access token from Supabase Auth (expires in 1 hour)"
+          description: JWT access token from Supabase Auth (expires in 1 hour)
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MTcwMDAwMzYwMH0.signature
         refreshToken:
           type: string
@@ -2518,7 +2518,7 @@ components:
         owner_id:
           type: string
           format: uuid
-          description: "User ID of the organization owner (ADMIN)"
+          description: User ID of the organization owner (ADMIN)
           example: 550e8400-e29b-41d4-a716-446655440000
         business_name:
           type: string
@@ -2561,7 +2561,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/OrganizationMember'
-          description: "List of organization members (MARKETER and TECHNICIAN users)"
+          description: List of organization members (MARKETER and TECHNICIAN users)
         created_at:
           type: string
           format: date-time
@@ -2582,33 +2582,33 @@ components:
       properties:
         business_name:
           type: string
-          description: "Name of the business/organization (required)"
+          description: Name of the business/organization (required)
           example: Tech Solutions Inc
         registration_number:
           type: string
-          description: "Business registration number (optional)"
+          description: Business registration number (optional)
           example: REG-2025-12345
         industry:
           type: string
-          description: "Industry sector (optional)"
+          description: Industry sector (optional)
           example: Technology
         business_address:
           type: string
-          description: "Business physical address (required)"
+          description: Business physical address (required)
           example: 123 Main Street, Silicon Valley, CA 94025
         business_email:
           type: string
           format: email
-          description: "Business contact email (required)"
+          description: Business contact email (required)
           example: contact@techsolutions.com
         phone_number:
           type: string
-          description: "Business phone number (optional)"
+          description: Business phone number (optional)
           example: +1-555-123-4567
         website_url:
           type: string
           format: uri
-          description: "Business website URL (optional)"
+          description: Business website URL (optional)
           example: https://techsolutions.com
 
     GetOrganizationResponse:
