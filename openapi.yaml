@@ -1421,16 +1421,46 @@ paths:
     get:
       tags:
         - Referral Management
-      summary: Get all referrals
+      summary: Get all referrals with pagination
       description: |
-        Returns a list of all referrals from the database, ordered by creation date (newest first).
+        Returns a paginated list of referrals from the database, ordered by creation date (newest first).
+
+        **Pagination:**
+        - Use `page` query parameter to specify page number (default: 1)
+        - Use `limit` query parameter to specify results per page (default: 10, max: 100)
+        - Returns pagination metadata including total count and page information
+
+        **Examples:**
+        - `/getAllReferrals` - Returns first 10 referrals
+        - `/getAllReferrals?page=2&limit=20` - Returns 20 referrals on page 2
+        - `/getAllReferrals?limit=50` - Returns first 50 referrals
 
         **Returns:**
         - Array of complete referral objects
-        - Includes all referral details
+        - Pagination metadata
       operationId: getAllReferrals
       security:
         - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: "Page number (default: 1, min: 1)"
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        - name: limit
+          in: query
+          description: "Number of results per page (default: 10, min: 1, max: 100)"
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+            example: 10
       responses:
         '200':
           description: Referrals retrieved successfully
@@ -1443,6 +1473,33 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Referral'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        example: 1
+                        description: Current page number
+                      limit:
+                        type: integer
+                        example: 10
+                        description: Results per page
+                      total_count:
+                        type: integer
+                        example: 47
+                        description: Total number of referrals
+                      total_pages:
+                        type: integer
+                        example: 5
+                        description: Total number of pages
+                      has_next_page:
+                        type: boolean
+                        example: true
+                        description: Whether there is a next page
+                      has_previous_page:
+                        type: boolean
+                        example: false
+                        description: Whether there is a previous page
         '401':
           description: Unauthorized
           content:
@@ -1806,19 +1863,21 @@ paths:
     post:
       tags:
         - Gallery Management
-      summary: Upload image to referral gallery
+      summary: Upload single or multiple images to referral gallery
       description: |
-        Uploads an image to a referral's photo gallery.
+        Uploads one or more images to a referral's photo gallery.
 
         **Business Rules:**
-        - Requires referral_id and image file in multipart/form-data
+        - Requires referral_id and image file(s) in multipart/form-data
         - If no gallery exists for the referral, creates one automatically
-        - Uploads image to Supabase Storage in folder: gallery/{gallery_id}
-        - Default image type is "none" (can be changed later with changePhotoTypeById)
+        - Uploads images to Supabase Storage in folder: gallery/{gallery_id}
+        - Default image type is "none" for all images (can be changed later with changePhotoTypeById)
         - Supported formats: JPEG, PNG, WebP, HEIC, HEIF
-        - Maximum file size: 4MB
+        - Maximum file size per image: 4MB
+        - Can upload multiple images in a single request
+        - Partial success: If some images fail, successful ones are still uploaded
 
-        **Returns:** Updated gallery with the newly uploaded image
+        **Returns:** Updated gallery with all successfully uploaded images
       operationId: uploadImage
       security:
         - BearerAuth: []
@@ -1835,14 +1894,16 @@ paths:
                 referral_id:
                   type: string
                   format: uuid
-                  description: Referral ID to upload image for
+                  description: Referral ID to upload images for
                 image:
-                  type: string
-                  format: binary
-                  description: "Image file to upload (max 4MB, JPEG/PNG/WebP/HEIC/HEIF)"
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: "One or more image files to upload (max 4MB each, JPEG/PNG/WebP/HEIC/HEIF)"
       responses:
         '201':
-          description: Image uploaded successfully
+          description: Image(s) uploaded successfully
           content:
             application/json:
               schema:
@@ -1853,24 +1914,48 @@ paths:
                     example: success
                   message:
                     type: string
-                    example: Image uploaded successfully
+                    example: "3 image(s) uploaded successfully"
                   data:
                     type: object
                     properties:
                       gallery:
                         $ref: '#/components/schemas/Gallery'
-                      uploaded_image:
+                      uploaded_images:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            url:
+                              type: string
+                              format: uri
+                            type:
+                              type: string
+                              enum: [before, after, none]
+                      failed_uploads:
+                        type: array
+                        description: "List of files that failed to upload (only present if there are failures)"
+                        items:
+                          type: object
+                          properties:
+                            filename:
+                              type: string
+                            error:
+                              type: string
+                      summary:
                         type: object
                         properties:
-                          id:
-                            type: string
-                            format: uuid
-                          url:
-                            type: string
-                            format: uri
-                          type:
-                            type: string
-                            enum: [before, after, none]
+                          total_attempted:
+                            type: integer
+                            example: 3
+                          successful:
+                            type: integer
+                            example: 3
+                          failed:
+                            type: integer
+                            example: 0
         '400':
           description: Invalid input
           content:
@@ -1887,17 +1972,17 @@ paths:
                   summary: Missing image file
                   value:
                     error: INVALID_INPUT
-                    message: image file is required
+                    message: At least one image file is required
                 invalidFileType:
                   summary: Invalid file type
                   value:
                     error: INVALID_INPUT
-                    message: Only image files (JPEG, PNG, WebP, HEIC, HEIF) are allowed
+                    message: 'File "image.gif" has invalid type. Only JPEG, PNG, WebP, HEIC, HEIF are allowed'
                 fileTooLarge:
                   summary: File size exceeds limit
                   value:
                     error: INVALID_INPUT
-                    message: Image file size must not exceed 4MB
+                    message: 'File "large-image.jpg" exceeds 4MB size limit'
         '404':
           description: Referral not found
           content:
@@ -2300,6 +2385,136 @@ paths:
                         type: string
                         format: uuid
                         example: 550e8400-e29b-41d4-a716-446655440000
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: INVALID_INPUT
+                message: Referral ID is required
+        '404':
+          description: Referral not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: REFERRAL_NOT_FOUND
+                message: Referral not found
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /getReferralHistory:
+    post:
+      tags:
+        - Referral Management
+      summary: Get referral history
+      description: |
+        Retrieves the complete history log for a specific referral.
+
+        **Business Rules:**
+        - Requires referral ID in request body
+        - Returns all logged actions for the referral
+        - Ordered by most recent first
+        - Includes user information for each action
+
+        **Returns:** Array of history entries with timestamps
+      operationId: getReferralHistory
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: Referral ID to get history for
+            example:
+              id: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Referral history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Referral history retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      referral_id:
+                        type: string
+                        format: uuid
+                        example: 550e8400-e29b-41d4-a716-446655440000
+                      history:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            referral_id:
+                              type: string
+                              format: uuid
+                            user_id:
+                              type: string
+                              format: uuid
+                            user_name:
+                              type: string
+                              example: "Maaz Imtiaz"
+                            action:
+                              type: string
+                              example: "created this referral"
+                            created_at:
+                              type: string
+                              format: date-time
+                        example:
+                          - id: 123e4567-e89b-12d3-a456-426614174000
+                            referral_id: 550e8400-e29b-41d4-a716-446655440000
+                            user_id: 789e0123-e89b-12d3-a456-426614174000
+                            user_name: "Maaz Imtiaz"
+                            action: "uploaded 4 photos to this referral"
+                            created_at: "2025-01-19T14:30:00Z"
+                          - id: 223e4567-e89b-12d3-a456-426614174000
+                            referral_id: 550e8400-e29b-41d4-a716-446655440000
+                            user_id: 789e0123-e89b-12d3-a456-426614174000
+                            user_name: "Maaz Imtiaz"
+                            action: "changed homeowner address"
+                            created_at: "2025-01-19T12:15:00Z"
+                          - id: 323e4567-e89b-12d3-a456-426614174000
+                            referral_id: 550e8400-e29b-41d4-a716-446655440000
+                            user_id: 789e0123-e89b-12d3-a456-426614174000
+                            user_name: "Maaz Imtiaz"
+                            action: "created this referral"
+                            created_at: "2025-01-19T10:00:00Z"
+                      count:
+                        type: integer
+                        example: 3
         '400':
           description: Invalid input
           content:
