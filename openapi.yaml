@@ -1661,15 +1661,16 @@ paths:
     post:
       tags:
         - Referral Management
-      summary: Search referrals
+      summary: Search referrals with pagination
       description: |
-        Searches referrals based on query and/or filters.
+        Searches referrals based on query and/or filters with pagination support.
 
         **Business Rules:**
         - Either `query` or `filters` must be provided (at least one is mandatory)
         - Query searches by home owner name or phone number (case-insensitive, partial match)
         - Filters can include: job_type, status, and/or value
         - If both query and filters are provided, all criteria are combined (AND logic)
+        - Supports pagination with page and limit parameters (default: page=1, limit=10, max: 100)
 
         **Query:**
         - Searches in home_owner_info.name and home_owner_info.phone
@@ -1681,7 +1682,11 @@ paths:
         - value: Must be a number (exact match)
         - At least one filter field must be provided if using filters
 
-        **Returns:** Array of matching referrals ordered by created_at (newest first)
+        **Pagination:**
+        - page: Page number (default: 1, min: 1)
+        - limit: Results per page (default: 10, min: 1, max: 100)
+
+        **Returns:** Paginated array of matching referrals ordered by created_at (newest first)
       operationId: searchReferral
       security:
         - BearerAuth: []
@@ -1719,6 +1724,17 @@ paths:
                     value:
                       type: number
                       description: Filter by exact job value
+                page:
+                  type: integer
+                  minimum: 1
+                  default: 1
+                  description: "Page number (default: 1)"
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  default: 10
+                  description: "Results per page (default: 10, max: 100)"
             examples:
               searchByName:
                 summary: Search by home owner name
@@ -1758,6 +1774,12 @@ paths:
                       id: 3
                       name: Plumbing
                     value: 2500
+              paginatedSearch:
+                summary: Search with pagination
+                value:
+                  query: John
+                  page: 2
+                  limit: 20
       responses:
         '200':
           description: Search results returned successfully
@@ -1776,6 +1798,33 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Referral'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        example: 1
+                        description: Current page number
+                      limit:
+                        type: integer
+                        example: 10
+                        description: Results per page
+                      total_count:
+                        type: integer
+                        example: 5
+                        description: Total number of matching referrals
+                      total_pages:
+                        type: integer
+                        example: 1
+                        description: Total number of pages
+                      has_next_page:
+                        type: boolean
+                        example: false
+                        description: Whether there is a next page
+                      has_previous_page:
+                        type: boolean
+                        example: false
+                        description: Whether there is a previous page
               examples:
                 foundResults:
                   summary: Results found
@@ -1808,12 +1857,26 @@ paths:
                           name: Draft
                         created_at: "2025-01-19T10:00:00.000Z"
                         updated_at: "2025-01-19T10:00:00.000Z"
+                    pagination:
+                      page: 1
+                      limit: 10
+                      total_count: 2
+                      total_pages: 1
+                      has_next_page: false
+                      has_previous_page: false
                 noResults:
                   summary: No results found
                   value:
                     status: success
                     message: Found 0 referral(s)
                     data: []
+                    pagination:
+                      page: 1
+                      limit: 10
+                      total_count: 0
+                      total_pages: 0
+                      has_next_page: false
+                      has_previous_page: false
         '400':
           description: Invalid input
           content:
