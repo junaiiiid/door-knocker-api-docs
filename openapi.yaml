@@ -1361,19 +1361,12 @@ paths:
         - **ALL**: Returns both residential and other building types
 
         **Authentication:**
-        - Requires JWT authentication via Authorization header
+        - Requires JWT authentication via Authorization header (use "Authorize" button at top)
         - campaign_id is mandatory
       operationId: getAddressesFromZone
       security:
-        - BearerAuth: []
-      parameters:
-        - name: Authorization
-          in: header
-          required: true
-          schema:
-            type: string
-          description: "Bearer token for authentication (format: Bearer YOUR_JWT_TOKEN)"
-          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        - SupabaseAuth: []
+          BearerAuth: []
       requestBody:
         required: true
         content:
@@ -1551,18 +1544,12 @@ paths:
         - Provides detailed verification results
         - Batch processing up to 1000 addresses
 
-        **Authentication:** Requires JWT authentication via Authorization header and PostGrid API key in header
+        **Authentication:** Requires JWT authentication (use "Authorize" button at top) and PostGrid API key in header
       operationId: verifyAddresses
       security:
-        - BearerAuth: []
+        - SupabaseAuth: []
+          BearerAuth: []
       parameters:
-        - name: Authorization
-          in: header
-          required: true
-          schema:
-            type: string
-          description: "Bearer token for authentication (format: Bearer YOUR_JWT_TOKEN)"
-          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         - name: x-postgrid-api-key
           in: header
           required: true
