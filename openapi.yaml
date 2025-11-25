@@ -1353,8 +1353,11 @@ paths:
         - Uses Overpass API for building discovery
         - Filters by building type (ALL, RESIDENTIAL, OTHER)
         - Returns full address details with coordinates
+        - Optional: Save to database by providing campaign_id (requires JWT)
 
-        **Authentication:** Public endpoint - no authentication required
+        **Authentication:**
+        - Public endpoint when used without campaign_id
+        - Requires JWT when campaign_id is provided (saves to location_zones table)
       operationId: getAddressesFromZone
       requestBody:
         required: true
@@ -1386,22 +1389,34 @@ paths:
                       type: string
                       enum: [ALL, RESIDENTIAL, OTHER]
                       default: ALL
-                      description: Type of buildings to search for
+                      description: Type of buildings to search for (filters results by residential vs other)
+                campaign_id:
+                  type: string
+                  format: uuid
+                  description: Optional - If provided, saves zone to location_zones table and returns zone_id (requires JWT authentication)
             examples:
               radiusMode:
-                summary: Radius-based search
+                summary: Radius-based search (no save)
                 value:
                   address: "37.4224764,-122.0842499"
                   data:
                     radius: 1000
                     searchType: "RESIDENTIAL"
               countMode:
-                summary: Count-based search
+                summary: Count-based search (no save)
                 value:
                   address: "1600 Amphitheatre Parkway, Mountain View, CA"
                   data:
                     count: 50
                     searchType: "ALL"
+              withCampaignId:
+                summary: Save to database (requires JWT)
+                value:
+                  address: "1600 Amphitheatre Parkway, Mountain View, CA"
+                  data:
+                    radius: 500
+                    searchType: "RESIDENTIAL"
+                  campaign_id: "660e8400-e29b-41d4-a716-446655440001"
       responses:
         '200':
           description: Addresses retrieved successfully
@@ -1416,21 +1431,37 @@ paths:
                   message:
                     type: string
                     example: "Found 45 addresses"
+                  zone_id:
+                    type: string
+                    format: uuid
+                    description: Zone ID (only returned when campaign_id is provided)
+                    example: "123e4567-e89b-12d3-a456-426614174000"
+                  center:
+                    type: object
+                    properties:
+                      lat:
+                        type: number
+                      long:
+                        type: number
+                      radius:
+                        type: integer
+                        description: Only present in radius mode
+                  mode:
+                    type: string
+                    enum: [radius, count]
+                  searchType:
+                    type: string
+                    enum: [ALL, RESIDENTIAL, OTHER]
                   metadata:
                     type: object
                     properties:
-                      search_center:
-                        type: object
-                        properties:
-                          lat:
-                            type: number
-                          lng:
-                            type: number
-                      search_radius_meters:
+                      totalBuildingsFound:
                         type: integer
-                      search_type:
-                        type: string
-                      total_found:
+                      addressesReturned:
+                        type: integer
+                      residentialCount:
+                        type: integer
+                      otherCount:
                         type: integer
                       processingTimeMs:
                         type: integer
@@ -1453,22 +1484,27 @@ paths:
                           type: string
               example:
                 status: success
-                message: "Found 45 addresses"
+                message: "Found 7 addresses"
+                zone_id: "123e4567-e89b-12d3-a456-426614174000"
+                center:
+                  lat: 37.4224764
+                  long: -122.0842499
+                  radius: 500
+                mode: radius
+                searchType: RESIDENTIAL
                 metadata:
-                  search_center:
-                    lat: 37.4224764
-                    lng: -122.0842499
-                  search_radius_meters: 1000
-                  search_type: RESIDENTIAL
-                  total_found: 45
-                  processingTimeMs: 2341
+                  totalBuildingsFound: 7
+                  addressesReturned: 7
+                  residentialCount: 0
+                  otherCount: 7
+                  processingTimeMs: 1295
                 addresses:
-                  - lat: 37.4225
-                    long: -122.0843
-                    address: "1600 Amphitheatre Parkway, Mountain View, CA 94043"
-                    residential: true
-                    building_type: "house"
-                    osm_id: "way/123456789"
+                  - lat: 37.4224816
+                    long: -122.085569
+                    address: "1600, Amphitheatre Parkway, Mountain View, CA, 94043"
+                    residential: false
+                    building_type: "commercial"
+                    osm_id: "23733659"
         '400':
           description: Invalid input
           content:
@@ -1486,9 +1522,10 @@ paths:
     post:
       tags:
         - Address Discovery
-      summary: Verify addresses using PostGrid
+      summary: Verify addresses in a zone using PostGrid
       description: |
-        Verifies addresses from getAddressesFromZone using PostGrid address verification API.
+        Verifies addresses in a saved zone using PostGrid address verification API.
+        Updates the zone in the database with verification results.
 
         **Use Case:**
         - Validate addresses before sending postcards
@@ -1496,13 +1533,15 @@ paths:
         - Get standardized address format
 
         **Features:**
-        - Verifies addresses using PostGrid API
+        - Fetches zone by zone_id from location_zones table
+        - Verifies all addresses in the zone using PostGrid API
+        - Updates zone in database with verification status
         - Returns verification status (verified, corrected, undeliverable)
         - Supports filtering: return only verified or all with status
         - Provides detailed verification results
         - Batch processing up to 1000 addresses
 
-        **Authentication:** Public endpoint - requires PostGrid API key in header
+        **Authentication:** Requires JWT authentication and PostGrid API key
       operationId: verifyAddresses
       parameters:
         - name: x-postgrid-api-key
@@ -1518,39 +1557,19 @@ paths:
             schema:
               type: object
               required:
-                - addresses
+                - zone_id
               properties:
-                addresses:
-                  type: array
-                  description: Array of address objects from getAddressesFromZone
-                  items:
-                    type: object
-                    properties:
-                      lat:
-                        type: number
-                      long:
-                        type: number
-                      address:
-                        type: string
-                      residential:
-                        type: boolean
-                      building_type:
-                        type: string
-                      osm_id:
-                        type: string
-                verified:
+                zone_id:
+                  type: string
+                  format: uuid
+                  description: ID of the zone to verify (from getAddressesFromZone response)
+                showOnlyVerified:
                   type: boolean
                   default: true
-                  description: If true, returns only verified addresses. If false, returns all with verification status
+                  description: If true, returns only verified addresses. If false, returns all addresses with verification status
             example:
-              addresses:
-                - lat: 37.4225
-                  long: -122.0843
-                  address: "1600 Amphitheatre Parkway, Mountain View, CA 94043"
-                  residential: true
-                  building_type: "house"
-                  osm_id: "way/123456789"
-              verified: true
+              zone_id: "123e4567-e89b-12d3-a456-426614174000"
+              showOnlyVerified: true
       responses:
         '200':
           description: Addresses verified successfully
@@ -1564,24 +1583,48 @@ paths:
                     example: success
                   message:
                     type: string
-                    example: "Verified 42 of 45 addresses"
-                  summary:
+                    example: "Verified 5 of 7 addresses"
+                  center:
                     type: object
+                    description: Same center data from the zone
                     properties:
-                      total_addresses_submitted:
+                      lat:
+                        type: number
+                      long:
+                        type: number
+                      radius:
                         type: integer
-                      verified_count:
-                        type: integer
-                      unverified_count:
-                        type: integer
-                      addresses_returned:
-                        type: integer
-                      filter_mode:
-                        type: string
-                        enum: [verified_only, all]
+                  mode:
+                    type: string
+                    enum: [radius, count]
+                    description: Same mode from the zone
+                  searchType:
+                    type: string
+                    enum: [ALL, RESIDENTIAL, OTHER]
+                    description: Same searchType from the zone
                   metadata:
                     type: object
                     properties:
+                      totalBuildingsFound:
+                        type: integer
+                      addressesReturned:
+                        type: integer
+                      residentialCount:
+                        type: integer
+                      otherCount:
+                        type: integer
+                      verified_count:
+                        type: integer
+                        description: Number of verified addresses
+                      unverified_count:
+                        type: integer
+                        description: Number of unverified addresses
+                      addresses_returned:
+                        type: integer
+                        description: Number of addresses in response (filtered by showOnlyVerified)
+                      filter_mode:
+                        type: string
+                        enum: [verified_only, all]
                       processingTimeMs:
                         type: integer
                   addresses:
@@ -1623,14 +1666,22 @@ paths:
                                 type: object
               example:
                 status: success
-                message: "Verified 42 of 45 addresses"
-                summary:
-                  total_addresses_submitted: 45
-                  verified_count: 42
-                  unverified_count: 3
-                  addresses_returned: 42
-                  filter_mode: verified_only
+                message: "Verified 5 of 7 addresses"
+                center:
+                  lat: 37.4224764
+                  long: -122.0842499
+                  radius: 500
+                mode: radius
+                searchType: RESIDENTIAL
                 metadata:
+                  totalBuildingsFound: 7
+                  addressesReturned: 5
+                  residentialCount: 0
+                  otherCount: 7
+                  verified_count: 5
+                  unverified_count: 2
+                  addresses_returned: 5
+                  filter_mode: verified_only
                   processingTimeMs: 5234
                 addresses:
                   - lat: 37.4225
@@ -3106,11 +3157,14 @@ paths:
         **Step 4: Add Business Details**
         Adds business name, phone, website, QR URL, and before/after images.
 
-        **Steps 5-6:** To be implemented
+        **Step 5: Link Zone to Campaign**
+        Links a location zone (from getAddressesFromZone) to the campaign by saving zone_id.
+
+        **Step 6:** To be implemented
 
         **Business Rules:**
         - Organization-based (user must be in organization)
-        - Step 1 creates new campaign, steps 2-4 require campaign_id
+        - Step 1 creates new campaign, steps 2-5 require campaign_id
         - Each step advances current_step counter
         - Campaign starts in Draft status
 
@@ -3227,6 +3281,24 @@ paths:
                           type: string
                           format: uuid
                           description: ID of after image from referral's gallery
+                - type: object
+                  title: Step 5
+                  required:
+                    - step
+                    - campaign_id
+                    - zone_id
+                  properties:
+                    step:
+                      type: integer
+                      example: 5
+                    campaign_id:
+                      type: string
+                      format: uuid
+                      description: Campaign ID
+                    zone_id:
+                      type: string
+                      format: uuid
+                      description: Zone ID from getAddressesFromZone response
             examples:
               step1:
                 summary: Step 1 - Link Referral
@@ -3263,6 +3335,12 @@ paths:
                     qr_url: "https://abchome.com/spring-promo"
                     before_image_id: "770e8400-e29b-41d4-a716-446655440002"
                     after_image_id: "880e8400-e29b-41d4-a716-446655440003"
+              step5:
+                summary: Step 5 - Link Zone to Campaign
+                value:
+                  step: 5
+                  campaign_id: 660e8400-e29b-41d4-a716-446655440001
+                  zone_id: 123e4567-e89b-12d3-a456-426614174000
       responses:
         '200':
           description: Campaign updated successfully (steps 2-4)
