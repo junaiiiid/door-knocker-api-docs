@@ -1333,6 +1333,332 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /getAddressesFromZone:
+    post:
+      tags:
+        - Address Discovery
+      summary: Get addresses from a geographic zone
+      description: |
+        Discovers addresses within a specified radius or count using OpenStreetMap.
+
+        **Use Case:**
+        - Find addresses for door-knocking campaigns
+        - Discover residential or commercial buildings in a target area
+        - Get addresses without Google Maps API dependency
+
+        **Features:**
+        - Supports two modes: radius-based or count-based search
+        - Accepts address as lat,lng coordinates or full text address
+        - Uses OpenStreetMap Nominatim for geocoding
+        - Uses Overpass API for building discovery
+        - Filters by building type (ALL, RESIDENTIAL, OTHER)
+        - Returns full address details with coordinates
+
+        **Authentication:** Public endpoint - no authentication required
+      operationId: getAddressesFromZone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - address
+                - data
+              properties:
+                address:
+                  type: string
+                  description: Either "lat,lng" coordinates or full text address to geocode
+                  example: "1600 Amphitheatre Parkway, Mountain View, CA 94043"
+                data:
+                  type: object
+                  description: Search parameters - must include either radius OR count
+                  properties:
+                    radius:
+                      type: integer
+                      description: Search radius in meters (use for radius mode)
+                      example: 1000
+                    count:
+                      type: integer
+                      description: Number of addresses to return (use for count mode)
+                      example: 100
+                    searchType:
+                      type: string
+                      enum: [ALL, RESIDENTIAL, OTHER]
+                      default: ALL
+                      description: Type of buildings to search for
+            examples:
+              radiusMode:
+                summary: Radius-based search
+                value:
+                  address: "37.4224764,-122.0842499"
+                  data:
+                    radius: 1000
+                    searchType: "RESIDENTIAL"
+              countMode:
+                summary: Count-based search
+                value:
+                  address: "1600 Amphitheatre Parkway, Mountain View, CA"
+                  data:
+                    count: 50
+                    searchType: "ALL"
+      responses:
+        '200':
+          description: Addresses retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: "Found 45 addresses"
+                  metadata:
+                    type: object
+                    properties:
+                      search_center:
+                        type: object
+                        properties:
+                          lat:
+                            type: number
+                          lng:
+                            type: number
+                      search_radius_meters:
+                        type: integer
+                      search_type:
+                        type: string
+                      total_found:
+                        type: integer
+                      processingTimeMs:
+                        type: integer
+                  addresses:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        lat:
+                          type: number
+                        long:
+                          type: number
+                        address:
+                          type: string
+                        residential:
+                          type: boolean
+                        building_type:
+                          type: string
+                        osm_id:
+                          type: string
+              example:
+                status: success
+                message: "Found 45 addresses"
+                metadata:
+                  search_center:
+                    lat: 37.4224764
+                    lng: -122.0842499
+                  search_radius_meters: 1000
+                  search_type: RESIDENTIAL
+                  total_found: 45
+                  processingTimeMs: 2341
+                addresses:
+                  - lat: 37.4225
+                    long: -122.0843
+                    address: "1600 Amphitheatre Parkway, Mountain View, CA 94043"
+                    residential: true
+                    building_type: "house"
+                    osm_id: "way/123456789"
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /verifyAddresses:
+    post:
+      tags:
+        - Address Discovery
+      summary: Verify addresses using PostGrid
+      description: |
+        Verifies addresses from getAddressesFromZone using PostGrid address verification API.
+
+        **Use Case:**
+        - Validate addresses before sending postcards
+        - Filter out undeliverable addresses
+        - Get standardized address format
+
+        **Features:**
+        - Verifies addresses using PostGrid API
+        - Returns verification status (verified, corrected, undeliverable)
+        - Supports filtering: return only verified or all with status
+        - Provides detailed verification results
+        - Batch processing up to 1000 addresses
+
+        **Authentication:** Public endpoint - requires PostGrid API key in header
+      operationId: verifyAddresses
+      parameters:
+        - name: x-postgrid-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+          description: PostGrid API key for address verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - addresses
+              properties:
+                addresses:
+                  type: array
+                  description: Array of address objects from getAddressesFromZone
+                  items:
+                    type: object
+                    properties:
+                      lat:
+                        type: number
+                      long:
+                        type: number
+                      address:
+                        type: string
+                      residential:
+                        type: boolean
+                      building_type:
+                        type: string
+                      osm_id:
+                        type: string
+                verified:
+                  type: boolean
+                  default: true
+                  description: If true, returns only verified addresses. If false, returns all with verification status
+            example:
+              addresses:
+                - lat: 37.4225
+                  long: -122.0843
+                  address: "1600 Amphitheatre Parkway, Mountain View, CA 94043"
+                  residential: true
+                  building_type: "house"
+                  osm_id: "way/123456789"
+              verified: true
+      responses:
+        '200':
+          description: Addresses verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: "Verified 42 of 45 addresses"
+                  summary:
+                    type: object
+                    properties:
+                      total_addresses_submitted:
+                        type: integer
+                      verified_count:
+                        type: integer
+                      unverified_count:
+                        type: integer
+                      addresses_returned:
+                        type: integer
+                      filter_mode:
+                        type: string
+                        enum: [verified_only, all]
+                  metadata:
+                    type: object
+                    properties:
+                      processingTimeMs:
+                        type: integer
+                  addresses:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        lat:
+                          type: number
+                        long:
+                          type: number
+                        address:
+                          type: string
+                        residential:
+                          type: boolean
+                        building_type:
+                          type: string
+                        osm_id:
+                          type: string
+                        verified:
+                          type: boolean
+                        verification_details:
+                          type: object
+                          properties:
+                            status:
+                              type: string
+                              enum: [verified, corrected, undeliverable]
+                            line1:
+                              type: string
+                            city:
+                              type: string
+                            provinceOrState:
+                              type: string
+                            postalOrZip:
+                              type: string
+                            errors:
+                              type: array
+                              items:
+                                type: object
+              example:
+                status: success
+                message: "Verified 42 of 45 addresses"
+                summary:
+                  total_addresses_submitted: 45
+                  verified_count: 42
+                  unverified_count: 3
+                  addresses_returned: 42
+                  filter_mode: verified_only
+                metadata:
+                  processingTimeMs: 5234
+                addresses:
+                  - lat: 37.4225
+                    long: -122.0843
+                    address: "1600 Amphitheatre Parkway, Mountain View, CA 94043"
+                    residential: true
+                    building_type: "house"
+                    osm_id: "way/123456789"
+                    verified: true
+                    verification_details:
+                      status: verified
+                      line1: "1600 Amphitheatre Pkwy"
+                      city: "Mountain View"
+                      provinceOrState: "CA"
+                      postalOrZip: "94043"
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /createReferral:
     post:
       tags:
