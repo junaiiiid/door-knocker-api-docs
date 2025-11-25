@@ -2852,6 +2852,8 @@ paths:
                         - phone
                         - website
                         - qr_url
+                        - before_image_id
+                        - after_image_id
                       properties:
                         business_name:
                           type: string
@@ -2861,6 +2863,14 @@ paths:
                           type: string
                         qr_url:
                           type: string
+                        before_image_id:
+                          type: string
+                          format: uuid
+                          description: ID of before image from referral's gallery
+                        after_image_id:
+                          type: string
+                          format: uuid
+                          description: ID of after image from referral's gallery
             examples:
               step1:
                 summary: Step 1 - Link Referral
@@ -2886,7 +2896,7 @@ paths:
                     cta_text: "Call Now to Redeem"
                     disclaimer_text: "Offer valid for new customers only"
               step4:
-                summary: Step 4 - Add Business Details
+                summary: Step 4 - Add Business Details and Images
                 value:
                   step: 4
                   campaign_id: 660e8400-e29b-41d4-a716-446655440001
@@ -2895,6 +2905,8 @@ paths:
                     phone: "+1-555-123-4567"
                     website: "https://abchome.com"
                     qr_url: "https://abchome.com/spring-promo"
+                    before_image_id: "770e8400-e29b-41d4-a716-446655440002"
+                    after_image_id: "880e8400-e29b-41d4-a716-446655440003"
       responses:
         '200':
           description: Campaign updated successfully (steps 2-4)
@@ -3611,6 +3623,295 @@ paths:
           description: User not in organization
         '404':
           description: Campaign not found in user's organization
+        '500':
+          description: Internal server error
+
+  /previewCampaignPostcard:
+    post:
+      tags:
+        - Campaign Management
+      summary: Generate live preview of campaign postcard
+      description: |
+        Generates a visual preview of a postcard using PostGrid's API without actually sending it.
+
+        **Use Cases:**
+        - Real-time preview during Step 3 (offer details entry)
+        - Preview after Step 4 (business details entry)
+        - Final preview before sending campaign
+
+        **How it Works:**
+        - Takes campaign data (or preview overrides) and merges with template
+        - Creates a PostGrid postcard with sendDate set to 2099 (never sends)
+        - Returns preview image URLs (front, back, thumbnails, PDF)
+
+        **Preview Data Override:**
+        - Pass `preview_data` to override campaign data for real-time preview
+        - Useful for showing live updates as user types in Step 3
+      operationId: previewCampaignPostcard
+      security:
+        - SupabaseAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: x-postgrid-api-key
+          in: header
+          required: true
+          description: PostGrid API key for accessing template service
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - campaign_id
+              properties:
+                campaign_id:
+                  type: string
+                  format: uuid
+                  description: Campaign ID to preview
+                preview_data:
+                  type: object
+                  description: Optional data to override campaign data for live preview
+                  properties:
+                    offer_data:
+                      type: object
+                      description: Override offer data for real-time preview
+                    business_data:
+                      type: object
+                      description: Override business data for real-time preview
+            examples:
+              livePreviewStep3:
+                summary: Live preview during Step 3 (offer entry)
+                value:
+                  campaign_id: "5af434d9-7522-4954-aed9-134947de9f54"
+                  preview_data:
+                    offer_data:
+                      offer_headline: "Special Spring Discount!"
+                      offer_description: "Get 20% off all services this month"
+                      start_date: "2025-03-01"
+                      end_date: "2025-03-31"
+                      cta_text: "Call Now to Redeem"
+                      disclaimer_text: "Offer valid for new customers only"
+              savedDataPreview:
+                summary: Preview using saved campaign data
+                value:
+                  campaign_id: "5af434d9-7522-4954-aed9-134947de9f54"
+      responses:
+        '200':
+          description: Preview generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      campaign_id:
+                        type: string
+                        format: uuid
+                      template_id:
+                        type: string
+                      preview:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            description: PostGrid postcard ID
+                          frontPreviewUrl:
+                            type: string
+                            format: uri
+                            description: URL to front preview image
+                          backPreviewUrl:
+                            type: string
+                            format: uri
+                            description: URL to back preview image
+                          frontThumbnailUrl:
+                            type: string
+                            format: uri
+                          backThumbnailUrl:
+                            type: string
+                            format: uri
+                          pdf:
+                            type: string
+                            format: uri
+                            description: URL to preview PDF
+                      merge_data:
+                        type: object
+                        description: The actual data used for preview
+                      note:
+                        type: string
+                        example: "This is a preview postcard. It will not be sent (scheduled for 2099)."
+        '400':
+          description: Invalid input or missing PostGrid API key
+        '401':
+          description: Unauthorized
+        '403':
+          description: User not in organization
+        '404':
+          description: Campaign not found
+        '500':
+          description: Internal server error or PostGrid API error
+
+  /sendCampaignPostcards:
+    post:
+      tags:
+        - Campaign Management
+      summary: Send campaign postcards to recipients
+      description: |
+        Creates and sends physical postcards via PostGrid API using campaign data.
+
+        **Prerequisites:**
+        - Campaign must have completed steps 1-4:
+          - Step 1: Referral linked
+          - Step 2: Template selected
+          - Step 3: Offer details added
+          - Step 4: Business details added
+
+        **Process:**
+        - Fetches campaign data (template_id, offer_data, business_data)
+        - For each recipient, creates a PostGrid postcard with merged data
+        - Updates campaign metrics (postcards_sent)
+        - Logs action to campaign_history
+
+        **Batch Sending:**
+        - Accepts array of recipients
+        - Returns success/failure status for each recipient
+        - Continues processing even if some recipients fail
+      operationId: sendCampaignPostcards
+      security:
+        - SupabaseAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: x-postgrid-api-key
+          in: header
+          required: true
+          description: PostGrid API key for sending postcards
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - campaign_id
+                - recipients
+              properties:
+                campaign_id:
+                  type: string
+                  format: uuid
+                  description: Campaign ID to send
+                recipients:
+                  type: array
+                  description: List of recipients to send postcards to
+                  items:
+                    type: object
+                    required:
+                      - firstName
+                      - lastName
+                      - address
+                    properties:
+                      firstName:
+                        type: string
+                      lastName:
+                        type: string
+                      name:
+                        type: string
+                        description: Full name (alternative to firstName/lastName)
+                      address:
+                        type: object
+                        required:
+                          - street
+                          - city
+                          - state
+                          - zip
+                        properties:
+                          street:
+                            type: string
+                          city:
+                            type: string
+                          state:
+                            type: string
+                          zip:
+                            type: string
+                          country:
+                            type: string
+                            default: US
+            example:
+              campaign_id: "5af434d9-7522-4954-aed9-134947de9f54"
+              recipients:
+                - firstName: "John"
+                  lastName: "Smith"
+                  address:
+                    street: "123 Main St"
+                    city: "Austin"
+                    state: "TX"
+                    zip: "78701"
+                - firstName: "Jane"
+                  lastName: "Doe"
+                  address:
+                    street: "456 Oak Ave"
+                    city: "Dallas"
+                    state: "TX"
+                    zip: "75201"
+      responses:
+        '200':
+          description: Postcards sent (may include partial failures)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: "Successfully sent 2 out of 2 postcards"
+                  data:
+                    type: object
+                    properties:
+                      total_requested:
+                        type: integer
+                        description: Total number of recipients requested
+                      successful:
+                        type: integer
+                        description: Number of postcards successfully created
+                      failed:
+                        type: integer
+                        description: Number of failed postcard creations
+                      postcards:
+                        type: array
+                        description: Successfully created PostGrid postcards
+                        items:
+                          type: object
+                      errors:
+                        type: array
+                        description: List of failures with recipient and error details
+                        items:
+                          type: object
+                          properties:
+                            recipient:
+                              type: object
+                            error:
+                              type: string
+        '400':
+          description: Invalid input, missing API key, or incomplete campaign
+        '401':
+          description: Unauthorized
+        '403':
+          description: User not in organization
+        '404':
+          description: Campaign not found
         '500':
           description: Internal server error
 
