@@ -1353,11 +1353,16 @@ paths:
         - Uses Overpass API for building discovery
         - Filters by building type (ALL, RESIDENTIAL, OTHER)
         - Returns full address details with coordinates
-        - Optional: Save to database by providing campaign_id (requires JWT)
+        - Saves zone to location_zones table and returns zone_id
+
+        **Building Type Classifications:**
+        - **RESIDENTIAL**: apartments, barracks, bungalow, cabin, detached, annexe, dormitory, farm, ger, hotel, house, houseboat, residential, semidetached_house, static_caravan, stilt_house, terrace, tree_house, trullo
+        - **OTHER**: commercial, industrial, office, retail, warehouse, religious buildings (church, mosque, temple, etc.), civic/amenity (hospital, school, museum, etc.), agricultural (barn, greenhouse, stable, etc.), sports (stadium, sports_hall, etc.), storage (shed, hangar, etc.), parking/garages, and more
+        - **ALL**: Returns both residential and other building types
 
         **Authentication:**
-        - Public endpoint when used without campaign_id
-        - Requires JWT when campaign_id is provided (saves to location_zones table)
+        - Requires JWT authentication
+        - campaign_id is mandatory
       operationId: getAddressesFromZone
       requestBody:
         required: true
@@ -1368,6 +1373,7 @@ paths:
               required:
                 - address
                 - data
+                - campaign_id
               properties:
                 address:
                   type: string
@@ -1393,29 +1399,23 @@ paths:
                 campaign_id:
                   type: string
                   format: uuid
-                  description: Optional - If provided, saves zone to location_zones table and returns zone_id (requires JWT authentication)
+                  description: Campaign ID (required)
             examples:
               radiusMode:
-                summary: Radius-based search (no save)
+                summary: Radius-based search
                 value:
                   address: "37.4224764,-122.0842499"
                   data:
                     radius: 1000
                     searchType: "RESIDENTIAL"
+                  campaign_id: "660e8400-e29b-41d4-a716-446655440001"
               countMode:
-                summary: Count-based search (no save)
+                summary: Count-based search
                 value:
                   address: "1600 Amphitheatre Parkway, Mountain View, CA"
                   data:
                     count: 50
                     searchType: "ALL"
-              withCampaignId:
-                summary: Save to database (requires JWT)
-                value:
-                  address: "1600 Amphitheatre Parkway, Mountain View, CA"
-                  data:
-                    radius: 500
-                    searchType: "RESIDENTIAL"
                   campaign_id: "660e8400-e29b-41d4-a716-446655440001"
       responses:
         '200':
@@ -1434,7 +1434,7 @@ paths:
                   zone_id:
                     type: string
                     format: uuid
-                    description: Zone ID (only returned when campaign_id is provided)
+                    description: Zone ID (always returned)
                     example: "123e4567-e89b-12d3-a456-426614174000"
                   center:
                     type: object
@@ -1537,11 +1537,11 @@ paths:
         - Verifies all addresses in the zone using PostGrid API
         - Updates zone in database with verification status
         - Returns verification status (verified, corrected, undeliverable)
-        - Supports filtering: return only verified or all with status
+        - Returns all addresses with verification status
         - Provides detailed verification results
         - Batch processing up to 1000 addresses
 
-        **Authentication:** Requires JWT authentication and PostGrid API key
+        **Authentication:** Requires JWT authentication and PostGrid API key in header
       operationId: verifyAddresses
       parameters:
         - name: x-postgrid-api-key
@@ -1563,13 +1563,8 @@ paths:
                   type: string
                   format: uuid
                   description: ID of the zone to verify (from getAddressesFromZone response)
-                showOnlyVerified:
-                  type: boolean
-                  default: true
-                  description: If true, returns only verified addresses. If false, returns all addresses with verification status
             example:
               zone_id: "123e4567-e89b-12d3-a456-426614174000"
-              showOnlyVerified: true
       responses:
         '200':
           description: Addresses verified successfully
@@ -1619,12 +1614,6 @@ paths:
                       unverified_count:
                         type: integer
                         description: Number of unverified addresses
-                      addresses_returned:
-                        type: integer
-                        description: Number of addresses in response (filtered by showOnlyVerified)
-                      filter_mode:
-                        type: string
-                        enum: [verified_only, all]
                       processingTimeMs:
                         type: integer
                   addresses:
