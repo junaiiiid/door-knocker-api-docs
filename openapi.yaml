@@ -1361,9 +1361,19 @@ paths:
         - **ALL**: Returns both residential and other building types
 
         **Authentication:**
-        - Requires JWT authentication
+        - Requires JWT authentication via Authorization header
         - campaign_id is mandatory
       operationId: getAddressesFromZone
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: "Bearer token for authentication (format: Bearer YOUR_JWT_TOKEN)"
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
       requestBody:
         required: true
         content:
@@ -1541,9 +1551,18 @@ paths:
         - Provides detailed verification results
         - Batch processing up to 1000 addresses
 
-        **Authentication:** Requires JWT authentication and PostGrid API key in header
+        **Authentication:** Requires JWT authentication via Authorization header and PostGrid API key in header
       operationId: verifyAddresses
+      security:
+        - BearerAuth: []
       parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: "Bearer token for authentication (format: Bearer YOUR_JWT_TOKEN)"
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         - name: x-postgrid-api-key
           in: header
           required: true
@@ -5065,4 +5084,4 @@ components:
       description: |
         JWT access token obtained from /login endpoint.
         Include in Authorization header as: Bearer <token>
-        Required for authenticated endpoints like /logout and creating ADMIN users.
+        Required for authenticated endpoints including campaigns, zones, referrals, and admin operations.
