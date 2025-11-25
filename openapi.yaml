@@ -3543,6 +3543,77 @@ paths:
         '500':
           description: Internal server error
 
+  /deleteCampaign:
+    delete:
+      tags:
+        - Campaign Management
+      summary: Delete campaign by ID
+      description: |
+        Deletes a campaign by ID. This action is irreversible.
+
+        **Cascade Behavior:**
+        - Automatically deletes all campaign_history entries (ON DELETE CASCADE)
+        - Sets campaign_id to NULL in associated referrals (ON DELETE SET NULL)
+        - Logs deletion action before removing the campaign
+
+        **Security:**
+        - Organization-based: Can only delete campaigns in user's organization
+        - Requires authentication
+      operationId: deleteCampaign
+      security:
+        - SupabaseAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: Campaign ID to delete
+            example:
+              id: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Campaign deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Campaign deleted successfully
+                  data:
+                    type: object
+                    properties:
+                      deleted_campaign_id:
+                        type: string
+                        format: uuid
+              example:
+                status: success
+                message: Campaign deleted successfully
+                data:
+                  deleted_campaign_id: "123e4567-e89b-12d3-a456-426614174000"
+        '400':
+          description: Invalid input (missing campaign ID)
+        '401':
+          description: Unauthorized
+        '403':
+          description: User not in organization
+        '404':
+          description: Campaign not found in user's organization
+        '500':
+          description: Internal server error
+
   /getOrganization:
     get:
       tags:
