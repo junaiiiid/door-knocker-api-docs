@@ -70,6 +70,8 @@ tags:
     description: Referral creation, retrieval, and management operations
   - name: Gallery Management
     description: Photo gallery and image management operations for referrals
+  - name: Campaign Management
+    description: Campaign creation, management, and PostGrid template operations
 
 paths:
   /signUp:
@@ -2609,6 +2611,938 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /getAllCampaignStatus:
+    get:
+      tags:
+        - Campaign Management
+      summary: Get all campaign status types
+      description: |
+        Returns all available campaign status types.
+
+        **Available Statuses:**
+        - Draft: Campaign is being created
+        - Active: Campaign is live and running
+        - In Active: Campaign is paused or ended
+
+        **Returns:** List of all campaign status types
+      operationId: getAllCampaignStatus
+      responses:
+        '200':
+          description: Campaign status types retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                          example: Draft
+                        created_at:
+                          type: string
+                          format: date-time
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /getAllTemplates:
+    get:
+      tags:
+        - Campaign Management
+      summary: Get PostGrid templates
+      description: |
+        Fetches available PostGrid postcard templates.
+
+        **Business Rules:**
+        - Requires PostGrid API key in x-postgrid-api-key header
+        - Organization-based (user must be in organization)
+        - Returns templates for postcard type only
+
+        **PostGrid Integration:**
+        Uses PostGrid Print & Mail API to fetch templates. Each template can be customized with variable fields.
+
+        **Returns:** List of PostGrid templates with IDs
+      operationId: getAllTemplates
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: x-postgrid-api-key
+          in: header
+          required: true
+          description: PostGrid API key for authentication
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Templates retrieved successfully from PostGrid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Templates fetched successfully
+                  data:
+                    type: object
+                    description: PostGrid API response with templates
+        '400':
+          description: Missing PostGrid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: MISSING_API_KEY
+                message: PostGrid API key is required in x-postgrid-api-key header
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /createCampaign:
+    post:
+      tags:
+        - Campaign Management
+      summary: Create or update campaign (multi-step)
+      description: |
+        Multi-step campaign creation process. Each step updates the campaign.
+
+        **Step 1: Link Referral**
+        Creates a draft campaign linked to a referral.
+
+        **Step 2: Select Template**
+        Selects a PostGrid template for the postcard.
+
+        **Step 3: Add Offer Details**
+        Adds offer headline, description, dates, CTA, and disclaimer.
+
+        **Step 4: Add Business Details**
+        Adds business name, phone, website, QR URL, and before/after images.
+
+        **Steps 5-6:** To be implemented
+
+        **Business Rules:**
+        - Organization-based (user must be in organization)
+        - Step 1 creates new campaign, steps 2-4 require campaign_id
+        - Each step advances current_step counter
+        - Campaign starts in Draft status
+
+        **Returns:** Updated campaign object
+      operationId: createCampaign
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  title: Step 1
+                  required:
+                    - step
+                    - referral_id
+                  properties:
+                    step:
+                      type: integer
+                      example: 1
+                    referral_id:
+                      type: string
+                      format: uuid
+                - type: object
+                  title: Step 2
+                  required:
+                    - step
+                    - campaign_id
+                    - template_id
+                  properties:
+                    step:
+                      type: integer
+                      example: 2
+                    campaign_id:
+                      type: string
+                      format: uuid
+                    template_id:
+                      type: string
+                - type: object
+                  title: Step 3
+                  required:
+                    - step
+                    - campaign_id
+                    - data
+                  properties:
+                    step:
+                      type: integer
+                      example: 3
+                    campaign_id:
+                      type: string
+                      format: uuid
+                    data:
+                      type: object
+                      required:
+                        - offer_headline
+                        - offer_description
+                        - start_date
+                        - end_date
+                        - cta_text
+                        - disclaimer_text
+                      properties:
+                        offer_headline:
+                          type: string
+                        offer_description:
+                          type: string
+                        start_date:
+                          type: string
+                          format: date
+                        end_date:
+                          type: string
+                          format: date
+                        cta_text:
+                          type: string
+                        disclaimer_text:
+                          type: string
+                - type: object
+                  title: Step 4
+                  required:
+                    - step
+                    - campaign_id
+                    - data
+                  properties:
+                    step:
+                      type: integer
+                      example: 4
+                    campaign_id:
+                      type: string
+                      format: uuid
+                    data:
+                      type: object
+                      required:
+                        - business_name
+                        - phone
+                        - website
+                        - qr_url
+                      properties:
+                        business_name:
+                          type: string
+                        phone:
+                          type: string
+                        website:
+                          type: string
+                        qr_url:
+                          type: string
+            examples:
+              step1:
+                summary: Step 1 - Link Referral
+                value:
+                  step: 1
+                  referral_id: 550e8400-e29b-41d4-a716-446655440000
+              step2:
+                summary: Step 2 - Select Template
+                value:
+                  step: 2
+                  campaign_id: 660e8400-e29b-41d4-a716-446655440001
+                  template_id: tmpl_abc123xyz
+              step3:
+                summary: Step 3 - Add Offer Details
+                value:
+                  step: 3
+                  campaign_id: 660e8400-e29b-41d4-a716-446655440001
+                  data:
+                    offer_headline: "Special Spring Discount!"
+                    offer_description: "Get 20% off all services this month"
+                    start_date: "2025-03-01"
+                    end_date: "2025-03-31"
+                    cta_text: "Call Now to Redeem"
+                    disclaimer_text: "Offer valid for new customers only"
+              step4:
+                summary: Step 4 - Add Business Details
+                value:
+                  step: 4
+                  campaign_id: 660e8400-e29b-41d4-a716-446655440001
+                  data:
+                    business_name: "ABC Home Services"
+                    phone: "+1-555-123-4567"
+                    website: "https://abchome.com"
+                    qr_url: "https://abchome.com/spring-promo"
+      responses:
+        '200':
+          description: Campaign updated successfully (steps 2-4)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: "Template selected successfully (Step 2 complete)"
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      organization_id:
+                        type: string
+                        format: uuid
+                      referral_id:
+                        type: string
+                        format: uuid
+                      status:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          name:
+                            type: string
+                            example: Draft
+                      current_step:
+                        type: integer
+                        example: 2
+                      template_id:
+                        type: string
+                      offer_data:
+                        type: object
+                      business_data:
+                        type: object
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+        '201':
+          description: Campaign created successfully (step 1)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: "Campaign created successfully (Step 1 complete)"
+                  data:
+                    type: object
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Referral or campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '501':
+          description: Step not yet implemented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /getCampaignStep:
+    post:
+      tags:
+        - Campaign Management
+      summary: Get campaign current step
+      description: |
+        Returns the current step and complete details of a campaign.
+
+        **Business Rules:**
+        - Requires campaign_id in request body
+        - Organization-based (user must be in organization)
+        - Returns current_step (0-6) and all campaign data
+
+        **Use Case:**
+        Check which step the campaign is on to resume creation process.
+
+        **Returns:** Campaign details with current step information
+      operationId: getCampaignStep
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - campaign_id
+              properties:
+                campaign_id:
+                  type: string
+                  format: uuid
+                  description: Campaign ID to check
+            example:
+              campaign_id: 660e8400-e29b-41d4-a716-446655440001
+      responses:
+        '200':
+          description: Campaign step retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: "Campaign is at step 3"
+                  data:
+                    type: object
+                    properties:
+                      campaign_id:
+                        type: string
+                        format: uuid
+                      current_step:
+                        type: integer
+                        example: 3
+                      status:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          name:
+                            type: string
+                            example: Draft
+                      referral_id:
+                        type: string
+                        format: uuid
+                      template_id:
+                        type: string
+                      offer_data:
+                        type: object
+                      business_data:
+                        type: object
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /getCampaignById:
+    post:
+      tags:
+        - Campaign Management
+      summary: Get campaign by ID
+      description: Returns complete campaign information by campaign ID
+      operationId: getCampaignById
+      security:
+        - SupabaseAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: Campaign ID
+            example:
+              id: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Campaign retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Campaign'
+        '401':
+          description: Unauthorized
+        '403':
+          description: User not in organization
+        '404':
+          description: Campaign not found
+        '500':
+          description: Internal server error
+
+  /getCampaignInformationByReferralId:
+    post:
+      tags:
+        - Campaign Management
+      summary: Get campaign by referral ID
+      description: Returns campaign associated with a specific referral
+      operationId: getCampaignInformationByReferralId
+      security:
+        - SupabaseAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: Referral ID
+            example:
+              id: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Campaign retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Campaign'
+        '401':
+          description: Unauthorized
+        '403':
+          description: User not in organization
+        '404':
+          description: Referral not found or not associated with any campaign
+        '500':
+          description: Internal server error
+
+  /getAllCampaigns:
+    get:
+      tags:
+        - Campaign Management
+      summary: Get all campaigns (paginated)
+      description: Returns a paginated list of campaigns from the user's organization
+      operationId: getAllCampaigns
+      security:
+        - SupabaseAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number (default 1)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Results per page (default 10, max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description: Campaigns retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Campaign'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized
+        '403':
+          description: User not in organization
+        '500':
+          description: Internal server error
+
+  /searchCampaign:
+    post:
+      tags:
+        - Campaign Management
+      summary: Search campaigns with filters
+      description: |
+        Search campaigns with filters. At least query or filters must be provided.
+
+        **Filters:**
+        - status: Campaign status (Draft, Active, In Active)
+        - start_date: Campaign start date (from offer_data)
+        - end_date: Campaign expiry date (from offer_data)
+        - created_by: User ID who created the campaign
+      operationId: searchCampaign
+      security:
+        - SupabaseAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: Search query (searches in template_id, offer_data, business_data)
+                filters:
+                  type: object
+                  properties:
+                    status:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                          enum: [Draft, Active, In Active]
+                    start_date:
+                      type: string
+                      format: date
+                      description: Filter by campaign start date
+                    end_date:
+                      type: string
+                      format: date
+                      description: Filter by campaign expiry date
+                    created_by:
+                      type: string
+                      format: uuid
+                      description: Filter by creator user ID
+                page:
+                  type: integer
+                  minimum: 1
+                  default: 1
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  default: 10
+            examples:
+              filterByStatus:
+                summary: Filter by status
+                value:
+                  filters:
+                    status:
+                      name: "Active"
+                  page: 1
+                  limit: 10
+              filterByDates:
+                summary: Filter by date range
+                value:
+                  filters:
+                    start_date: "2025-01-01"
+                    end_date: "2025-12-31"
+                  page: 1
+                  limit: 10
+              searchQuery:
+                summary: Search by query
+                value:
+                  query: "summer promo"
+                  page: 1
+                  limit: 10
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Campaign'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          description: Invalid input (query or filters required)
+        '401':
+          description: Unauthorized
+        '403':
+          description: User not in organization
+        '500':
+          description: Internal server error
+
+  /getCampaignHistory:
+    post:
+      tags:
+        - Campaign Management
+      summary: Get campaign history
+      description: Returns the complete history log for a specific campaign
+      operationId: getCampaignHistory
+      security:
+        - SupabaseAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: Campaign ID
+            example:
+              id: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Campaign history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      campaign_id:
+                        type: string
+                        format: uuid
+                      history:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CampaignHistoryEntry'
+                      count:
+                        type: integer
+        '401':
+          description: Unauthorized
+        '403':
+          description: User not in organization
+        '404':
+          description: Campaign not found
+        '500':
+          description: Internal server error
+
+  /updateCampaignById:
+    patch:
+      tags:
+        - Campaign Management
+      summary: Update campaign by ID
+      description: |
+        Updates a campaign by ID. Can update any field except ID and organization_id.
+        All changes are logged to campaign_history.
+
+        **Updatable Fields:**
+        - referral_id: Change linked referral
+        - status: Update campaign status
+        - current_step: Update current step
+        - template_id: Change PostGrid template
+        - offer_data: Update offer details (merged with existing)
+        - business_data: Update business details (merged with existing)
+        - additional_data: Update additional data (merged with existing)
+        - postcards_sent: Update number of postcards sent
+        - scan_rate: Update scan rate percentage
+        - leads_gen: Update leads generated count
+        - total_spent: Update total amount spent
+        - roi: Update return on investment
+      operationId: updateCampaignById
+      security:
+        - SupabaseAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                referral_id:
+                  type: string
+                  format: uuid
+                status:
+                  oneOf:
+                    - type: string
+                      enum: [Draft, Active, In Active]
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                current_step:
+                  type: integer
+                  minimum: 0
+                  maximum: 6
+                template_id:
+                  type: string
+                offer_data:
+                  type: object
+                business_data:
+                  type: object
+                additional_data:
+                  type: object
+                postcards_sent:
+                  type: integer
+                scan_rate:
+                  type: number
+                  format: decimal
+                leads_gen:
+                  type: integer
+                total_spent:
+                  type: number
+                  format: decimal
+                roi:
+                  type: number
+                  format: decimal
+            examples:
+              updateStatus:
+                summary: Update campaign status
+                value:
+                  id: "123e4567-e89b-12d3-a456-426614174000"
+                  status: "Active"
+              updateMetrics:
+                summary: Update campaign metrics
+                value:
+                  id: "123e4567-e89b-12d3-a456-426614174000"
+                  postcards_sent: 500
+                  scan_rate: 12.5
+                  leads_gen: 62
+                  total_spent: 750.00
+                  roi: 250.00
+      responses:
+        '200':
+          description: Campaign updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Campaign'
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+        '403':
+          description: User not in organization
+        '404':
+          description: Campaign not found
+        '500':
+          description: Internal server error
+
   /getOrganization:
     get:
       tags:
@@ -3218,6 +4152,108 @@ components:
           format: date-time
           description: Gallery last update timestamp
           example: '2025-01-19T11:30:00.000Z'
+
+    Campaign:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Campaign ID
+        organization_id:
+          type: string
+          format: uuid
+          description: Organization ID
+        referral_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Associated referral ID
+        status:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+              enum: [Draft, Active, In Active]
+          description: Campaign status
+        current_step:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: Current step in campaign creation process
+        template_id:
+          type: string
+          nullable: true
+          description: PostGrid template ID
+        offer_data:
+          type: object
+          description: Offer details (offer_headline, offer_description, start_date, end_date, cta_text, disclaimer_text)
+        business_data:
+          type: object
+          description: Business details (business_name, phone, website, qr_url, before_image_url, after_image_url)
+        additional_data:
+          type: object
+          description: Additional campaign data
+        postcards_sent:
+          type: integer
+          default: 0
+          description: Number of postcards sent
+        scan_rate:
+          type: number
+          format: decimal
+          default: 0.00
+          description: Scan rate percentage
+        leads_gen:
+          type: integer
+          default: 0
+          description: Number of leads generated
+        total_spent:
+          type: number
+          format: decimal
+          default: 0.00
+          description: Total amount spent
+        roi:
+          type: number
+          format: decimal
+          default: 0.00
+          description: Return on investment
+        created_at:
+          type: string
+          format: date-time
+          description: Campaign creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Campaign last update timestamp
+
+    CampaignHistoryEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: History entry ID
+        campaign_id:
+          type: string
+          format: uuid
+          description: Campaign ID
+        user_id:
+          type: string
+          format: uuid
+          description: User who performed the action
+        user_name:
+          type: string
+          description: Name of user who performed the action
+        action:
+          type: string
+          description: Description of the action performed
+        created_at:
+          type: string
+          format: date-time
+          description: When the action was performed
 
   securitySchemes:
     SupabaseAuth:
