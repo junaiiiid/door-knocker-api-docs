@@ -1248,22 +1248,24 @@ paths:
     get:
       tags:
         - Referral Management
-      summary: Get all US states
+      summary: Get all US states with cities
       description: |
-        Returns a list of all 50 US states with their standard abbreviations.
+        Returns a list of all 50 US states with their standard abbreviations and major cities.
 
         **Use Case:**
         - Used for dropdown/selection in address forms
         - Provides standardized list of US states
+        - Includes major cities for each state
         - No authentication required - public endpoint
 
         **Returns:**
-        - Array of states with name and abbreviation
-        - Sorted alphabetically by name
+        - Array of states with id, name, abbreviation, and cities
+        - Each state includes an array of cities with id and name
+        - Sorted alphabetically by state name
       operationId: getAllStates
       responses:
         '200':
-          description: States retrieved successfully
+          description: States and cities retrieved successfully
           content:
             application/json:
               schema:
@@ -1274,6 +1276,10 @@ paths:
                     items:
                       type: object
                       properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: State ID
                         name:
                           type: string
                           description: Full state name
@@ -1282,14 +1288,38 @@ paths:
                           type: string
                           description: Two-letter state abbreviation
                           example: CA
+                        cities:
+                          type: array
+                          description: Major cities in this state
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                                description: City ID
+                              name:
+                                type: string
+                                description: City name
+                                example: Los Angeles
               example:
                 data:
-                  - name: Alabama
+                  - id: "9ecfafd6-9738-41e2-a2cc-35a84be5e7e1"
+                    name: Alabama
                     abbreviation: AL
-                  - name: Alaska
-                    abbreviation: AK
-                  - name: California
+                    cities:
+                      - id: "ba7d6b4f-8052-4e6a-be89-bc5f533e962f"
+                        name: Birmingham
+                      - id: "96214170-abe2-4ca5-a438-d985a56b7bc3"
+                        name: Montgomery
+                  - id: "e5af919b-80da-4c29-bab0-900bf44df74e"
+                    name: California
                     abbreviation: CA
+                    cities:
+                      - id: "74fc41aa-4437-48e2-b201-335a71fe5b04"
+                        name: Los Angeles
+                      - id: "3606499a-a7b4-4474-85df-ab73f713ab92"
+                        name: San Francisco
         '405':
           description: Method not allowed
           content:
