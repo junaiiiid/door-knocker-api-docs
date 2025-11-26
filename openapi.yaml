@@ -2057,6 +2057,9 @@ paths:
 
         **Required:**
         - id: UUID of the referral
+
+        **Returns:**
+        - Complete referral information including image_url (first image from gallery, empty string if no images)
       operationId: getReferralById
       security:
         - BearerAuth: []
@@ -2131,7 +2134,7 @@ paths:
         - `/getAllReferrals?limit=50` - Returns first 50 referrals
 
         **Returns:**
-        - Array of complete referral objects
+        - Array of complete referral objects with image_url (first image from gallery, empty string if no images)
         - Pagination metadata
       operationId: getAllReferrals
       security:
@@ -2227,6 +2230,9 @@ paths:
         - address, street, city, state, zip (address fields)
         - job_type, value, currency, referral_percentage, notes (job_details)
         - status
+
+        **Returns:**
+        - Updated referral with image_url (first image from gallery, empty string if no images)
 
         **Note:** Automatically updates the updated_at timestamp
       operationId: updateReferralById
@@ -2381,7 +2387,7 @@ paths:
         - page: Page number (default: 1, min: 1)
         - limit: Results per page (default: 10, min: 1, max: 100)
 
-        **Returns:** Paginated array of matching referrals ordered by created_at (newest first)
+        **Returns:** Paginated array of matching referrals ordered by created_at (newest first), each with image_url (first image from gallery, empty string if no images)
       operationId: searchReferral
       security:
         - BearerAuth: []
@@ -5304,6 +5310,11 @@ components:
           format: date-time
           description: Last update timestamp
           example: '2025-01-19T10:00:00.000Z'
+        image_url:
+          type: string
+          format: uri
+          description: URL of the first image from the referral's gallery (empty string if no images)
+          example: https://example.supabase.co/storage/v1/object/public/images/gallery/660e8400/image1.jpg
 
     Gallery:
       type: object
