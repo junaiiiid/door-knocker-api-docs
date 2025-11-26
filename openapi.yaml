@@ -1,15 +1,21 @@
 openapi: 3.0.3
 info:
-  title: Door Knocker Role-Based Authentication API
+  title: Door Knocker Campaign Management API
   description: |
-    Complete role-based authentication and organization management system built with Supabase Edge Functions and Supabase Auth.
+    Complete campaign management system with role-based authentication, address discovery, verification, and organization management built with Supabase Edge Functions and Supabase Auth.
 
     ## Features
     - Role-based access control (ADMIN, MARKETER, TECHNICIAN)
     - User registration with role assignment
     - Organization management with multi-user support
-    - Automatic organization creation on ADMIN signup
-    - Organization member tracking
+    - Campaign creation and management (6-step workflow)
+    - Address discovery using OpenStreetMap with Google Maps/Nominatim geocoding
+    - PostGrid address verification integration
+    - Location zones with verified addresses
+    - Campaign disclaimers and consents
+    - Referral management system
+    - Image gallery for before/after photos
+    - PostGrid template integration
     - Secure authentication using Supabase Auth
     - JWT-based session management
     - Password reset flow
@@ -22,11 +28,28 @@ info:
     - **MARKETER**: Marketing team member, associated with an organization
     - **TECHNICIAN**: Technical operations team member, associated with an organization
 
+    ## Campaign Workflow (6 Steps)
+    1. **Link Referral** - Associate referral with campaign
+    2. **Select Template** - Choose PostGrid postcard template
+    3. **Add Offer Details** - Set headline, description, dates, CTA, disclaimer
+    4. **Add Business Details** - Business info, contact, QR code, before/after images
+    5. **Link Location Zone** - Associate verified address zone with campaign
+    6. **Campaign Consents** - Accept required disclaimers and consents
+
+    ## Address Discovery & Verification
+    - Uses OpenStreetMap Overpass API to find buildings in a radius
+    - Optional Google Maps API for accurate reverse geocoding (recommended)
+    - Falls back to OpenStreetMap Nominatim for geocoding
+    - PostGrid integration for address verification
+    - Saves zones with verified addresses to database
+    - Filters by building type (ALL, RESIDENTIAL, OTHER)
+
     ## Organization Management
     - ADMIN users automatically get an organization on signup
     - Organization stores business information (name, address, contact details)
     - Team members (MARKETER/TECHNICIAN) are automatically added to organization_members
     - Role-based organization retrieval (owner vs member access)
+    - All campaigns, referrals, and zones are organization-scoped
 
     ## Security
     - Strong password requirements enforced:
@@ -1360,6 +1383,12 @@ paths:
         - **OTHER**: commercial, industrial, office, retail, warehouse, religious buildings (church, mosque, temple, etc.), civic/amenity (hospital, school, museum, etc.), agricultural (barn, greenhouse, stable, etc.), sports (stadium, sports_hall, etc.), storage (shed, hangar, etc.), parking/garages, and more
         - **ALL**: Returns both residential and other building types
 
+        **Address Geocoding:**
+        - Uses reverse geocoding to get complete addresses (street, city, state, ZIP)
+        - Supports optional Google Maps API key in x-google-api-key header for best results
+        - Falls back to OpenStreetMap Nominatim if no Google key provided
+        - Google Maps provides faster, more accurate addresses
+
         **Authentication:**
         - Requires JWT authentication via Authorization header (use "Authorize" button at top)
         - campaign_id is mandatory
@@ -1367,6 +1396,13 @@ paths:
       security:
         - SupabaseAuth: []
           BearerAuth: []
+      parameters:
+        - name: x-google-api-key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Optional Google Maps API key for better address geocoding (recommended for accurate PostGrid verification)
       requestBody:
         required: true
         content:
@@ -3909,7 +3945,19 @@ paths:
       tags:
         - Campaign Management
       summary: Get campaign history
-      description: Returns the complete history log for a specific campaign
+      description: |
+        Returns the complete history log for a specific campaign.
+
+        **Logged Actions Include:**
+        - Step 1: Linked referral to campaign
+        - Step 2: Selected PostGrid template
+        - Step 3: Added offer details
+        - Step 4: Added business details and images
+        - Step 5: Linked location zone to campaign
+        - Step 6: Completed campaign consents and disclaimers
+        - Any manual updates via updateCampaignById
+
+        History entries include user information (who performed the action) and timestamp.
       operationId: getCampaignHistory
       security:
         - SupabaseAuth: []
