@@ -3360,14 +3360,19 @@ paths:
         Returns all campaign disclaimers/consents from the campaign_disclaimers table.
 
         **Business Rules:**
-        - Public endpoint - no authentication required
+        - Requires authentication (use "Authorize" button at top with SupabaseAuth and BearerAuth)
         - Returns all disclaimer texts with their IDs and values
         - Used for displaying consent checkboxes in campaign creation Step 6
 
         **Use Case:**
         - Fetch disclaimers to show in campaign creation UI
         - Users must accept all consents (set to true) in Step 6
+
+        **Authentication:** Requires JWT authentication (use "Authorize" button at top)
       operationId: getAllConsents
+      security:
+        - SupabaseAuth: []
+          BearerAuth: []
       responses:
         '200':
           description: Consents retrieved successfully
