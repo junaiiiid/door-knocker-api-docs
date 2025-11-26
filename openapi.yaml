@@ -1538,11 +1538,16 @@ paths:
         **Features:**
         - Fetches zone by zone_id from location_zones table
         - Verifies all addresses in the zone using PostGrid API
-        - Updates zone in database with verification status
-        - Returns verification status (verified, corrected, undeliverable)
-        - Returns all addresses with verification status
-        - Provides detailed verification results
+        - Updates zone in database with verification status for each address
+        - Returns all addresses with verified: true/false status
+        - Saves verified status to database in the zone
+        - Only status='verified' is considered verified (not 'corrected')
         - Batch processing up to 1000 addresses
+
+        **Address Parsing:**
+        - Parses address formats: "Street, City, State ZIP" or "Street, City State ZIP"
+        - Sends parsed components to PostGrid in format: {address: {line1, city, provinceOrState, postalOrZip, country}}
+        - Returns verified address from PostGrid response
 
         **Authentication:** Requires JWT authentication (use "Authorize" button at top) and PostGrid API key in header
       operationId: verifyAddresses
@@ -1641,24 +1646,30 @@ paths:
                           type: string
                         verified:
                           type: boolean
+                          description: True only if PostGrid status is 'verified' (not 'corrected')
                         verification_details:
                           type: object
+                          description: Details from PostGrid verification or error information
                           properties:
                             status:
                               type: string
                               enum: [verified, corrected, undeliverable]
+                              description: PostGrid verification status
                             line1:
                               type: string
+                              description: Verified street address
                             city:
                               type: string
+                              description: Verified city
                             provinceOrState:
                               type: string
+                              description: Verified state/province
                             postalOrZip:
                               type: string
-                            errors:
-                              type: array
-                              items:
-                                type: object
+                              description: Verified postal/zip code
+                            error:
+                              type: string
+                              description: Error message if verification failed
               example:
                 status: success
                 message: "Verified 5 of 7 addresses"
@@ -1670,13 +1681,11 @@ paths:
                 searchType: RESIDENTIAL
                 metadata:
                   totalBuildingsFound: 7
-                  addressesReturned: 5
-                  residentialCount: 0
-                  otherCount: 7
+                  addressesReturned: 7
+                  residentialCount: 7
+                  otherCount: 0
                   verified_count: 5
                   unverified_count: 2
-                  addresses_returned: 5
-                  filter_mode: verified_only
                   processingTimeMs: 5234
                 addresses:
                   - lat: 37.4225
@@ -3060,6 +3069,60 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /getAllConsents:
+    get:
+      tags:
+        - Campaign Management
+      summary: Get all campaign disclaimers/consents
+      description: |
+        Returns all campaign disclaimers/consents from the campaign_disclaimers table.
+
+        **Business Rules:**
+        - Public endpoint - no authentication required
+        - Returns all disclaimer texts with their IDs and values
+        - Used for displaying consent checkboxes in campaign creation Step 6
+
+        **Use Case:**
+        - Fetch disclaimers to show in campaign creation UI
+        - Users must accept all consents (set to true) in Step 6
+      operationId: getAllConsents
+      responses:
+        '200':
+          description: Consents retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          example: "123e4567-e89b-12d3-a456-426614174000"
+                        disclaimer_text:
+                          type: string
+                          example: "I confirm all campaign details are correct and approved for mailing."
+                        value:
+                          type: boolean
+                          example: true
+                        created_at:
+                          type: string
+                          format: date-time
+                          example: "2025-01-26T12:00:00Z"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /getAllTemplates:
     get:
       tags:
@@ -3155,13 +3218,15 @@ paths:
         **Step 5: Link Zone to Campaign**
         Links a location zone (from getAddressesFromZone) to the campaign by saving zone_id.
 
-        **Step 6:** To be implemented
+        **Step 6: Campaign Consents/Disclaimers**
+        Validates and stores campaign consents. All consents must be provided and set to true.
 
         **Business Rules:**
         - Organization-based (user must be in organization)
-        - Step 1 creates new campaign, steps 2-5 require campaign_id
+        - Step 1 creates new campaign, steps 2-6 require campaign_id
         - Each step advances current_step counter
         - Campaign starts in Draft status
+        - Step 6 validates all consents are true, stores them in campaign
 
         **Returns:** Updated campaign object
       operationId: createCampaign
@@ -3294,6 +3359,29 @@ paths:
                       type: string
                       format: uuid
                       description: Zone ID from getAddressesFromZone response
+                - type: object
+                  title: Step 6
+                  required:
+                    - step
+                    - campaign_id
+                    - consent
+                  properties:
+                    step:
+                      type: integer
+                      example: 6
+                    campaign_id:
+                      type: string
+                      format: uuid
+                      description: Campaign ID
+                    consent:
+                      type: object
+                      description: Object containing consent IDs as keys and boolean values (all must be true)
+                      additionalProperties:
+                        type: boolean
+                      example:
+                        "123e4567-e89b-12d3-a456-426614174000": true
+                        "223e4567-e89b-12d3-a456-426614174001": true
+                        "323e4567-e89b-12d3-a456-426614174002": true
             examples:
               step1:
                 summary: Step 1 - Link Referral
@@ -3336,6 +3424,15 @@ paths:
                   step: 5
                   campaign_id: 660e8400-e29b-41d4-a716-446655440001
                   zone_id: 123e4567-e89b-12d3-a456-426614174000
+              step6:
+                summary: Step 6 - Campaign Consents
+                value:
+                  step: 6
+                  campaign_id: 660e8400-e29b-41d4-a716-446655440001
+                  consent:
+                    "123e4567-e89b-12d3-a456-426614174000": true
+                    "223e4567-e89b-12d3-a456-426614174001": true
+                    "323e4567-e89b-12d3-a456-426614174002": true
       responses:
         '200':
           description: Campaign updated successfully (steps 2-4)
