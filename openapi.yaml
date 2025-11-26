@@ -1575,10 +1575,11 @@ paths:
         - Fetches zone by zone_id from location_zones table
         - Verifies all addresses in the zone using PostGrid API
         - Updates zone in database with verification status for each address
-        - Returns all addresses with verified: true/false status
+        - Returns all addresses with verified: true/false status (or only verified if showOnlyVerified=true)
         - Saves verified status to database in the zone
         - Only status='verified' is considered verified (not 'corrected')
         - Batch processing up to 1000 addresses
+        - Optional filtering to return only verified addresses in response
 
         **Address Parsing:**
         - Parses address formats: "Street, City, State ZIP" or "Street, City State ZIP"
@@ -1610,8 +1611,13 @@ paths:
                   type: string
                   format: uuid
                   description: ID of the zone to verify (from getAddressesFromZone response)
+                showOnlyVerified:
+                  type: boolean
+                  default: false
+                  description: If true, only return verified addresses in the response. All addresses are still saved to the zone with verification status, but the response will filter to show only verified ones.
             example:
               zone_id: "123e4567-e89b-12d3-a456-426614174000"
+              showOnlyVerified: false
       responses:
         '200':
           description: Addresses verified successfully
@@ -1657,10 +1663,19 @@ paths:
                         type: integer
                       verified_count:
                         type: integer
-                        description: Number of verified addresses
+                        description: Number of verified addresses (total)
                       unverified_count:
                         type: integer
-                        description: Number of unverified addresses
+                        description: Number of unverified addresses (total)
+                      total_addresses:
+                        type: integer
+                        description: Total number of addresses processed
+                      returned_addresses:
+                        type: integer
+                        description: Number of addresses returned in response (may be filtered if showOnlyVerified=true)
+                      showing_only_verified:
+                        type: boolean
+                        description: Indicates if response is filtered to show only verified addresses
                       processingTimeMs:
                         type: integer
                   addresses:
@@ -1749,6 +1764,237 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  /getAddressZoneById:
+    post:
+      tags:
+        - Address Zones
+      summary: Get address zone by ID
+      description: |
+        Retrieves a specific location zone by ID.
+
+        **Business Rules:**
+        - Organization-based (user must be in same organization as zone)
+        - Returns complete zone data including all addresses
+      operationId: getAddressZoneById
+      security:
+        - SupabaseAuth: []
+          BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: Zone ID
+            example:
+              id: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Zone retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/LocationZone'
+        '401':
+          description: Unauthorized
+        '403':
+          description: User not in organization
+        '404':
+          description: Zone not found
+        '500':
+          description: Internal server error
+
+  /getAllAddressZones:
+    get:
+      tags:
+        - Address Zones
+      summary: Get all address zones
+      description: |
+        Retrieves all location zones for the user's organization.
+
+        **Business Rules:**
+        - Organization-based (returns only zones from user's organization)
+        - Ordered by most recent first
+        - Includes all zone data and addresses
+      operationId: getAllAddressZones
+      security:
+        - SupabaseAuth: []
+          BearerAuth: []
+      responses:
+        '200':
+          description: Zones retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LocationZone'
+                  count:
+                    type: integer
+        '401':
+          description: Unauthorized
+        '403':
+          description: User not in organization
+        '500':
+          description: Internal server error
+
+  /updateAddressZoneById:
+    patch:
+      tags:
+        - Address Zones
+      summary: Update address zone by ID
+      description: |
+        Updates a specific location zone by ID.
+
+        **Business Rules:**
+        - Organization-based (user must be in same organization as zone)
+        - Can update: center, mode, search_type, metadata, addresses
+        - Cannot update: id, organization_id, campaign_id, created_at
+        - Updates updated_at timestamp automatically
+      operationId: updateAddressZoneById
+      security:
+        - SupabaseAuth: []
+          BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: Zone ID
+                center:
+                  type: object
+                  description: Center coordinates
+                mode:
+                  type: string
+                  enum: [radius, count]
+                search_type:
+                  type: string
+                  enum: [ALL, RESIDENTIAL, OTHER]
+                metadata:
+                  type: object
+                  description: Zone metadata
+                addresses:
+                  type: array
+                  description: Array of addresses
+            example:
+              id: "123e4567-e89b-12d3-a456-426614174000"
+              search_type: "RESIDENTIAL"
+              metadata:
+                note: "Updated zone"
+      responses:
+        '200':
+          description: Zone updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/LocationZone'
+        '400':
+          description: Invalid input or attempting to update protected fields
+        '401':
+          description: Unauthorized
+        '403':
+          description: User not in organization
+        '404':
+          description: Zone not found
+        '500':
+          description: Internal server error
+
+  /deleteAddressZone:
+    delete:
+      tags:
+        - Address Zones
+      summary: Delete address zone
+      description: |
+        Deletes a specific location zone by ID.
+
+        **Business Rules:**
+        - Organization-based (user must be in same organization as zone)
+        - Cascade behavior: If campaigns reference this zone, zone_id will be set to NULL
+      operationId: deleteAddressZone
+      security:
+        - SupabaseAuth: []
+          BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: Zone ID
+            example:
+              id: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Zone deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      deleted:
+                        type: boolean
+        '401':
+          description: Unauthorized
+        '403':
+          description: User not in organization
+        '404':
+          description: Zone not found
+        '500':
+          description: Internal server error
 
   /createReferral:
     post:
