@@ -3496,8 +3496,8 @@ paths:
       description: |
         Multi-step campaign creation process. Each step updates the campaign.
 
-        **Step 1: Link Referral**
-        Creates a draft campaign linked to a referral.
+        **Step 1: Link Referral and Set Campaign Name**
+        Creates a draft campaign linked to a referral with a campaign name.
 
         **Step 2: Select Template**
         Selects a PostGrid template for the postcard.
@@ -3536,6 +3536,7 @@ paths:
                   required:
                     - step
                     - referral_id
+                    - campaign_name
                   properties:
                     step:
                       type: integer
@@ -3543,6 +3544,9 @@ paths:
                     referral_id:
                       type: string
                       format: uuid
+                    campaign_name:
+                      type: string
+                      description: Name of the campaign
                 - type: object
                   title: Step 2
                   required:
@@ -3677,10 +3681,11 @@ paths:
                         "323e4567-e89b-12d3-a456-426614174002": true
             examples:
               step1:
-                summary: Step 1 - Link Referral
+                summary: Step 1 - Link Referral and Set Campaign Name
                 value:
                   step: 1
                   referral_id: 550e8400-e29b-41d4-a716-446655440000
+                  campaign_name: Summer Promotion 2025
               step2:
                 summary: Step 2 - Select Template
                 value:
@@ -4094,11 +4099,16 @@ paths:
       description: |
         Search campaigns with filters. At least query or filters must be provided.
 
+        **Query Search:**
+        - Searches in: campaign_name, offer headline, offer description
+
         **Filters:**
         - status: Campaign status (Draft, Active, In Active)
         - start_date: Campaign start date (from offer_data)
         - end_date: Campaign expiry date (from offer_data)
         - created_by: User ID who created the campaign
+
+        **Returns:** Campaigns with image_url (first image from referral gallery) and campaign_name
       operationId: searchCampaign
       security:
         - SupabaseAuth: []
@@ -4112,7 +4122,7 @@ paths:
               properties:
                 query:
                   type: string
-                  description: Search query (searches in template_id, offer_data, business_data)
+                  description: Search query (searches in campaign_name, offer headline, and offer description)
                 filters:
                   type: object
                   properties:
@@ -4279,6 +4289,7 @@ paths:
 
         **Updatable Fields:**
         - referral_id: Change linked referral
+        - campaign_name: Update campaign name
         - status: Update campaign status
         - current_step: Update current step
         - template_id: Change PostGrid template
@@ -4290,6 +4301,8 @@ paths:
         - leads_gen: Update leads generated count
         - total_spent: Update total amount spent
         - roi: Update return on investment
+
+        **Returns:** Updated campaign with image_url from referral gallery
       operationId: updateCampaignById
       security:
         - SupabaseAuth: []
@@ -4309,6 +4322,9 @@ paths:
                 referral_id:
                   type: string
                   format: uuid
+                campaign_name:
+                  type: string
+                  description: Campaign name
                 status:
                   oneOf:
                     - type: string
@@ -5377,6 +5393,11 @@ components:
           format: uuid
           nullable: true
           description: Associated referral ID
+        campaign_name:
+          type: string
+          nullable: true
+          description: Name of the campaign (set in step 1)
+          example: Summer Promotion 2025
         status:
           type: object
           properties:
