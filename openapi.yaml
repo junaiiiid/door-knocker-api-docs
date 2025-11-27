@@ -3499,8 +3499,8 @@ paths:
         **Step 1: Link Referral and Set Campaign Name**
         Creates a draft campaign linked to a referral with a campaign name.
 
-        **Step 2: Select Template**
-        Selects a PostGrid template for the postcard.
+        **Step 2: Select Templates**
+        Selects PostGrid templates for front and back of the postcard.
 
         **Step 3: Add Offer Details**
         Adds offer headline, description, dates, CTA, and disclaimer.
@@ -3552,7 +3552,8 @@ paths:
                   required:
                     - step
                     - campaign_id
-                    - template_id
+                    - front_template_id
+                    - back_template_id
                   properties:
                     step:
                       type: integer
@@ -3560,8 +3561,12 @@ paths:
                     campaign_id:
                       type: string
                       format: uuid
-                    template_id:
+                    front_template_id:
                       type: string
+                      description: PostGrid template ID for front of postcard
+                    back_template_id:
+                      type: string
+                      description: PostGrid template ID for back of postcard
                 - type: object
                   title: Step 3
                   required:
@@ -3687,11 +3692,12 @@ paths:
                   referral_id: 550e8400-e29b-41d4-a716-446655440000
                   campaign_name: Summer Promotion 2025
               step2:
-                summary: Step 2 - Select Template
+                summary: Step 2 - Select Templates
                 value:
                   step: 2
                   campaign_id: 660e8400-e29b-41d4-a716-446655440001
-                  template_id: tmpl_abc123xyz
+                  front_template_id: tmpl_front_abc123
+                  back_template_id: tmpl_back_xyz789
               step3:
                 summary: Step 3 - Add Offer Details
                 value:
@@ -4292,7 +4298,8 @@ paths:
         - campaign_name: Update campaign name
         - status: Update campaign status
         - current_step: Update current step
-        - template_id: Change PostGrid template
+        - front_template_id: Change PostGrid template for front of postcard
+        - back_template_id: Change PostGrid template for back of postcard
         - offer_data: Update offer details (merged with existing)
         - business_data: Update business details (merged with existing)
         - additional_data: Update additional data (merged with existing)
@@ -4340,8 +4347,12 @@ paths:
                   type: integer
                   minimum: 0
                   maximum: 6
-                template_id:
+                front_template_id:
                   type: string
+                  description: PostGrid template ID for front of postcard
+                back_template_id:
+                  type: string
+                  description: PostGrid template ID for back of postcard
                 offer_data:
                   type: object
                 business_data:
@@ -5413,10 +5424,14 @@ components:
           minimum: 0
           maximum: 6
           description: Current step in campaign creation process
-        template_id:
+        front_template_id:
           type: string
           nullable: true
-          description: PostGrid template ID
+          description: PostGrid template ID for front of postcard
+        back_template_id:
+          type: string
+          nullable: true
+          description: PostGrid template ID for back of postcard
         offer_data:
           type: object
           description: Offer details (offer_headline, offer_description, start_date, end_date, cta_text, disclaimer_text)
