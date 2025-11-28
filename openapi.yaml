@@ -4300,6 +4300,7 @@ paths:
         - current_step: Update current step
         - front_template_id: Change PostGrid template for front of postcard
         - back_template_id: Change PostGrid template for back of postcard
+        - zone_id: Change linked location zone
         - offer_data: Update offer details (merged with existing)
         - business_data: Update business details (merged with existing)
         - additional_data: Update additional data (merged with existing)
@@ -4353,6 +4354,10 @@ paths:
                 back_template_id:
                   type: string
                   description: PostGrid template ID for back of postcard
+                zone_id:
+                  type: string
+                  format: uuid
+                  description: Location zone ID
                 offer_data:
                   type: object
                 business_data:
