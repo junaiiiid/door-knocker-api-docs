@@ -26,9 +26,10 @@ This API provides a secure authentication system with three user roles:
 1. **POST /signUp** - Register new users with role assignment
 2. **POST /login** - Authenticate users and get JWT token
 3. **GET /getUser** - Fetch user profile and role information
-4. **POST /logout** - Invalidate user session
-5. **POST /forgotPassword** - Request password reset email
-6. **POST /resetPassword** - Reset password with token
+4. **GET /getAppContent** - Get role-based application content and menu configuration
+5. **POST /logout** - Invalidate user session
+6. **POST /forgotPassword** - Request password reset email
+7. **POST /resetPassword** - Reset password with token
 
 ## Setup Instructions
 
@@ -60,6 +61,7 @@ Deploy all authentication functions:
 supabase functions deploy signUp
 supabase functions deploy login
 supabase functions deploy getUser
+supabase functions deploy getAppContent
 supabase functions deploy logout
 supabase functions deploy forgotPassword
 supabase functions deploy resetPassword
@@ -189,7 +191,209 @@ curl -X POST https://YOUR-PROJECT.supabase.co/functions/v1/forgotPassword \
   -d '{"email": "tech@example.com"}'
 ```
 
-### 6. Reset Password
+### 6. Get App Content (Role-based Menu Configuration)
+
+```bash
+curl -X GET https://YOUR-PROJECT.supabase.co/functions/v1/getAppContent \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**ADMIN User Response:**
+```json
+{
+  "data": {
+    "menu_items": [
+      {
+        "name": "search_bar",
+        "title": "Search",
+        "description": "Search Job, Referrals & Campaigns",
+        "id": 0,
+        "enabled": true,
+        "extended": false,
+        "extended_options": []
+      },
+      {
+        "name": "dashboard",
+        "title": "Dashboard",
+        "description": "Create, Navigate, Lead & Iterate",
+        "id": 1,
+        "enabled": true,
+        "extended": false,
+        "extended_options": []
+      },
+      {
+        "name": "referrals",
+        "title": "Referrals",
+        "description": "Add Referrals, start Campaigns & Get Leads",
+        "id": 2,
+        "enabled": true,
+        "extended": false,
+        "extended_options": []
+      },
+      {
+        "name": "campaigns",
+        "title": "Campaigns",
+        "description": "Manage Your Campaigns",
+        "id": 3,
+        "enabled": true,
+        "extended": false,
+        "extended_options": []
+      },
+      {
+        "name": "templates",
+        "title": "Templates",
+        "description": "Manage Your Templates",
+        "id": 4,
+        "enabled": true,
+        "extended": false,
+        "extended_options": []
+      },
+      {
+        "name": "targeting",
+        "title": "Targeting",
+        "description": "",
+        "id": 5,
+        "enabled": true,
+        "extended": true,
+        "extended_options": [
+          {
+            "name": "targeting_zones",
+            "title": "Targeting Zones",
+            "description": "Targeting > Targeting Zones",
+            "id": 51,
+            "enabled": true,
+            "extended": false,
+            "extended_options": []
+          }
+        ]
+      },
+      {
+        "name": "analytics",
+        "title": "Analytics",
+        "description": "",
+        "id": 6,
+        "enabled": true,
+        "extended": true,
+        "extended_options": [
+          {
+            "name": "overview",
+            "title": "Overview",
+            "description": "Analytics > Overview",
+            "id": 61,
+            "enabled": true,
+            "extended": false,
+            "extended_options": []
+          }
+        ]
+      },
+      {
+        "name": "notifications",
+        "title": "Notifications",
+        "description": "",
+        "id": 8,
+        "enabled": true,
+        "extended": false,
+        "extended_options": []
+      },
+      {
+        "name": "settings",
+        "title": "Settings",
+        "description": "Manage Your Account Settings",
+        "id": 9,
+        "enabled": true,
+        "extended": false,
+        "extended_options": []
+      }
+    ]
+  }
+}
+```
+
+**MARKETER User Response** (Limited features):
+```json
+{
+  "data": {
+    "menu_items": [
+      {
+        "name": "referrals",
+        "title": "Referrals",
+        "description": "Add Referrals, start Campaigns & Get Leads",
+        "id": 2,
+        "enabled": true,
+        "extended": false,
+        "extended_options": []
+      },
+      {
+        "name": "campaigns",
+        "title": "Campaigns",
+        "description": "Manage Your Campaigns",
+        "id": 3,
+        "enabled": true,
+        "extended": false,
+        "extended_options": []
+      },
+      {
+        "name": "targeting",
+        "title": "Targeting",
+        "description": "",
+        "id": 5,
+        "enabled": true,
+        "extended": true,
+        "extended_options": []
+      },
+      {
+        "name": "analytics",
+        "title": "Analytics", 
+        "description": "",
+        "id": 6,
+        "enabled": true,
+        "extended": true,
+        "extended_options": []
+      },
+      {
+        "name": "notifications",
+        "title": "Notifications",
+        "description": "",
+        "id": 8,
+        "enabled": true,
+        "extended": false,
+        "extended_options": []
+      }
+    ]
+  }
+}
+```
+
+**TECHNICIAN User Response** (Referrals only):
+```json
+{
+  "data": {
+    "menu_items": [
+      {
+        "name": "referrals",
+        "title": "Referrals",
+        "description": "Add Referrals & Manage Jobs",
+        "id": 2,
+        "enabled": true,
+        "extended": false,
+        "extended_options": []
+      },
+      {
+        "name": "notifications",
+        "title": "Notifications",
+        "description": "",
+        "id": 8,
+        "enabled": true,
+        "extended": false,
+        "extended_options": []
+      }
+    ]
+  }
+}
+```
+
+### 7. Reset Password
 
 ```bash
 curl -X POST https://YOUR-PROJECT.supabase.co/functions/v1/resetPassword \
@@ -204,10 +408,28 @@ curl -X POST https://YOUR-PROJECT.supabase.co/functions/v1/resetPassword \
 ## Security Features
 
 - **Role-Based Access Control**: Only ADMINs can create other ADMINs
+- **Organization-Based Content**: App content scoped to user's organization
+- **Dynamic Menu Generation**: Menu items filtered by user role
 - **Row Level Security**: Database-level access control
 - **Password Security**: Managed by Supabase Auth (bcrypt)
 - **JWT Tokens**: Secure session management
 - **Email Enumeration Prevention**: Forgot password always returns success
+
+## Role-Based Features Access
+
+| Feature | ADMIN | MARKETER | TECHNICIAN |
+|---------|-------|----------|------------|
+| Search | ✅ | ✅ | ✅ (Limited) |
+| Dashboard | ✅ | ✅ | ✅ |
+| Referrals | ✅ | ✅ | ✅ |
+| Campaigns | ✅ | ✅ | ❌ |
+| Templates | ✅ | ❌ | ❌ |
+| Targeting | ✅ | ✅ | ❌ |
+| Analytics | ✅ | ✅ | ❌ |
+| Quick Actions | ✅ Full | ✅ Limited | ✅ Referrals Only |
+| Notifications | ✅ | ✅ | ✅ |
+| Settings | ✅ | ❌ | ❌ |
+| Integrations | ✅ | ❌ | ❌ |
 
 ## Error Codes
 
@@ -224,6 +446,9 @@ curl -X POST https://YOUR-PROJECT.supabase.co/functions/v1/resetPassword \
 | INVALID_TOKEN | Token invalid/expired |
 | USER_NOT_FOUND | Requested user does not exist |
 | PROFILE_NOT_FOUND | User profile not found |
+| NO_ORGANIZATION | User not associated with organization |
+| CONTENT_FETCH_FAILED | Failed to fetch app content |
+| CONTENT_NOT_FOUND | App content not found for user role |
 
 ## Viewing the Documentation
 
