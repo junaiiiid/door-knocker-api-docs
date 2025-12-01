@@ -2664,6 +2664,226 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /excludeAddress:
+    post:
+      tags:
+        - Address Management
+      summary: Exclude (opt-out) an address across all zones
+      description: |
+        Opts out an address across all zones accessible to the user by changing its status to 'Opt-out'.
+
+        **Business Rules:**
+        - Takes a complete address object in request body
+        - Searches for the address across all zones in user's organization
+        - Changes status to 'Opt-out' wherever the address is found
+        - Matches addresses based on lat/lng coordinates (with tolerance)
+        - Returns list of zones where address was updated
+        - Supports matching addresses across multiple zones simultaneously
+
+        **Matching Logic:**
+        - Uses coordinate matching with tolerance (±0.000001 degrees)
+        - Approximately 0.1 meter precision for address matching
+        - Updates all matching addresses found in any zone
+
+        **Use Cases:**
+        - User opts out from receiving marketing materials
+        - Compliance with do-not-contact requests
+        - Global exclusion management
+        - Address blacklisting across campaigns
+      operationId: excludeAddress
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - address
+              properties:
+                address:
+                  allOf:
+                    - $ref: '#/components/schemas/AddressObject'
+                    - type: object
+                      description: "Complete address object to be excluded"
+            example:
+              address:
+                lat: 37.4176671
+                long: -122.0928876
+                address: "901, North Rengstorff Avenue"
+                residential: true
+                building_type: "residential"
+                osm_id: "166790593"
+                propertyType: "Residential Building"
+                distanceFromCenter: 933
+                targeting_zone_name: "Zone at 37.4225, -122.0842"
+                campaigns_used_in: []
+                zoneType: "radius(1.0km)"
+                postcards_sent: 0
+                first_post_card_sent_date: null
+                status: "UnVerified"
+                zone_id: "1b503442-f07e-4aaa-800e-b151d0a1e37d"
+                zone_name: "Zone at 37.4225, -122.0842"
+                campaign_id: "1c650d6f-a29c-4667-9f17-5709765ba34f"
+      responses:
+        '200':
+          description: Address successfully excluded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Address successfully excluded in 1 zone(s)"
+                  address:
+                    type: object
+                    properties:
+                      lat:
+                        type: number
+                        format: double
+                        example: 37.4176671
+                      long:
+                        type: number
+                        format: double
+                        example: -122.0928876
+                      address:
+                        type: string
+                        example: "901, North Rengstorff Avenue"
+                  zonesSearched:
+                    type: integer
+                    description: "Total number of zones searched"
+                    example: 1
+                  zonesUpdated:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        zone_id:
+                          type: string
+                          format: uuid
+                          example: "1b503442-f07e-4aaa-800e-b151d0a1e37d"
+                        zone_name:
+                          type: string
+                          example: "Zone at 37.4225, -122.0842"
+                        campaign_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          example: "1c650d6f-a29c-4667-9f17-5709765ba34f"
+                        addresses_updated:
+                          type: integer
+                          description: "Number of addresses updated in this zone"
+                          example: 1
+                  addressesUpdated:
+                    type: integer
+                    description: "Total number of address instances updated across all zones"
+                    example: 1
+                  processingTimeMs:
+                    type: integer
+                    description: "Processing time in milliseconds"
+                    example: 817
+              examples:
+                singleZoneUpdate:
+                  summary: Address found and excluded in one zone
+                  value:
+                    status: "success"
+                    message: "Address successfully excluded in 1 zone(s)"
+                    address:
+                      lat: 37.4176671
+                      long: -122.0928876
+                      address: "901, North Rengstorff Avenue"
+                    zonesSearched: 1
+                    zonesUpdated:
+                      - zone_id: "1b503442-f07e-4aaa-800e-b151d0a1e37d"
+                        zone_name: "Zone at 37.4225, -122.0842"
+                        campaign_id: "1c650d6f-a29c-4667-9f17-5709765ba34f"
+                        addresses_updated: 1
+                    addressesUpdated: 1
+                    processingTimeMs: 817
+                multipleZonesUpdate:
+                  summary: Address found and excluded in multiple zones
+                  value:
+                    status: "success"
+                    message: "Address successfully excluded in 3 zone(s)"
+                    address:
+                      lat: 37.4176671
+                      long: -122.0928876
+                      address: "901, North Rengstorff Avenue"
+                    zonesSearched: 5
+                    zonesUpdated:
+                      - zone_id: "1b503442-f07e-4aaa-800e-b151d0a1e37d"
+                        zone_name: "Zone A"
+                        campaign_id: "1c650d6f-a29c-4667-9f17-5709765ba34f"
+                        addresses_updated: 1
+                      - zone_id: "2c513552-g18f-5bbb-911f-c262e1b2f48e"
+                        zone_name: "Zone B"
+                        campaign_id: "2d761e7g-b3ad-5778-a28g-6810876cb56g"
+                        addresses_updated: 1
+                      - zone_id: "3d624663-h29g-6ccc-a22g-d373f2c3g59f"
+                        zone_name: "Zone C"
+                        campaign_id: null
+                        addresses_updated: 1
+                    addressesUpdated: 3
+                    processingTimeMs: 1245
+                addressNotFound:
+                  summary: Address not found in any zone
+                  value:
+                    status: "success"
+                    message: "Address not found in any accessible zones"
+                    zonesSearched: 5
+                    zonesUpdated: []
+                    addressesUpdated: 0
+                    processingTimeMs: 320
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingAddress:
+                  summary: Missing address in request body
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "Missing 'address' object in request body"
+                invalidCoordinates:
+                  summary: Invalid coordinates
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "Address must have valid 'lat' and 'long' coordinates"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '405':
+          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "METHOD_NOT_ALLOWED"
+                message: "Only POST method is allowed"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /createReferral:
     post:
       tags:

@@ -669,6 +669,247 @@ curl -X POST https://YOUR-PROJECT.supabase.co/functions/v1/getAllAddresses \
 4. **Compliance**: Track opt-outs across all zones
 5. **Analytics**: Analyze address distribution and status across organization
 
+## Exclude Address API
+
+The `/excludeAddress` endpoint opts out an address across all zones accessible to the user by changing its status to 'Opt-out'.
+
+### Endpoint
+
+- **URL**: `/excludeAddress`
+- **Method**: POST
+- **Authentication**: Required (Bearer Token)
+
+### Features
+
+- Takes a complete address object in request body
+- Searches for the address across all zones in user's organization
+- Changes status to 'Opt-out' wherever the address is found
+- Matches addresses based on lat/lng coordinates with high precision
+- Returns list of zones where address was updated
+- Supports matching addresses across multiple zones simultaneously
+
+### Request Format
+
+**POST Request**:
+```bash
+curl -X POST https://YOUR-PROJECT.supabase.co/functions/v1/excludeAddress \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "address": {
+      "lat": 37.4176671,
+      "long": -122.0928876,
+      "address": "901, North Rengstorff Avenue",
+      "residential": true,
+      "building_type": "residential",
+      "osm_id": "166790593",
+      "propertyType": "Residential Building",
+      "distanceFromCenter": 933,
+      "targeting_zone_name": "Zone at 37.4225, -122.0842",
+      "campaigns_used_in": [],
+      "zoneType": "radius(1.0km)",
+      "postcards_sent": 0,
+      "first_post_card_sent_date": null,
+      "status": "UnVerified",
+      "zone_id": "1b503442-f07e-4aaa-800e-b151d0a1e37d",
+      "zone_name": "Zone at 37.4225, -122.0842",
+      "campaign_id": "1c650d6f-a29c-4667-9f17-5709765ba34f"
+    }
+  }'
+```
+
+### Request Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `address` | object | Yes | Complete address object to be excluded |
+| `address.lat` | number | Yes | Latitude coordinate |
+| `address.long` | number | Yes | Longitude coordinate |
+| `address.address` | string | No | Street address |
+| `address.*` | various | No | All other address fields (optional) |
+
+### Response Format
+
+**Success Response (Address Found)**:
+```json
+{
+  "status": "success",
+  "message": "Address successfully excluded in 1 zone(s)",
+  "address": {
+    "lat": 37.4176671,
+    "long": -122.0928876,
+    "address": "901, North Rengstorff Avenue"
+  },
+  "zonesSearched": 1,
+  "zonesUpdated": [
+    {
+      "zone_id": "1b503442-f07e-4aaa-800e-b151d0a1e37d",
+      "zone_name": "Zone at 37.4225, -122.0842",
+      "campaign_id": "1c650d6f-a29c-4667-9f17-5709765ba34f",
+      "addresses_updated": 1
+    }
+  ],
+  "addressesUpdated": 1,
+  "processingTimeMs": 817
+}
+```
+
+**Success Response (Address Not Found)**:
+```json
+{
+  "status": "success",
+  "message": "Address not found in any accessible zones",
+  "zonesSearched": 5,
+  "zonesUpdated": [],
+  "addressesUpdated": 0,
+  "processingTimeMs": 320
+}
+```
+
+**Success Response (Multiple Zones Updated)**:
+```json
+{
+  "status": "success",
+  "message": "Address successfully excluded in 3 zone(s)",
+  "address": {
+    "lat": 37.4176671,
+    "long": -122.0928876,
+    "address": "901, North Rengstorff Avenue"
+  },
+  "zonesSearched": 5,
+  "zonesUpdated": [
+    {
+      "zone_id": "1b503442-f07e-4aaa-800e-b151d0a1e37d",
+      "zone_name": "Zone A",
+      "campaign_id": "1c650d6f-a29c-4667-9f17-5709765ba34f",
+      "addresses_updated": 1
+    },
+    {
+      "zone_id": "2c513552-g18f-5bbb-911f-c262e1b2f48e",
+      "zone_name": "Zone B",
+      "campaign_id": "2d761e7g-b3ad-5778-a28g-6810876cb56g",
+      "addresses_updated": 1
+    },
+    {
+      "zone_id": "3d624663-h29g-6ccc-a22g-d373f2c3g59f",
+      "zone_name": "Zone C",
+      "campaign_id": null,
+      "addresses_updated": 1
+    }
+  ],
+  "addressesUpdated": 3,
+  "processingTimeMs": 1245
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | string | Response status ("success" or "error") |
+| `message` | string | Human-readable message |
+| `address` | object | Summary of the excluded address (lat, long, address) |
+| `zonesSearched` | integer | Total number of zones searched |
+| `zonesUpdated` | array | List of zones where address was found and updated |
+| `zonesUpdated[].zone_id` | string (uuid) | ID of the updated zone |
+| `zonesUpdated[].zone_name` | string | Name of the updated zone |
+| `zonesUpdated[].campaign_id` | string (uuid) \| null | Associated campaign ID |
+| `zonesUpdated[].addresses_updated` | integer | Number of addresses updated in this zone |
+| `addressesUpdated` | integer | Total number of address instances updated |
+| `processingTimeMs` | integer | Processing time in milliseconds |
+
+### Matching Logic
+
+- **Coordinate Matching**: Uses lat/lng coordinates with tolerance of ±0.000001 degrees
+- **Precision**: Approximately 0.1 meter precision for address matching
+- **Multi-Zone Support**: Updates all matching addresses found in any zone
+- **Status Change**: Changes status from any current status to 'Opt-out'
+
+### Business Rules
+
+1. **Organization Scope**: Only searches zones in the user's organization
+2. **Global Exclusion**: Updates address in all zones where it appears
+3. **Coordinate-Based**: Matching is based on coordinates, not string address
+4. **Idempotent**: Running multiple times is safe (already opted-out addresses remain opted-out)
+5. **Atomic Updates**: All zone updates succeed or fail together
+
+### Error Responses
+
+| Status Code | Error | Description |
+|-------------|-------|-------------|
+| 400 | INVALID_INPUT | Missing address object or invalid coordinates |
+| 401 | Unauthorized | Missing or invalid authentication token |
+| 403 | Forbidden | User not in organization |
+| 405 | METHOD_NOT_ALLOWED | Only POST method is allowed |
+| 500 | Internal Server Error | Database or processing error |
+
+### Error Examples
+
+**Missing Address Object**:
+```json
+{
+  "error": "INVALID_INPUT",
+  "message": "Missing 'address' object in request body"
+}
+```
+
+**Invalid Coordinates**:
+```json
+{
+  "error": "INVALID_INPUT",
+  "message": "Address must have valid 'lat' and 'long' coordinates"
+}
+```
+
+### Use Cases
+
+1. **User Opt-Out**: User requests to stop receiving marketing materials at their address
+2. **Compliance**: Handle do-not-contact requests in compliance with regulations
+3. **Global Exclusion**: Blacklist an address across all campaigns and zones
+4. **Address Cleanup**: Remove problematic addresses from targeting
+5. **Privacy Management**: Honor user privacy preferences across organization
+
+### Integration Example
+
+**Frontend Integration**:
+```javascript
+async function excludeAddress(addressObject, authToken) {
+  const response = await fetch(
+    'https://YOUR-PROJECT.supabase.co/functions/v1/excludeAddress',
+    {
+      method: 'POST',
+      headers: {
+        'apikey': 'YOUR_ANON_KEY',
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        address: addressObject
+      })
+    }
+  );
+
+  const result = await response.json();
+
+  if (result.status === 'success') {
+    console.log(`Address excluded in ${result.zonesUpdated.length} zone(s)`);
+    console.log(`Total addresses updated: ${result.addressesUpdated}`);
+  }
+
+  return result;
+}
+```
+
+### Best Practices
+
+1. **Complete Address Object**: Pass the complete address object from `getAllAddresses` response
+2. **Coordinate Accuracy**: Ensure lat/lng coordinates have sufficient precision (6 decimal places)
+3. **User Confirmation**: Ask for user confirmation before excluding an address
+4. **Audit Trail**: Log exclusion requests for compliance and auditing
+5. **Notification**: Notify relevant stakeholders when addresses are excluded
+6. **Verify Results**: Check `addressesUpdated` to confirm the operation succeeded
+
 ## Viewing the Documentation
 
 ### Option 1: Open Locally
