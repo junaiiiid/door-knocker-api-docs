@@ -503,6 +503,172 @@ The address-related APIs (`/getAddressesFromZone`, `/verifyAddresses`, `/getAddr
 
 **Note**: All request body formats remain unchanged - these are response-only enhancements.
 
+## Get All Addresses API
+
+The `/getAllAddresses` endpoint retrieves all addresses from all location zones in the user's organization with optional filtering capabilities.
+
+### Endpoint
+
+- **URL**: `/getAllAddresses`
+- **Methods**: GET, POST
+- **Authentication**: Required (Bearer Token)
+
+### Features
+
+- Returns addresses from all zones in the organization
+- Optional filtering to show only non-Valid addresses (exclusions)
+- Automatic deduplication based on lat/lng coordinates
+- Includes zone metadata for each address
+- Detailed status breakdown and metadata
+
+### Request Methods
+
+**GET Request** - Returns all addresses (default behavior):
+```bash
+curl -X GET https://YOUR-PROJECT.supabase.co/functions/v1/getAllAddresses \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**POST Request** - Supports filtering with request body:
+```bash
+curl -X POST https://YOUR-PROJECT.supabase.co/functions/v1/getAllAddresses \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "showOnlyExclusions": true
+  }'
+```
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `showOnlyExclusions` | boolean | false | If true, returns only addresses with status other than 'Valid' (UnVerified, Duplicate, Opt-out) |
+
+### Response Format
+
+```json
+{
+  "status": "success",
+  "message": "Found 150 unique addresses from 3 zones",
+  "metadata": {
+    "total_zones": 3,
+    "total_addresses_before_dedup": 152,
+    "total_addresses_after_dedup": 150,
+    "addresses_returned": 150,
+    "showOnlyExclusions": false,
+    "status_breakdown": {
+      "Valid": 120,
+      "UnVerified": 25,
+      "Duplicate": 3,
+      "Opt-out": 2
+    },
+    "processingTimeMs": 150
+  },
+  "addresses": [
+    {
+      "lat": 37.4176671,
+      "long": -122.0928876,
+      "address": "901, North Rengstorff Avenue",
+      "residential": true,
+      "building_type": "residential",
+      "osm_id": "166790593",
+      "propertyType": "Residential Building",
+      "distanceFromCenter": 847,
+      "targeting_zone_name": "Mountain View Zone",
+      "campaigns_used_in": ["Summer 2024 Campaign"],
+      "zoneType": "radius(1.0km)",
+      "postcards_sent": 0,
+      "first_post_card_sent_date": null,
+      "status": "Valid",
+      "zone_id": "c9abd41e-56a2-448e-942c-a0b37f796972",
+      "zone_name": "Mountain View Zone",
+      "campaign_id": "a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6"
+    }
+  ]
+}
+```
+
+### Additional Address Fields
+
+Each address in the response includes zone-specific metadata:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `zone_id` | string (uuid) | ID of the zone this address belongs to |
+| `zone_name` | string | Name of the zone this address belongs to |
+| `campaign_id` | string (uuid) \| null | Campaign ID associated with the zone |
+
+### Filtering Logic
+
+- **showOnlyExclusions = false** (default): Returns all addresses regardless of status
+- **showOnlyExclusions = true**: Returns only addresses with non-Valid status:
+  - UnVerified
+  - Duplicate
+  - Opt-out
+
+### Example: Get Only Exclusions
+
+**Request:**
+```bash
+curl -X POST https://YOUR-PROJECT.supabase.co/functions/v1/getAllAddresses \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "showOnlyExclusions": true
+  }'
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Found 30 addresses with non-Valid status (30 total exclusions)",
+  "metadata": {
+    "total_zones": 3,
+    "total_addresses_before_dedup": 152,
+    "total_addresses_after_dedup": 150,
+    "addresses_returned": 30,
+    "showOnlyExclusions": true,
+    "status_breakdown": {
+      "Valid": 0,
+      "UnVerified": 25,
+      "Duplicate": 3,
+      "Opt-out": 2
+    },
+    "processingTimeMs": 120
+  },
+  "addresses": [...]
+}
+```
+
+### Business Rules
+
+1. **Organization Scope**: Only returns addresses from zones in the user's organization
+2. **Deduplication**: Addresses are automatically deduplicated based on lat/lng coordinates
+3. **Zone Metadata**: Each address includes information about the zone it belongs to
+4. **Status Tracking**: Provides detailed breakdown of address statuses
+5. **Performance**: Returns processing time for monitoring
+
+### Error Responses
+
+| Status Code | Error | Description |
+|-------------|-------|-------------|
+| 401 | Unauthorized | Missing or invalid authentication token |
+| 403 | Forbidden | User not in organization |
+| 500 | Internal Server Error | Database or processing error |
+
+### Use Cases
+
+1. **Global Address Review**: View all addresses across all campaigns and zones
+2. **Exclusion Management**: Filter to see only problematic addresses (duplicates, unverified, opt-outs)
+3. **Data Quality**: Monitor address verification status across organization
+4. **Compliance**: Track opt-outs across all zones
+5. **Analytics**: Analyze address distribution and status across organization
+
 ## Viewing the Documentation
 
 ### Option 1: Open Locally

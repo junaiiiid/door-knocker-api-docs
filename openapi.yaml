@@ -2372,6 +2372,298 @@ paths:
         '500':
           description: Internal server error
 
+  /getAllAddresses:
+    get:
+      tags:
+        - Address Management
+      summary: Get all addresses from organization zones
+      description: |
+        Retrieves all addresses from all location zones in the user's organization with optional filtering.
+
+        **Business Rules:**
+        - Returns addresses from all zones in the organization
+        - Optional filtering to show only non-Valid addresses (exclusions)
+        - Automatic deduplication based on lat/lng coordinates
+        - Includes zone metadata for each address
+
+        **Request Methods:**
+        - GET: Returns all addresses (showOnlyExclusions = false)
+        - POST: Supports filtering with request body
+
+        **Filtering Logic:**
+        - showOnlyExclusions = false (default): Returns all addresses
+        - showOnlyExclusions = true: Returns only UnVerified, Duplicate, and Opt-out addresses (excludes Valid)
+      operationId: getAllAddressesGet
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Addresses retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Found 150 unique addresses from 3 zones"
+                  metadata:
+                    type: object
+                    properties:
+                      total_zones:
+                        type: integer
+                        description: "Number of zones in organization"
+                        example: 3
+                      total_addresses_before_dedup:
+                        type: integer
+                        description: "Total addresses before deduplication"
+                        example: 152
+                      total_addresses_after_dedup:
+                        type: integer
+                        description: "Total unique addresses after deduplication"
+                        example: 150
+                      addresses_returned:
+                        type: integer
+                        description: "Number of addresses returned after filtering"
+                        example: 150
+                      showOnlyExclusions:
+                        type: boolean
+                        description: "Whether exclusion filter was applied"
+                        example: false
+                      status_breakdown:
+                        type: object
+                        properties:
+                          Valid:
+                            type: integer
+                            example: 120
+                          UnVerified:
+                            type: integer
+                            example: 25
+                          Duplicate:
+                            type: integer
+                            example: 3
+                          Opt-out:
+                            type: integer
+                            example: 2
+                      processingTimeMs:
+                        type: integer
+                        description: "Processing time in milliseconds"
+                        example: 150
+                  addresses:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/AddressObject'
+                        - type: object
+                          properties:
+                            zone_id:
+                              type: string
+                              format: uuid
+                              description: "ID of the zone this address belongs to"
+                              example: "c9abd41e-56a2-448e-942c-a0b37f796972"
+                            zone_name:
+                              type: string
+                              description: "Name of the zone this address belongs to"
+                              example: "Mountain View Zone"
+                            campaign_id:
+                              type: string
+                              format: uuid
+                              nullable: true
+                              description: "Campaign ID associated with the zone"
+                              example: "a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6"
+              examples:
+                allAddresses:
+                  summary: Get all addresses from organization
+                  value:
+                    status: "success"
+                    message: "Found 150 unique addresses from 3 zones"
+                    metadata:
+                      total_zones: 3
+                      total_addresses_before_dedup: 152
+                      total_addresses_after_dedup: 150
+                      addresses_returned: 150
+                      showOnlyExclusions: false
+                      status_breakdown:
+                        Valid: 120
+                        UnVerified: 25
+                        Duplicate: 3
+                        Opt-out: 2
+                      processingTimeMs: 150
+                    addresses: []
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - Address Management
+      summary: Get all addresses from organization zones with filtering
+      description: |
+        Retrieves all addresses from all location zones in the user's organization with optional filtering.
+
+        **Business Rules:**
+        - Returns addresses from all zones in the organization
+        - Optional filtering to show only non-Valid addresses (exclusions)
+        - Automatic deduplication based on lat/lng coordinates
+        - Includes zone metadata for each address
+
+        **Request Methods:**
+        - GET: Returns all addresses (showOnlyExclusions = false)
+        - POST: Supports filtering with request body
+
+        **Filtering Logic:**
+        - showOnlyExclusions = false (default): Returns all addresses
+        - showOnlyExclusions = true: Returns only UnVerified, Duplicate, and Opt-out addresses (excludes Valid)
+      operationId: getAllAddressesPost
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                showOnlyExclusions:
+                  type: boolean
+                  default: false
+                  description: "If true, returns only addresses with status other than 'Valid'"
+                  example: true
+            example:
+              showOnlyExclusions: true
+      responses:
+        '200':
+          description: Addresses retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Found 30 addresses with non-Valid status (30 total exclusions)"
+                  metadata:
+                    type: object
+                    properties:
+                      total_zones:
+                        type: integer
+                        description: "Number of zones in organization"
+                        example: 3
+                      total_addresses_before_dedup:
+                        type: integer
+                        description: "Total addresses before deduplication"
+                        example: 152
+                      total_addresses_after_dedup:
+                        type: integer
+                        description: "Total unique addresses after deduplication"
+                        example: 150
+                      addresses_returned:
+                        type: integer
+                        description: "Number of addresses returned after filtering"
+                        example: 30
+                      showOnlyExclusions:
+                        type: boolean
+                        description: "Whether exclusion filter was applied"
+                        example: true
+                      status_breakdown:
+                        type: object
+                        properties:
+                          Valid:
+                            type: integer
+                            example: 120
+                          UnVerified:
+                            type: integer
+                            example: 25
+                          Duplicate:
+                            type: integer
+                            example: 3
+                          Opt-out:
+                            type: integer
+                            example: 2
+                      processingTimeMs:
+                        type: integer
+                        description: "Processing time in milliseconds"
+                        example: 120
+                  addresses:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/AddressObject'
+                        - type: object
+                          properties:
+                            zone_id:
+                              type: string
+                              format: uuid
+                              description: "ID of the zone this address belongs to"
+                              example: "c9abd41e-56a2-448e-942c-a0b37f796972"
+                            zone_name:
+                              type: string
+                              description: "Name of the zone this address belongs to"
+                              example: "Mountain View Zone"
+                            campaign_id:
+                              type: string
+                              format: uuid
+                              nullable: true
+                              description: "Campaign ID associated with the zone"
+                              example: "a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6"
+              examples:
+                exclusionsOnly:
+                  summary: Get only non-Valid addresses (exclusions)
+                  value:
+                    status: "success"
+                    message: "Found 30 addresses with non-Valid status (30 total exclusions)"
+                    metadata:
+                      total_zones: 3
+                      total_addresses_before_dedup: 152
+                      total_addresses_after_dedup: 150
+                      addresses_returned: 30
+                      showOnlyExclusions: true
+                      status_breakdown:
+                        Valid: 120
+                        UnVerified: 25
+                        Duplicate: 3
+                        Opt-out: 2
+                      processingTimeMs: 120
+                    addresses: []
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /createReferral:
     post:
       tags:
@@ -5748,6 +6040,105 @@ components:
           format: date-time
           description: Zone last update timestamp
           example: "2025-01-18T15:30:00.000Z"
+
+    AddressObject:
+      type: object
+      properties:
+        lat:
+          type: number
+          description: Address latitude
+          example: 37.4225
+        long:
+          type: number
+          description: Address longitude
+          example: -122.0843
+        address:
+          type: string
+          description: Full address string
+          example: "1600 Amphitheatre Parkway, Mountain View, CA 94043"
+        residential:
+          type: boolean
+          description: Whether this is a residential building
+          example: true
+        building_type:
+          type: string
+          description: Type of building from OpenStreetMap
+          example: "house"
+        osm_id:
+          type: string
+          description: OpenStreetMap ID
+          example: "way/123456789"
+        verified:
+          type: boolean
+          description: Whether address has been verified with PostGrid
+          example: true
+        verification_details:
+          type: object
+          nullable: true
+          description: PostGrid verification details (if verified)
+          properties:
+            status:
+              type: string
+              enum: [verified, corrected, undeliverable]
+              description: PostGrid verification status
+              example: "verified"
+            line1:
+              type: string
+              description: Verified street address
+              example: "1600 Amphitheatre Pkwy"
+            city:
+              type: string
+              description: Verified city
+              example: "Mountain View"
+            provinceOrState:
+              type: string
+              description: Verified state/province
+              example: "CA"
+            postalOrZip:
+              type: string
+              description: Verified postal/zip code
+              example: "94043"
+            error:
+              type: string
+              description: Error message if verification failed
+              example: null
+        propertyType:
+          type: string
+          description: "Type of property (e.g., 'Single Family Home', 'Office Building', 'Warehouse')"
+          example: "Single Family Home"
+        distanceFromCenter:
+          type: integer
+          description: "Distance from search center point in meters"
+          example: 847
+        targeting_zone_name:
+          type: string
+          description: "Human-readable name of the targeting zone based on search address"
+          example: "Mountain View, CA Area"
+        campaigns_used_in:
+          type: array
+          items:
+            type: string
+          description: "List of campaign names that have used this address"
+          example: []
+        zoneType:
+          type: string
+          description: "Type of zone search performed"
+          example: "radius(1.0km)"
+        postcards_sent:
+          type: integer
+          description: "Number of postcards sent to this address"
+          example: 0
+        first_post_card_sent_date:
+          type: string
+          format: date-time
+          nullable: true
+          description: "Date when first postcard was sent to this address"
+          example: null
+        status:
+          type: string
+          enum: ["Valid", "Duplicate", "Opt-out", "UnVerified"]
+          description: "Verification status of the address"
+          example: "UnVerified"
 
   securitySchemes:
     SupabaseAuth:
