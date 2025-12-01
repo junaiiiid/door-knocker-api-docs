@@ -466,6 +466,17 @@ The address-related APIs (`/getAddressesFromZone`, `/verifyAddresses`, `/getAddr
 | `postcards_sent` | number | Number of postcards sent to this address | 0 |
 | `first_post_card_sent_date` | string\|null | ISO date when first postcard was sent | "2024-01-15T10:30:00.000Z" |
 | `status` | enum | Verification status of address | "Valid", "Duplicate", "Opt-out", "UnVerified" |
+| `createdBy` | object | Information about user who created/modified the address | See below |
+
+#### createdBy Field Structure
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| `id` | string (uuid) | User ID | "98a88548-47d3-470d-ac40-ba10c9881d98" |
+| `user_role` | enum | User role (ADMIN, MARKETER, TECHNICIAN) | "ADMIN" |
+| `full_name` | string\|null | Full name of the user | "Admin User" |
+| `created_at` | string (ISO date) | When user profile was created | "2025-01-13T10:00:00.000Z" |
+| `updated_at` | string (ISO date) | When user profile was last updated | "2025-01-13T10:00:00.000Z" |
 
 ### Address Status Values
 
@@ -495,7 +506,14 @@ The address-related APIs (`/getAddressesFromZone`, `/verifyAddresses`, `/getAddr
       "zoneType": "radius(1.0km)",
       "postcards_sent": 0,
       "first_post_card_sent_date": null,
-      "status": "UnVerified"
+      "status": "UnVerified",
+      "createdBy": {
+        "id": "98a88548-47d3-470d-ac40-ba10c9881d98",
+        "user_role": "ADMIN",
+        "full_name": "Admin User",
+        "created_at": "2025-01-13T10:00:00.000Z",
+        "updated_at": "2025-01-13T10:00:00.000Z"
+      }
     }
   ]
 }

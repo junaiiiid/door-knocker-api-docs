@@ -6359,6 +6359,35 @@ components:
           enum: ["Valid", "Duplicate", "Opt-out", "UnVerified"]
           description: "Verification status of the address"
           example: "UnVerified"
+        createdBy:
+          type: object
+          description: "Information about the user who created or last modified this address"
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: "User ID"
+              example: "98a88548-47d3-470d-ac40-ba10c9881d98"
+            user_role:
+              type: string
+              enum: ["ADMIN", "MARKETER", "TECHNICIAN"]
+              description: "User role"
+              example: "ADMIN"
+            full_name:
+              type: string
+              nullable: true
+              description: "Full name of the user"
+              example: "Admin User"
+            created_at:
+              type: string
+              format: date-time
+              description: "When the user profile was created"
+              example: "2025-01-13T10:00:00.000Z"
+            updated_at:
+              type: string
+              format: date-time
+              description: "When the user profile was last updated"
+              example: "2025-01-13T10:00:00.000Z"
 
   securitySchemes:
     SupabaseAuth:
