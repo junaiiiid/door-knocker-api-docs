@@ -450,6 +450,59 @@ curl -X POST https://YOUR-PROJECT.supabase.co/functions/v1/resetPassword \
 | CONTENT_FETCH_FAILED | Failed to fetch app content |
 | CONTENT_NOT_FOUND | App content not found for user role |
 
+## Enhanced Address Fields
+
+The address-related APIs (`/getAddressesFromZone`, `/verifyAddresses`, `/getAddressZoneById`, etc.) now return enhanced address objects with additional tracking and metadata fields:
+
+### New Address Fields
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| `propertyType` | string | Type of property based on building classification | "Single Family Home", "Office Building" |
+| `distanceFromCenter` | number | Distance from search center point in meters | 847 |
+| `targeting_zone_name` | string | Human-readable name of the targeting zone | "Mountain View, CA Area" |
+| `campaigns_used_in` | string[] | Array of campaign names that have used this address | `["Summer 2024 Campaign"]` |
+| `zoneType` | string | Type of zone search performed | "radius(1.0km)" or "point(50 addresses)" |
+| `postcards_sent` | number | Number of postcards sent to this address | 0 |
+| `first_post_card_sent_date` | string\|null | ISO date when first postcard was sent | "2024-01-15T10:30:00.000Z" |
+| `status` | enum | Verification status of address | "Valid", "Duplicate", "Opt-out", "UnVerified" |
+
+### Address Status Values
+
+- **UnVerified**: Default state, address not yet verified
+- **Valid**: Address verified through PostGrid API (`/verifyAddresses`)
+- **Duplicate**: Address already exists in another zone  
+- **Opt-out**: Address manually marked as opted out
+
+### Enhanced Response Example
+
+```json
+{
+  "status": "success",
+  "message": "Found 115 addresses",
+  "addresses": [
+    {
+      "lat": 37.4176671,
+      "long": -122.0928876,
+      "address": "901, North Rengstorff Avenue",
+      "residential": true,
+      "building_type": "residential",
+      "osm_id": "166790593",
+      "propertyType": "Residential Building",
+      "distanceFromCenter": 847,
+      "targeting_zone_name": "Mountain View, CA Area",
+      "campaigns_used_in": [],
+      "zoneType": "radius(1.0km)",
+      "postcards_sent": 0,
+      "first_post_card_sent_date": null,
+      "status": "UnVerified"
+    }
+  ]
+}
+```
+
+**Note**: All request body formats remain unchanged - these are response-only enhancements.
+
 ## Viewing the Documentation
 
 ### Option 1: Open Locally

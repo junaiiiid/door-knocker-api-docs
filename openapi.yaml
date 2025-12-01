@@ -1807,6 +1807,43 @@ paths:
                           type: string
                         osm_id:
                           type: string
+                        propertyType:
+                          type: string
+                          description: "Type of property (e.g., 'Single Family Home', 'Office Building', 'Warehouse')"
+                          example: "Single Family Home"
+                        distanceFromCenter:
+                          type: integer
+                          description: "Distance from search center point in meters"
+                          example: 847
+                        targeting_zone_name:
+                          type: string
+                          description: "Human-readable name of the targeting zone based on search address"
+                          example: "Mountain View, CA Area"
+                        campaigns_used_in:
+                          type: array
+                          items:
+                            type: string
+                          description: "List of campaign names that have used this address"
+                          example: []
+                        zoneType:
+                          type: string
+                          description: "Type of zone search performed"
+                          example: "radius(1.0km)"
+                        postcards_sent:
+                          type: integer
+                          description: "Number of postcards sent to this address"
+                          example: 0
+                        first_post_card_sent_date:
+                          type: string
+                          format: date-time
+                          nullable: true
+                          description: "Date when first postcard was sent to this address"
+                          example: null
+                        status:
+                          type: string
+                          enum: ["Valid", "Duplicate", "Opt-out", "UnVerified"]
+                          description: "Verification status of the address"
+                          example: "UnVerified"
               example:
                 status: success
                 message: "Found 7 addresses"
@@ -1830,6 +1867,14 @@ paths:
                     residential: false
                     building_type: "commercial"
                     osm_id: "23733659"
+                    propertyType: "Office Building"
+                    distanceFromCenter: 847
+                    targeting_zone_name: "Mountain View, CA Area"
+                    campaigns_used_in: []
+                    zoneType: "radius(0.5km)"
+                    postcards_sent: 0
+                    first_post_card_sent_date: null
+                    status: "UnVerified"
         '400':
           description: Invalid input
           content:
@@ -2007,6 +2052,43 @@ paths:
                             error:
                               type: string
                               description: Error message if verification failed
+                        propertyType:
+                          type: string
+                          description: "Type of property (e.g., 'Single Family Home', 'Office Building', 'Warehouse')"
+                          example: "Single Family Home"
+                        distanceFromCenter:
+                          type: integer
+                          description: "Distance from search center point in meters"
+                          example: 847
+                        targeting_zone_name:
+                          type: string
+                          description: "Human-readable name of the targeting zone based on search address"
+                          example: "Mountain View, CA Area"
+                        campaigns_used_in:
+                          type: array
+                          items:
+                            type: string
+                          description: "List of campaign names that have used this address"
+                          example: []
+                        zoneType:
+                          type: string
+                          description: "Type of zone search performed"
+                          example: "radius(1.0km)"
+                        postcards_sent:
+                          type: integer
+                          description: "Number of postcards sent to this address"
+                          example: 0
+                        first_post_card_sent_date:
+                          type: string
+                          format: date-time
+                          nullable: true
+                          description: "Date when first postcard was sent to this address"
+                          example: null
+                        status:
+                          type: string
+                          enum: ["Valid", "Duplicate", "Opt-out", "UnVerified"]
+                          description: "Verification status of the address"
+                          example: "UnVerified"
               example:
                 status: success
                 message: "Verified 5 of 7 addresses"
@@ -2038,6 +2120,14 @@ paths:
                       city: "Mountain View"
                       provinceOrState: "CA"
                       postalOrZip: "94043"
+                    propertyType: "Single Family Home"
+                    distanceFromCenter: 425
+                    targeting_zone_name: "Mountain View, CA Area"
+                    campaigns_used_in: []
+                    zoneType: "radius(0.5km)"
+                    postcards_sent: 0
+                    first_post_card_sent_date: null
+                    status: "Valid"
         '400':
           description: Invalid input
           content:
@@ -5472,6 +5562,192 @@ components:
           type: string
           format: date-time
           description: When the action was performed
+
+    LocationZone:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Zone unique identifier
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        organization_id:
+          type: string
+          format: uuid
+          description: Organization ID that owns this zone
+          example: "770e8400-e29b-41d4-a716-446655440003"
+        campaign_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Campaign ID this zone is associated with
+          example: "660e8400-e29b-41d4-a716-446655440001"
+        center:
+          type: object
+          properties:
+            lat:
+              type: number
+              description: Latitude of search center
+              example: 37.4224764
+            long:
+              type: number
+              description: Longitude of search center
+              example: -122.0842499
+            radius:
+              type: integer
+              description: Search radius in meters (only present in radius mode)
+              example: 1000
+        mode:
+          type: string
+          enum: [radius, count]
+          description: Search mode used
+          example: "radius"
+        search_type:
+          type: string
+          enum: [ALL, RESIDENTIAL, OTHER]
+          description: Type of buildings searched for
+          example: "RESIDENTIAL"
+        metadata:
+          type: object
+          properties:
+            totalBuildingsFound:
+              type: integer
+              description: Total buildings found during search
+              example: 45
+            addressesReturned:
+              type: integer
+              description: Number of addresses returned
+              example: 45
+            residentialCount:
+              type: integer
+              description: Number of residential buildings
+              example: 30
+            otherCount:
+              type: integer
+              description: Number of non-residential buildings
+              example: 15
+            verified_count:
+              type: integer
+              description: Number of verified addresses (if verification was performed)
+              example: 28
+            unverified_count:
+              type: integer
+              description: Number of unverified addresses (if verification was performed)
+              example: 17
+            processingTimeMs:
+              type: integer
+              description: Processing time in milliseconds
+              example: 2500
+        addresses:
+          type: array
+          items:
+            type: object
+            properties:
+              lat:
+                type: number
+                description: Address latitude
+                example: 37.4225
+              long:
+                type: number
+                description: Address longitude
+                example: -122.0843
+              address:
+                type: string
+                description: Full address string
+                example: "1600 Amphitheatre Parkway, Mountain View, CA 94043"
+              residential:
+                type: boolean
+                description: Whether this is a residential building
+                example: true
+              building_type:
+                type: string
+                description: Type of building from OpenStreetMap
+                example: "house"
+              osm_id:
+                type: string
+                description: OpenStreetMap ID
+                example: "way/123456789"
+              verified:
+                type: boolean
+                description: Whether address has been verified with PostGrid
+                example: true
+              verification_details:
+                type: object
+                nullable: true
+                description: PostGrid verification details (if verified)
+                properties:
+                  status:
+                    type: string
+                    enum: [verified, corrected, undeliverable]
+                    description: PostGrid verification status
+                    example: "verified"
+                  line1:
+                    type: string
+                    description: Verified street address
+                    example: "1600 Amphitheatre Pkwy"
+                  city:
+                    type: string
+                    description: Verified city
+                    example: "Mountain View"
+                  provinceOrState:
+                    type: string
+                    description: Verified state/province
+                    example: "CA"
+                  postalOrZip:
+                    type: string
+                    description: Verified postal/zip code
+                    example: "94043"
+                  error:
+                    type: string
+                    description: Error message if verification failed
+                    example: null
+              propertyType:
+                type: string
+                description: "Type of property (e.g., 'Single Family Home', 'Office Building', 'Warehouse')"
+                example: "Single Family Home"
+              distanceFromCenter:
+                type: integer
+                description: "Distance from search center point in meters"
+                example: 847
+              targeting_zone_name:
+                type: string
+                description: "Human-readable name of the targeting zone based on search address"
+                example: "Mountain View, CA Area"
+              campaigns_used_in:
+                type: array
+                items:
+                  type: string
+                description: "List of campaign names that have used this address"
+                example: []
+              zoneType:
+                type: string
+                description: "Type of zone search performed"
+                example: "radius(1.0km)"
+              postcards_sent:
+                type: integer
+                description: "Number of postcards sent to this address"
+                example: 0
+              first_post_card_sent_date:
+                type: string
+                format: date-time
+                nullable: true
+                description: "Date when first postcard was sent to this address"
+                example: null
+              status:
+                type: string
+                enum: ["Valid", "Duplicate", "Opt-out", "UnVerified"]
+                description: "Verification status of the address"
+                example: "UnVerified"
+        created_at:
+          type: string
+          format: date-time
+          description: Zone creation timestamp
+          example: "2025-01-18T10:00:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Zone last update timestamp
+          example: "2025-01-18T15:30:00.000Z"
 
   securitySchemes:
     SupabaseAuth:
