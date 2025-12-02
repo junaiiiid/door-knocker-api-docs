@@ -932,6 +932,8 @@ async function excludeAddress(addressObject, authToken) {
 
 The template management APIs allow you to create, retrieve, and delete PostGrid templates for your postcards. All templates are organization-scoped.
 
+**Campaign Integration:** When templates are used in campaigns (via `/createCampaign` Step 2), the campaign name is automatically added to the template's `campaigns_used` array. The Step 2 endpoint accepts both database UUIDs and PostGrid template IDs for flexible template selection.
+
 ### Create New Template API
 
 The `/createNewTemplate` endpoint creates a template in PostGrid and saves it to the database.
@@ -1144,6 +1146,538 @@ The `/deleteTemplate` endpoint deletes a template from both PostGrid and the dat
 3. **Brand Consistency**: Standardize postcard designs across campaigns
 4. **Template Management**: Organize and track template usage
 5. **Multi-Size Support**: Create templates for different postcard sizes
+
+---
+
+## Get Template by ID API
+
+### Endpoint
+`POST /getTemplateById`
+
+### Description
+Retrieves a single template by either its database UUID or PostGrid template ID. The API automatically detects which type of ID is provided.
+
+### Features
+- **Dual ID Support**: Accepts both database UUID and PostGrid template ID
+- **Organization Scoped**: Returns only templates belonging to user's organization
+- **Deleted Template Detection**: Returns 410 status if template is marked as deleted
+- **Authentication Required**: Uses JWT token from Authorization header
+
+### Request Method
+- **POST**: Send template ID in request body
+
+### Request Body
+
+**Using Database UUID:**
+```json
+{
+  "templateId": "a7b3c4d5-e6f7-8901-2345-6789abcdef01"
+}
+```
+
+**Using PostGrid Template ID:**
+```json
+{
+  "templateId": "template_abc123xyz"
+}
+```
+
+### Request Headers
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+Content-Type: application/json
+```
+
+### Response Format
+
+#### Success Response (200 OK)
+
+```json
+{
+  "status": "success",
+  "message": "Template retrieved successfully",
+  "template": {
+    "id": "a7b3c4d5-e6f7-8901-2345-6789abcdef01",
+    "postgrid_template_id": "template_abc123xyz",
+    "description": "Front side template for spring campaign",
+    "html": "<html><body>...</body></html>",
+    "templateType": "Front",
+    "postcardSize": "6x9",
+    "campaigns_used": ["Spring Sale 2025", "March Promotion"],
+    "createdBy": {
+      "id": "98a88548-47d3-470d-ac40-ba10c9881d98",
+      "user_role": "ADMIN",
+      "full_name": "Admin User",
+      "created_at": "2025-01-13T10:00:00.000Z",
+      "updated_at": "2025-01-13T10:00:00.000Z"
+    },
+    "live": true,
+    "deleted": false,
+    "created_at": "2025-02-01T14:30:00.000Z",
+    "updated_at": "2025-02-01T14:30:00.000Z"
+  },
+  "processingTimeMs": 245
+}
+```
+
+### Field Descriptions
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `templateId` | string | Either database UUID or PostGrid template ID |
+
+**Response Fields**: See [Template Fields](#template-fields) section above for complete field descriptions.
+
+### ID Type Detection
+
+The API automatically determines the ID type:
+- **UUID Format** (e.g., `a7b3c4d5-e6f7-8901-2345-6789abcdef01`): Queries by database `id`
+- **Non-UUID Format** (e.g., `template_abc123xyz`): Queries by `postgrid_template_id`
+
+### Business Rules
+
+1. **Organization Verification**: Template must belong to user's organization
+2. **Deleted Templates**: Returns 410 Gone status if template is deleted
+3. **Authentication Required**: Valid JWT token must be provided
+4. **Flexible ID Lookup**: Supports both internal and external ID references
+
+### Error Responses
+
+| Status Code | Error | Description |
+|-------------|-------|-------------|
+| 400 | INVALID_INPUT | Missing or invalid templateId |
+| 401 | UNAUTHORIZED | Missing or invalid authentication token |
+| 403 | NO_ORGANIZATION | User not associated with any organization |
+| 404 | TEMPLATE_NOT_FOUND | Template not found or doesn't belong to organization |
+| 410 | TEMPLATE_DELETED | Template has been deleted |
+| 500 | DATABASE_ERROR | Database operation error |
+
+### Example Usage
+
+#### Using Database UUID
+```bash
+curl -X POST https://iywivotqnphrjijztxtu.supabase.co/functions/v1/getTemplateById \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "templateId": "a7b3c4d5-e6f7-8901-2345-6789abcdef01"
+  }'
+```
+
+#### Using PostGrid Template ID
+```bash
+curl -X POST https://iywivotqnphrjijztxtu.supabase.co/functions/v1/getTemplateById \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "templateId": "template_abc123xyz"
+  }'
+```
+
+### Use Cases
+
+1. **Template Preview**: Fetch template details before using in campaign
+2. **Template Verification**: Verify template exists and is accessible
+3. **Template Inspection**: Review template HTML and metadata
+4. **Campaign Setup**: Retrieve template for campaign configuration
+5. **External Integration**: Look up templates using PostGrid IDs from external systems
+
+---
+
+## Create Postcard From Template API
+
+### Endpoint
+`POST /createPostCardFromTemplate`
+
+### Description
+Creates a postcard using PostGrid's API with specified front and back templates. This endpoint accepts both database UUIDs and PostGrid template IDs for flexible template selection.
+
+### Features
+- **Dual ID Support**: Accepts both database UUID and PostGrid template IDs for frontTemplate and backTemplate
+- **Organization Scoped**: Templates must belong to user's organization
+- **PostGrid Integration**: Direct integration with PostGrid's postcard creation API
+- **Merge Variables**: Support for dynamic template variables
+- **Validation**: Verifies templates exist and are not deleted before creating postcard
+
+### Request Method
+- **POST**: Send postcard details in request body
+
+### Request Body
+
+```json
+{
+  "postgridApiKey": "test_sk_7oVoDY45m5aPpjKmMZJxz3",
+  "to": {
+    "firstName": "John",
+    "lastName": "Smith",
+    "addressLine1": "123 Main Street",
+    "city": "San Francisco",
+    "provinceOrState": "CA",
+    "postalOrZip": "94105",
+    "countryCode": "US"
+  },
+  "from": {
+    "companyName": "ABC Home Services",
+    "addressLine1": "456 Business Ave",
+    "city": "San Francisco",
+    "provinceOrState": "CA",
+    "postalOrZip": "94107",
+    "countryCode": "US"
+  },
+  "size": "6x4",
+  "frontTemplate": "a7b3c4d5-e6f7-8901-2345-6789abcdef01",
+  "backTemplate": "template_phXZr8fWFejSVWP3o5WEWh",
+  "description": "Spring Promo Postcard",
+  "mergeVariables": {
+    "offer_headline": "Special Spring Discount!",
+    "offer_description": "Get 20% off all services this month",
+    "cta_text": "Call Now to Redeem",
+    "disclaimer_text": "Offer valid for new customers only",
+    "business_name": "ABC Home Services",
+    "phone": "+1-555-123-4567",
+    "website": "https://abchome.com",
+    "qr_url": "https://abchome.com/spring-promo",
+    "before_image_id": "https://example.com/before.jpg",
+    "after_image_id": "https://example.com/after.jpg"
+  }
+}
+```
+
+### Request Headers
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+Content-Type: application/json
+```
+
+### Required Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `postgridApiKey` | string | PostGrid API key for authentication |
+| `to` | object | Recipient address details |
+| `to.firstName` | string | Recipient first name |
+| `to.lastName` | string | Recipient last name |
+| `to.addressLine1` | string | Recipient street address |
+| `to.city` | string | Recipient city |
+| `to.provinceOrState` | string | Recipient state/province code |
+| `to.postalOrZip` | string | Recipient postal/zip code |
+| `to.countryCode` | string | Recipient country code (e.g., "US") |
+| `from` | object | Sender address details |
+| `from.addressLine1` | string | Sender street address |
+| `from.city` | string | Sender city |
+| `from.provinceOrState` | string | Sender state/province code |
+| `from.postalOrZip` | string | Sender postal/zip code |
+| `from.countryCode` | string | Sender country code (e.g., "US") |
+| `size` | string | Postcard size: "6x4", "6x9", or "6x11" |
+| `frontTemplate` | string | Front template ID (database UUID or PostGrid ID) |
+| `backTemplate` | string | Back template ID (database UUID or PostGrid ID) |
+
+### Optional Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `to.addressLine2` | string | Additional recipient address line |
+| `from.firstName` | string | Sender first name |
+| `from.lastName` | string | Sender last name |
+| `from.companyName` | string | Sender company name |
+| `from.addressLine2` | string | Additional sender address line |
+| `description` | string | Description for the postcard |
+| `mergeVariables` | object | Variables to merge into templates |
+
+### Response Format
+
+#### Success Response (201 Created)
+
+```json
+{
+  "status": "success",
+  "message": "Postcard created successfully",
+  "postcard": {
+    "id": "postcard_abc123xyz",
+    "object": "postcard",
+    "live": false,
+    "to": {
+      "firstName": "John",
+      "lastName": "Smith",
+      "addressLine1": "123 Main Street",
+      "city": "San Francisco",
+      "provinceOrState": "CA",
+      "postalOrZip": "94105",
+      "countryCode": "US"
+    },
+    "from": {
+      "companyName": "ABC Home Services",
+      "addressLine1": "456 Business Ave",
+      "city": "San Francisco",
+      "provinceOrState": "CA",
+      "postalOrZip": "94107",
+      "countryCode": "US"
+    },
+    "size": "6x4",
+    "frontTemplate": "template_ePSnE9wew6vFzghb1V4awo",
+    "backTemplate": "template_phXZr8fWFejSVWP3o5WEWh",
+    "description": "Spring Promo Postcard",
+    "url": "https://api.postgrid.com/print-mail/v1/postcards/postcard_abc123xyz",
+    "createdAt": "2025-02-02T10:30:00.000Z",
+    "updatedAt": "2025-02-02T10:30:00.000Z"
+  },
+  "processingTimeMs": 1523
+}
+```
+
+### Template ID Flexibility
+
+The API automatically detects the type of ID provided:
+- **UUID Format** (e.g., `a7b3c4d5-e6f7-8901-2345-6789abcdef01`): Looks up template in database
+- **Non-UUID Format** (e.g., `template_abc123xyz`): Treats as PostGrid template ID
+
+Both formats are validated to ensure:
+1. Template exists in the database
+2. Template belongs to user's organization
+3. Template is not marked as deleted
+
+### Business Rules
+
+1. **Organization Verification**: Templates must belong to user's organization
+2. **Template Validation**: Cannot use deleted templates
+3. **Authentication Required**: Valid JWT token must be provided
+4. **PostGrid Integration**: All PostGrid postcard parameters are supported
+5. **Error Propagation**: PostGrid API errors are returned with original status codes
+
+### Error Responses
+
+| Status Code | Error | Description |
+|-------------|-------|-------------|
+| 400 | INVALID_INPUT | Missing or invalid required fields |
+| 401 | UNAUTHORIZED | Missing or invalid authentication token |
+| 403 | NO_ORGANIZATION | User not associated with any organization |
+| 404 | TEMPLATE_NOT_FOUND | Template not found or doesn't belong to organization |
+| 410 | TEMPLATE_DELETED | Template has been deleted |
+| 500 | POSTGRID_API_ERROR | PostGrid API error (includes PostGrid error details) |
+| 500 | INTERNAL_ERROR | Unexpected server error |
+
+### Example Usage
+
+#### Using Database UUIDs
+```bash
+curl -X POST https://iywivotqnphrjijztxtu.supabase.co/functions/v1/createPostCardFromTemplate \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "postgridApiKey": "test_sk_7oVoDY45m5aPpjKmMZJxz3",
+    "to": {
+      "firstName": "John",
+      "lastName": "Smith",
+      "addressLine1": "123 Main Street",
+      "city": "San Francisco",
+      "provinceOrState": "CA",
+      "postalOrZip": "94105",
+      "countryCode": "US"
+    },
+    "from": {
+      "companyName": "ABC Home Services",
+      "addressLine1": "456 Business Ave",
+      "city": "San Francisco",
+      "provinceOrState": "CA",
+      "postalOrZip": "94107",
+      "countryCode": "US"
+    },
+    "size": "6x4",
+    "frontTemplate": "a7b3c4d5-e6f7-8901-2345-6789abcdef01",
+    "backTemplate": "b8c9d0e1-f2g3-4567-8901-gh2345678902",
+    "description": "Spring Promo Postcard",
+    "mergeVariables": {
+      "offer_headline": "Special Spring Discount!",
+      "business_name": "ABC Home Services"
+    }
+  }'
+```
+
+#### Using PostGrid Template IDs
+```bash
+curl -X POST https://iywivotqnphrjijztxtu.supabase.co/functions/v1/createPostCardFromTemplate \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "postgridApiKey": "test_sk_7oVoDY45m5aPpjKmMZJxz3",
+    "to": {
+      "firstName": "John",
+      "lastName": "Smith",
+      "addressLine1": "123 Main Street",
+      "city": "San Francisco",
+      "provinceOrState": "CA",
+      "postalOrZip": "94105",
+      "countryCode": "US"
+    },
+    "from": {
+      "companyName": "ABC Home Services",
+      "addressLine1": "456 Business Ave",
+      "city": "San Francisco",
+      "provinceOrState": "CA",
+      "postalOrZip": "94107",
+      "countryCode": "US"
+    },
+    "size": "6x4",
+    "frontTemplate": "template_ePSnE9wew6vFzghb1V4awo",
+    "backTemplate": "template_phXZr8fWFejSVWP3o5WEWh",
+    "description": "Spring Promo Postcard"
+  }'
+```
+
+### Use Cases
+
+1. **Campaign Execution**: Send postcards to leads using campaign templates
+2. **Single Send**: Send individual postcards with custom data
+3. **Batch Processing**: Create multiple postcards programmatically
+4. **A/B Testing**: Test different template combinations
+5. **Automated Mailings**: Trigger postcards based on events or workflows
+
+### Notes
+
+- The `mergeVariables` object can contain any custom fields your templates use
+- PostGrid response includes tracking URLs and status information
+- Test mode postcards (using test API keys) are not actually sent
+- Processing time includes template lookup and PostGrid API call
+
+---
+
+## Get Postcard By ID API
+
+### Endpoint
+`POST /getPostCardById`
+
+### Description
+Retrieves a postcard from PostGrid API by its ID. This endpoint provides complete postcard details including status, addresses, templates used, and tracking information.
+
+### Features
+- **Direct PostGrid Integration**: Fetches postcard data directly from PostGrid API
+- **Organization Scoped**: User must be authenticated and in organization
+- **Complete Data**: Returns all PostGrid postcard information
+- **Error Handling**: Properly handles PostGrid API errors
+
+### Request Method
+- **POST**: Send postcard ID in request body
+
+### Request Body
+
+```json
+{
+  "postgridApiKey": "test_sk_7oVoDY45m5aPpjKmMZJxz3",
+  "postcardId": "postcard_dfHxSciyRyyAZkRsuWSrNn"
+}
+```
+
+### Request Headers
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+Content-Type: application/json
+```
+
+### Required Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `postgridApiKey` | string | PostGrid API key for authentication |
+| `postcardId` | string | PostGrid postcard ID to retrieve |
+
+### Response Format
+
+#### Success Response (200 OK)
+
+```json
+{
+  "status": "success",
+  "message": "Postcard retrieved successfully",
+  "postcard": {
+    "id": "postcard_dfHxSciyRyyAZkRsuWSrNn",
+    "object": "postcard",
+    "live": false,
+    "to": {
+      "firstName": "John",
+      "lastName": "Smith",
+      "addressLine1": "123 Main Street",
+      "city": "San Francisco",
+      "provinceOrState": "CA",
+      "postalOrZip": "94105",
+      "countryCode": "US"
+    },
+    "from": {
+      "companyName": "ABC Home Services",
+      "addressLine1": "456 Business Ave",
+      "city": "San Francisco",
+      "provinceOrState": "CA",
+      "postalOrZip": "94107",
+      "countryCode": "US"
+    },
+    "size": "6x4",
+    "frontTemplate": "template_ePSnE9wew6vFzghb1V4awo",
+    "backTemplate": "template_phXZr8fWFejSVWP3o5WEWh",
+    "description": "Spring Promo Postcard",
+    "url": "https://api.postgrid.com/print-mail/v1/postcards/postcard_dfHxSciyRyyAZkRsuWSrNn",
+    "status": "ready",
+    "createdAt": "2025-02-02T10:30:00.000Z",
+    "updatedAt": "2025-02-02T10:30:00.000Z"
+  },
+  "processingTimeMs": 245
+}
+```
+
+### Business Rules
+
+1. **Authentication Required**: Valid JWT token must be provided
+2. **Organization Verification**: User must be associated with an organization
+3. **PostGrid Integration**: All data is fetched directly from PostGrid API
+4. **Error Propagation**: PostGrid API errors are returned with original status codes
+
+### Error Responses
+
+| Status Code | Error | Description |
+|-------------|-------|-------------|
+| 400 | INVALID_INPUT | Missing or invalid required fields |
+| 401 | UNAUTHORIZED | Missing or invalid authentication token |
+| 403 | NO_ORGANIZATION | User not associated with any organization |
+| 404 | POSTGRID_API_ERROR | Postcard not found (PostGrid returns 404) |
+| 500 | POSTGRID_API_ERROR | PostGrid API connection error |
+| 500 | INTERNAL_ERROR | Unexpected server error |
+
+### Example Usage
+
+```bash
+curl -X POST https://iywivotqnphrjijztxtu.supabase.co/functions/v1/getPostCardById \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "postgridApiKey": "test_sk_7oVoDY45m5aPpjKmMZJxz3",
+    "postcardId": "postcard_dfHxSciyRyyAZkRsuWSrNn"
+  }'
+```
+
+### Use Cases
+
+1. **Order Tracking**: Check status and details of sent postcards
+2. **Delivery Verification**: Verify postcard was created and is being processed
+3. **Audit Trail**: Retrieve postcard details for record-keeping
+4. **Status Monitoring**: Monitor postcard status throughout delivery lifecycle
+5. **Debugging**: Troubleshoot issues with specific postcard sends
+
+### Postcard Status Values
+
+PostGrid postcards can have the following status values:
+- `ready`: Postcard is ready to be printed
+- `scheduled`: Postcard is scheduled to be sent
+- `in_transit`: Postcard is being delivered
+- `delivered`: Postcard was successfully delivered
+- `returned`: Postcard was returned to sender
+- `cancelled`: Postcard was cancelled
+
+### Notes
+
+- The response includes complete PostGrid data including tracking information
+- Test mode postcards can be retrieved but are not actually sent
+- Processing time only includes API call duration
+- PostGrid API key permissions must allow reading postcards
+
+---
 
 ## Viewing the Documentation
 

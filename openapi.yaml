@@ -3213,6 +3213,139 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /getTemplateById:
+    post:
+      tags:
+        - Template Management
+      summary: Get a template by ID
+      description: |
+        Retrieves a single template by either database UUID or PostGrid template ID.
+
+        **Business Rules:**
+        - Accepts either database UUID or PostGrid template ID
+        - Template must belong to user's organization
+        - Returns error if template is deleted
+        - User must be authenticated
+
+        **ID Detection:**
+        - UUID format (8-4-4-4-12): Treated as database ID
+        - Any other format: Treated as PostGrid template ID
+      operationId: getTemplateById
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - templateId
+              properties:
+                templateId:
+                  type: string
+                  description: "Template ID (database UUID or PostGrid template ID)"
+                  example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+            examples:
+              databaseId:
+                summary: Query by database UUID
+                value:
+                  templateId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+              postgridId:
+                summary: Query by PostGrid template ID
+                value:
+                  templateId: "template_tBnVEzz878mXLbHQaz86j8"
+      responses:
+        '200':
+          description: Template retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Template retrieved successfully"
+                  template:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      postgrid_template_id:
+                        type: string
+                      description:
+                        type: string
+                      html:
+                        type: string
+                      templateType:
+                        type: string
+                        enum: ["Front", "Back"]
+                      postcardSize:
+                        type: string
+                        enum: ["4x6", "6x9", "6x11"]
+                      campaigns_used:
+                        type: array
+                        items:
+                          type: string
+                      createdBy:
+                        $ref: '#/components/schemas/CreatedByInfo'
+                      live:
+                        type: boolean
+                      deleted:
+                        type: boolean
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+                  processingTimeMs:
+                    type: integer
+                    example: 145
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Template not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '410':
+          description: Template has been deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "TEMPLATE_DELETED"
+                message: "This template has been deleted"
+        '500':
+          description: Database error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /deleteTemplate:
     post:
       tags:
@@ -3305,6 +3438,400 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  /createPostCardFromTemplate:
+    post:
+      tags:
+        - Template Management
+      summary: Create a postcard from templates
+      description: |
+        Creates a postcard using PostGrid API with specified templates.
+
+        **Business Rules:**
+        - Requires PostGrid API key in request body
+        - Accepts both database UUID and PostGrid template IDs for frontTemplate and backTemplate
+        - Templates must belong to user's organization
+        - Cannot use deleted templates
+        - All PostGrid postcard creation parameters are supported
+
+        **Template ID Flexibility:**
+        - frontTemplate and backTemplate accept either:
+          - Database UUID (e.g., "a7b3c4d5-e6f7-8901-2345-6789abcdef01")
+          - PostGrid template ID (e.g., "template_abc123xyz")
+
+        **Returns:** Complete PostGrid postcard response
+      operationId: createPostCardFromTemplate
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - postgridApiKey
+                - to
+                - from
+                - size
+                - frontTemplate
+                - backTemplate
+              properties:
+                postgridApiKey:
+                  type: string
+                  description: "PostGrid API key"
+                  example: "test_sk_7oVoDY45m5aPpjKmMZJxz3"
+                to:
+                  type: object
+                  description: "Recipient address"
+                  required:
+                    - firstName
+                    - lastName
+                    - addressLine1
+                    - city
+                    - provinceOrState
+                    - postalOrZip
+                    - countryCode
+                  properties:
+                    firstName:
+                      type: string
+                      example: "John"
+                    lastName:
+                      type: string
+                      example: "Smith"
+                    addressLine1:
+                      type: string
+                      example: "123 Main Street"
+                    addressLine2:
+                      type: string
+                    city:
+                      type: string
+                      example: "San Francisco"
+                    provinceOrState:
+                      type: string
+                      example: "CA"
+                    postalOrZip:
+                      type: string
+                      example: "94105"
+                    countryCode:
+                      type: string
+                      example: "US"
+                from:
+                  type: object
+                  description: "Sender address"
+                  required:
+                    - addressLine1
+                    - city
+                    - provinceOrState
+                    - postalOrZip
+                    - countryCode
+                  properties:
+                    firstName:
+                      type: string
+                    lastName:
+                      type: string
+                    companyName:
+                      type: string
+                      example: "ABC Home Services"
+                    addressLine1:
+                      type: string
+                      example: "456 Business Ave"
+                    addressLine2:
+                      type: string
+                    city:
+                      type: string
+                      example: "San Francisco"
+                    provinceOrState:
+                      type: string
+                      example: "CA"
+                    postalOrZip:
+                      type: string
+                      example: "94107"
+                    countryCode:
+                      type: string
+                      example: "US"
+                size:
+                  type: string
+                  description: "Postcard size"
+                  example: "6x4"
+                  enum:
+                    - "6x4"
+                    - "6x9"
+                    - "6x11"
+                frontTemplate:
+                  type: string
+                  description: "Front template ID (database UUID or PostGrid template ID)"
+                  example: "a7b3c4d5-e6f7-8901-2345-6789abcdef01"
+                backTemplate:
+                  type: string
+                  description: "Back template ID (database UUID or PostGrid template ID)"
+                  example: "template_phXZr8fWFejSVWP3o5WEWh"
+                description:
+                  type: string
+                  description: "Optional description for the postcard"
+                  example: "Spring Promo Postcard"
+                mergeVariables:
+                  type: object
+                  description: "Variables to merge into the template"
+                  additionalProperties: true
+                  example:
+                    offer_headline: "Special Spring Discount!"
+                    offer_description: "Get 20% off all services this month"
+                    cta_text: "Call Now to Redeem"
+                    disclaimer_text: "Offer valid for new customers only"
+                    business_name: "ABC Home Services"
+                    phone: "+1-555-123-4567"
+                    website: "https://abchome.com"
+                    qr_url: "https://abchome.com/spring-promo"
+                    before_image_id: "https://example.com/before.jpg"
+                    after_image_id: "https://example.com/after.jpg"
+            example:
+              postgridApiKey: "test_sk_7oVoDY45m5aPpjKmMZJxz3"
+              to:
+                firstName: "John"
+                lastName: "Smith"
+                addressLine1: "123 Main Street"
+                city: "San Francisco"
+                provinceOrState: "CA"
+                postalOrZip: "94105"
+                countryCode: "US"
+              from:
+                companyName: "ABC Home Services"
+                addressLine1: "456 Business Ave"
+                city: "San Francisco"
+                provinceOrState: "CA"
+                postalOrZip: "94107"
+                countryCode: "US"
+              size: "6x4"
+              frontTemplate: "a7b3c4d5-e6f7-8901-2345-6789abcdef01"
+              backTemplate: "template_phXZr8fWFejSVWP3o5WEWh"
+              description: "Spring Promo Postcard"
+              mergeVariables:
+                offer_headline: "Special Spring Discount!"
+                offer_description: "Get 20% off all services this month"
+                cta_text: "Call Now to Redeem"
+                disclaimer_text: "Offer valid for new customers only"
+                business_name: "ABC Home Services"
+                phone: "+1-555-123-4567"
+                website: "https://abchome.com"
+                qr_url: "https://abchome.com/spring-promo"
+                before_image_id: "https://example.com/before.jpg"
+                after_image_id: "https://example.com/after.jpg"
+      responses:
+        '201':
+          description: Postcard created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Postcard created successfully"
+                  postcard:
+                    type: object
+                    description: "Complete PostGrid postcard response object"
+                  processingTimeMs:
+                    type: integer
+                    example: 1523
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingField:
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "postgridApiKey is required and must be a string"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Template not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                templateNotFound:
+                  value:
+                    error: "TEMPLATE_NOT_FOUND"
+                    message: "Front template not found or doesn't belong to your organization"
+        '410':
+          description: Template has been deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                templateDeleted:
+                  value:
+                    error: "TEMPLATE_DELETED"
+                    message: "Front template has been deleted"
+        '500':
+          description: PostGrid API error or internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                postgridError:
+                  value:
+                    error: "POSTGRID_API_ERROR"
+                    message: "PostGrid API returned error: 400 - Invalid template ID"
+
+  /getPostCardById:
+    post:
+      tags:
+        - Template Management
+      summary: Get postcard by ID
+      description: |
+        Retrieves a postcard from PostGrid API by its ID.
+
+        **Business Rules:**
+        - Requires PostGrid API key and postcard ID
+        - Returns complete postcard details from PostGrid
+        - Organization-scoped (user must be in organization)
+
+        **Returns:** Complete PostGrid postcard response
+      operationId: getPostCardById
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - postgridApiKey
+                - postcardId
+              properties:
+                postgridApiKey:
+                  type: string
+                  description: "PostGrid API key"
+                  example: "test_sk_7oVoDY45m5aPpjKmMZJxz3"
+                postcardId:
+                  type: string
+                  description: "PostGrid postcard ID"
+                  example: "postcard_dfHxSciyRyyAZkRsuWSrNn"
+            example:
+              postgridApiKey: "test_sk_7oVoDY45m5aPpjKmMZJxz3"
+              postcardId: "postcard_dfHxSciyRyyAZkRsuWSrNn"
+      responses:
+        '200':
+          description: Postcard retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Postcard retrieved successfully"
+                  postcard:
+                    type: object
+                    description: "Complete PostGrid postcard response object"
+                    properties:
+                      id:
+                        type: string
+                        example: "postcard_dfHxSciyRyyAZkRsuWSrNn"
+                      object:
+                        type: string
+                        example: "postcard"
+                      live:
+                        type: boolean
+                        example: false
+                      to:
+                        type: object
+                        description: "Recipient address"
+                      from:
+                        type: object
+                        description: "Sender address"
+                      size:
+                        type: string
+                        example: "6x4"
+                      frontTemplate:
+                        type: string
+                        example: "template_ePSnE9wew6vFzghb1V4awo"
+                      backTemplate:
+                        type: string
+                        example: "template_phXZr8fWFejSVWP3o5WEWh"
+                      description:
+                        type: string
+                      url:
+                        type: string
+                      createdAt:
+                        type: string
+                        format: date-time
+                      updatedAt:
+                        type: string
+                        format: date-time
+                  processingTimeMs:
+                    type: integer
+                    example: 245
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingField:
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "postcardId is required and must be a string"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Postcard not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFound:
+                  value:
+                    error: "POSTGRID_API_ERROR"
+                    message: "PostGrid API returned error: 404 - Postcard not found"
+        '500':
+          description: PostGrid API error or internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                postgridError:
+                  value:
+                    error: "POSTGRID_API_ERROR"
+                    message: "Failed to connect to PostGrid API"
 
   /getReferralById:
     post:
@@ -4688,7 +5215,7 @@ paths:
         Creates a draft campaign linked to a referral with a campaign name.
 
         **Step 2: Select Templates**
-        Selects PostGrid templates for front and back of the postcard.
+        Selects templates for front and back of the postcard. Accepts both database UUIDs and PostGrid template IDs. Updates templates' campaigns_used array with campaign name.
 
         **Step 3: Add Offer Details**
         Adds offer headline, description, dates, CTA, and disclaimer.
@@ -4751,10 +5278,12 @@ paths:
                       format: uuid
                     front_template_id:
                       type: string
-                      description: PostGrid template ID for front of postcard
+                      description: Template ID for front of postcard (accepts both database UUID or PostGrid template ID)
+                      example: "a7b3c4d5-e6f7-8901-2345-6789abcdef01"
                     back_template_id:
                       type: string
-                      description: PostGrid template ID for back of postcard
+                      description: Template ID for back of postcard (accepts both database UUID or PostGrid template ID)
+                      example: "template_abc123xyz"
                 - type: object
                   title: Step 3
                   required:
@@ -4880,12 +5409,12 @@ paths:
                   referral_id: 550e8400-e29b-41d4-a716-446655440000
                   campaign_name: Summer Promotion 2025
               step2:
-                summary: Step 2 - Select Templates
+                summary: Step 2 - Select Templates (accepts database UUID or PostGrid template ID)
                 value:
                   step: 2
                   campaign_id: 660e8400-e29b-41d4-a716-446655440001
-                  front_template_id: tmpl_front_abc123
-                  back_template_id: tmpl_back_xyz789
+                  front_template_id: "a7b3c4d5-e6f7-8901-2345-6789abcdef01"
+                  back_template_id: "template_abc123xyz"
               step3:
                 summary: Step 3 - Add Offer Details
                 value:
@@ -4938,7 +5467,7 @@ paths:
                     example: success
                   message:
                     type: string
-                    example: "Template selected successfully (Step 2 complete)"
+                    example: "Templates selected successfully (Step 2 complete)"
                   data:
                     type: object
                     properties:
@@ -4951,6 +5480,14 @@ paths:
                       referral_id:
                         type: string
                         format: uuid
+                      campaign_name:
+                        type: string
+                      front_template_id:
+                        type: string
+                        description: PostGrid template ID for front
+                      back_template_id:
+                        type: string
+                        description: PostGrid template ID for back
                       status:
                         type: object
                         properties:
@@ -4963,12 +5500,39 @@ paths:
                       current_step:
                         type: integer
                         example: 2
-                      template_id:
+                      image_url:
                         type: string
+                        nullable: true
+                      templates_info:
+                        type: object
+                        description: Detailed template information
+                        properties:
+                          front_template:
+                            type: object
+                            properties:
+                              db_id:
+                                type: string
+                                format: uuid
+                                description: Database template ID
+                              postgrid_id:
+                                type: string
+                                description: PostGrid template ID
+                          back_template:
+                            type: object
+                            properties:
+                              db_id:
+                                type: string
+                                format: uuid
+                                description: Database template ID
+                              postgrid_id:
+                                type: string
+                                description: PostGrid template ID
                       offer_data:
                         type: object
+                        nullable: true
                       business_data:
                         type: object
+                        nullable: true
                       created_at:
                         type: string
                         format: date-time
