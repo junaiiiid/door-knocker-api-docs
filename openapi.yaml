@@ -4030,6 +4030,127 @@ paths:
                     error: "POSTGRID_API_ERROR"
                     message: "Failed to connect to PostGrid API"
 
+  /getTemplateHistory:
+    post:
+      tags:
+        - Template Management
+      summary: Get template history
+      description: |
+        Retrieves the complete history log for a specific template.
+
+        **Business Rules:**
+        - Accepts both database UUID and PostGrid template ID
+        - Returns all logged actions for the template (creation, updates, deletions)
+        - Ordered by most recent first
+        - Includes user information for each action
+        - Organization-scoped (user must be in organization)
+
+        **Returns:** Complete template history with all actions
+      operationId: getTemplateHistory
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  description: "Template ID (database UUID or PostGrid template ID)"
+                  example: "550e8400-e29b-41d4-a716-446655440000"
+            example:
+              id: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Template history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Template history retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      template_id:
+                        type: string
+                        format: uuid
+                      history:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            template_id:
+                              type: string
+                              format: uuid
+                            user_id:
+                              type: string
+                              format: uuid
+                            user_name:
+                              type: string
+                              example: "John Doe"
+                            action:
+                              type: string
+                              example: "created template (Front, 4x6)"
+                            created_at:
+                              type: string
+                              format: date-time
+                      count:
+                        type: integer
+                        example: 5
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingId:
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "Template ID is required"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Template not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFound:
+                  value:
+                    error: "TEMPLATE_NOT_FOUND"
+                    message: "Template not found in your organization"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /getReferralById:
     post:
       tags:

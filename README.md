@@ -1843,6 +1843,164 @@ PostGrid postcards can have the following status values:
 
 ---
 
+## Get Template History API
+
+### Endpoint
+`POST /getTemplateHistory`
+
+### Description
+Retrieves the complete history log for a specific template, showing all actions performed on the template including creation, updates, and deletion. This endpoint accepts both database UUIDs and PostGrid template IDs.
+
+### Features
+- **Dual ID Support**: Accepts both database UUID and PostGrid template IDs
+- **Complete History**: Returns all logged actions (creation, updates, deletions)
+- **Chronological Order**: Results ordered by most recent action first
+- **User Information**: Includes user details for each action
+- **Organization Scoped**: Only returns history for templates in user's organization
+- **Automatic Tracking**: History is automatically logged by the system
+
+### Request Method
+- **POST**: Send template ID in request body
+
+### Request Body
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+Or using PostGrid template ID:
+
+```json
+{
+  "id": "template_ePSnE9wew6vFzghb1V4awo"
+}
+```
+
+### Request Headers
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+Content-Type: application/json
+```
+
+### Required Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Template ID (database UUID or PostGrid template ID) |
+
+### Response Format
+
+#### Success Response (200 OK)
+
+```json
+{
+  "status": "success",
+  "message": "Template history retrieved successfully",
+  "data": {
+    "template_id": "550e8400-e29b-41d4-a716-446655440000",
+    "history": [
+      {
+        "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+        "template_id": "550e8400-e29b-41d4-a716-446655440000",
+        "user_id": "f9e8d7c6-b5a4-3210-9876-543210fedcba",
+        "user_name": "John Doe",
+        "action": "updated template (html, description)",
+        "created_at": "2025-02-03T14:30:00.000Z"
+      },
+      {
+        "id": "b2c3d4e5-f6a7-8901-2345-678901bcdefg",
+        "template_id": "550e8400-e29b-41d4-a716-446655440000",
+        "user_id": "f9e8d7c6-b5a4-3210-9876-543210fedcba",
+        "user_name": "John Doe",
+        "action": "created template (Front, 4x6)",
+        "created_at": "2025-02-03T10:00:00.000Z"
+      }
+    ],
+    "count": 2
+  }
+}
+```
+
+### Business Rules
+
+1. **Authentication Required**: Valid JWT token must be provided
+2. **Organization Verification**: User must be associated with an organization
+3. **Template Ownership**: Template must belong to user's organization
+4. **Dual ID Resolution**: Automatically detects if ID is database UUID or PostGrid template ID
+5. **Automatic Logging**: History is automatically logged on template creation, update, and deletion
+6. **Immutable History**: History records cannot be modified or deleted
+
+### History Action Types
+
+The following actions are automatically tracked:
+
+| Action | Description | Example |
+|--------|-------------|---------|
+| `created template` | Template was created | "created template (Front, 4x6)" |
+| `updated template` | Template was updated | "updated template (html, description)" |
+| `deleted template` | Template was deleted | "deleted template" |
+
+### Error Responses
+
+| Status Code | Error | Description |
+|-------------|-------|-------------|
+| 400 | INVALID_INPUT | Missing template ID |
+| 401 | UNAUTHORIZED | Missing or invalid authentication token |
+| 403 | NO_ORGANIZATION | User not associated with any organization |
+| 404 | TEMPLATE_NOT_FOUND | Template not found in organization |
+| 500 | HISTORY_FETCH_FAILED | Failed to retrieve history from database |
+| 500 | INTERNAL_ERROR | Unexpected server error |
+
+### Example Usage
+
+```bash
+# Using database UUID
+curl -X POST https://iywivotqnphrjijztxtu.supabase.co/functions/v1/getTemplateHistory \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "550e8400-e29b-41d4-a716-446655440000"
+  }'
+
+# Using PostGrid template ID
+curl -X POST https://iywivotqnphrjijztxtu.supabase.co/functions/v1/getTemplateHistory \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "template_ePSnE9wew6vFzghb1V4awo"
+  }'
+```
+
+### Use Cases
+
+1. **Audit Trail**: Track all changes made to a template over time
+2. **Compliance**: Maintain records of who modified templates and when
+3. **Troubleshooting**: Investigate when and how a template was changed
+4. **Team Collaboration**: See which team members worked on a template
+5. **Version Tracking**: Understand the evolution of a template
+6. **Change Management**: Review template modification history before using in campaigns
+
+### Response Details
+
+**History Array**: Ordered by `created_at` descending (most recent first)
+- Each entry includes the user who performed the action
+- Timestamps are in ISO 8601 format
+- Actions include contextual information (e.g., which fields were updated)
+
+**Count**: Total number of history records for the template
+
+### Notes
+
+- History is automatically logged by the system - no manual action required
+- History persists even if template is deleted (CASCADE delete removes history)
+- Empty history array means no actions have been recorded (should not happen for valid templates)
+- User names are captured at the time of the action
+- All timestamps are in UTC
+
+---
+
 ## Settings Management APIs
 
 ### Get App Content API
