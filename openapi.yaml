@@ -95,6 +95,8 @@ tags:
     description: Photo gallery and image management operations for referrals
   - name: Campaign Management
     description: Campaign creation, management, and PostGrid template operations
+  - name: Template Management
+    description: PostGrid template creation, retrieval, and deletion operations
 
 paths:
   /signUp:
@@ -2930,6 +2932,375 @@ paths:
                 $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /createNewTemplate:
+    post:
+      tags:
+        - Template Management
+      summary: Create a new PostGrid template
+      description: |
+        Creates a template in PostGrid and saves it to the database.
+
+        **Business Rules:**
+        - Creates template using PostGrid API
+        - Saves template metadata to database
+        - Template is organization-scoped
+        - Tracks creator via createdBy field
+        - Initializes empty campaigns_used array
+
+        **Required Fields:**
+        - postgridApiKey: PostGrid API key for authentication
+        - description: Template description
+        - html: HTML content for the template
+        - templateType: Front or Back
+        - postcardSize: 4x6, 6x9, or 6x11
+      operationId: createNewTemplate
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - postgridApiKey
+                - description
+                - html
+                - templateType
+                - postcardSize
+              properties:
+                postgridApiKey:
+                  type: string
+                  description: "PostGrid API key"
+                  example: "live_sk_..."
+                description:
+                  type: string
+                  description: "Template description"
+                  example: "Summer Campaign Front Template"
+                html:
+                  type: string
+                  description: "HTML content for the template"
+                  example: "<b>Hello</b> {{to.firstName}}!"
+                templateType:
+                  type: string
+                  enum: ["Front", "Back"]
+                  description: "Template type: Front or Back of postcard"
+                  example: "Front"
+                postcardSize:
+                  type: string
+                  enum: ["4x6", "6x9", "6x11"]
+                  description: "Postcard size"
+                  example: "4x6"
+      responses:
+        '201':
+          description: Template created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Template created successfully"
+                  template:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                      postgrid_template_id:
+                        type: string
+                        example: "template_tBnVEzz878mXLbHQaz86j8"
+                      description:
+                        type: string
+                        example: "Summer Campaign Front Template"
+                      html:
+                        type: string
+                        example: "<b>Hello</b> {{to.firstName}}!"
+                      templateType:
+                        type: string
+                        enum: ["Front", "Back"]
+                        example: "Front"
+                      postcardSize:
+                        type: string
+                        enum: ["4x6", "6x9", "6x11"]
+                        example: "4x6"
+                      campaigns_used:
+                        type: array
+                        items:
+                          type: string
+                        example: []
+                      createdBy:
+                        $ref: '#/components/schemas/CreatedByInfo'
+                      live:
+                        type: boolean
+                        example: false
+                      deleted:
+                        type: boolean
+                        example: false
+                      created_at:
+                        type: string
+                        format: date-time
+                        example: "2025-02-02T10:00:00.000Z"
+                      updated_at:
+                        type: string
+                        format: date-time
+                        example: "2025-02-02T10:00:00.000Z"
+                  processingTimeMs:
+                    type: integer
+                    example: 1523
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: PostGrid API or database error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /getAllTemplates:
+    get:
+      tags:
+        - Template Management
+      summary: Get all templates for organization
+      description: |
+        Returns all templates belonging to the user's organization.
+
+        **Business Rules:**
+        - Returns only templates from user's organization
+        - Excludes deleted templates by default
+        - Supports filtering by templateType and postcardSize
+        - Returns templates ordered by created_at (newest first)
+      operationId: getAllTemplates
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: includeDeleted
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: "Include deleted templates"
+        - name: templateType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["Front", "Back"]
+          description: "Filter by template type"
+        - name: postcardSize
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["4x6", "6x9", "6x11"]
+          description: "Filter by postcard size"
+      responses:
+        '200':
+          description: Templates retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Found 5 template(s)"
+                  metadata:
+                    type: object
+                    properties:
+                      total_templates:
+                        type: integer
+                        example: 5
+                      filters_applied:
+                        type: object
+                        properties:
+                          includeDeleted:
+                            type: boolean
+                            example: false
+                          templateType:
+                            type: string
+                            nullable: true
+                            example: null
+                          postcardSize:
+                            type: string
+                            nullable: true
+                            example: null
+                      processingTimeMs:
+                        type: integer
+                        example: 245
+                  templates:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        postgrid_template_id:
+                          type: string
+                        description:
+                          type: string
+                        html:
+                          type: string
+                        templateType:
+                          type: string
+                          enum: ["Front", "Back"]
+                        postcardSize:
+                          type: string
+                          enum: ["4x6", "6x9", "6x11"]
+                        campaigns_used:
+                          type: array
+                          items:
+                            type: string
+                        createdBy:
+                          $ref: '#/components/schemas/CreatedByInfo'
+                        live:
+                          type: boolean
+                        deleted:
+                          type: boolean
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Database error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /deleteTemplate:
+    post:
+      tags:
+        - Template Management
+      summary: Delete a template
+      description: |
+        Deletes a template from both PostGrid and the database.
+
+        **Business Rules:**
+        - Template must belong to user's organization
+        - Deletes template from PostGrid first
+        - Then marks template as deleted in database (soft delete)
+        - Cannot delete already deleted templates
+      operationId: deleteTemplate
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - templateId
+                - postgridApiKey
+              properties:
+                templateId:
+                  type: string
+                  format: uuid
+                  description: "Template ID to delete"
+                  example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                postgridApiKey:
+                  type: string
+                  description: "PostGrid API key"
+                  example: "live_sk_..."
+      responses:
+        '200':
+          description: Template deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Template deleted successfully"
+                  template:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      postgrid_template_id:
+                        type: string
+                      description:
+                        type: string
+                  processingTimeMs:
+                    type: integer
+                    example: 892
+        '400':
+          description: Invalid input or template already deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Template not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: PostGrid API or database error
           content:
             application/json:
               schema:
@@ -6388,6 +6759,36 @@ components:
               format: date-time
               description: "When the user profile was last updated"
               example: "2025-01-13T10:00:00.000Z"
+
+    CreatedByInfo:
+      type: object
+      description: "Information about the user who created or last modified an entity"
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "User ID"
+          example: "98a88548-47d3-470d-ac40-ba10c9881d98"
+        user_role:
+          type: string
+          enum: ["ADMIN", "MARKETER", "TECHNICIAN"]
+          description: "User role"
+          example: "ADMIN"
+        full_name:
+          type: string
+          nullable: true
+          description: "Full name of the user"
+          example: "Admin User"
+        created_at:
+          type: string
+          format: date-time
+          description: "When the user profile was created"
+          example: "2025-01-13T10:00:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: "When the user profile was last updated"
+          example: "2025-01-13T10:00:00.000Z"
 
   securitySchemes:
     SupabaseAuth:

@@ -928,6 +928,223 @@ async function excludeAddress(addressObject, authToken) {
 5. **Notification**: Notify relevant stakeholders when addresses are excluded
 6. **Verify Results**: Check `addressesUpdated` to confirm the operation succeeded
 
+## Template Management APIs
+
+The template management APIs allow you to create, retrieve, and delete PostGrid templates for your postcards. All templates are organization-scoped.
+
+### Create New Template API
+
+The `/createNewTemplate` endpoint creates a template in PostGrid and saves it to the database.
+
+#### Endpoint
+
+- **URL**: `/createNewTemplate`
+- **Method**: POST
+- **Authentication**: Required (Bearer Token)
+
+#### Request Body
+
+```json
+{
+  "postgridApiKey": "live_sk_...",
+  "description": "Summer Campaign Front Template",
+  "html": "<b>Hello</b> {{to.firstName}}!",
+  "templateType": "Front",
+  "postcardSize": "4x6"
+}
+```
+
+#### Request Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `postgridApiKey` | string | Yes | PostGrid API key for authentication |
+| `description` | string | Yes | Template description |
+| `html` | string | Yes | HTML content for the template |
+| `templateType` | enum | Yes | Template type: "Front" or "Back" |
+| `postcardSize` | enum | Yes | Postcard size: "4x6", "6x9", or "6x11" |
+
+#### Response
+
+```json
+{
+  "status": "success",
+  "message": "Template created successfully",
+  "template": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "postgrid_template_id": "template_tBnVEzz878mXLbHQaz86j8",
+    "description": "Summer Campaign Front Template",
+    "html": "<b>Hello</b> {{to.firstName}}!",
+    "templateType": "Front",
+    "postcardSize": "4x6",
+    "campaigns_used": [],
+    "createdBy": {
+      "id": "98a88548-47d3-470d-ac40-ba10c9881d98",
+      "user_role": "ADMIN",
+      "full_name": "Admin User",
+      "created_at": "2025-01-13T10:00:00.000Z",
+      "updated_at": "2025-01-13T10:00:00.000Z"
+    },
+    "live": false,
+    "deleted": false,
+    "created_at": "2025-02-02T10:00:00.000Z",
+    "updated_at": "2025-02-02T10:00:00.000Z"
+  },
+  "processingTimeMs": 1523
+}
+```
+
+### Get All Templates API
+
+The `/getAllTemplates` endpoint returns all templates for the user's organization.
+
+#### Endpoint
+
+- **URL**: `/getAllTemplates`
+- **Method**: GET
+- **Authentication**: Required (Bearer Token)
+
+#### Query Parameters (Optional)
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `includeDeleted` | boolean | false | Include deleted templates |
+| `templateType` | enum | null | Filter by "Front" or "Back" |
+| `postcardSize` | enum | null | Filter by "4x6", "6x9", or "6x11" |
+
+#### Example Request
+
+```bash
+curl -X GET 'https://YOUR-PROJECT.supabase.co/functions/v1/getAllTemplates?templateType=Front&postcardSize=4x6' \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+#### Response
+
+```json
+{
+  "status": "success",
+  "message": "Found 5 template(s)",
+  "metadata": {
+    "total_templates": 5,
+    "filters_applied": {
+      "includeDeleted": false,
+      "templateType": "Front",
+      "postcardSize": "4x6"
+    },
+    "processingTimeMs": 245
+  },
+  "templates": [
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "postgrid_template_id": "template_tBnVEzz878mXLbHQaz86j8",
+      "description": "Summer Campaign Front Template",
+      "html": "<b>Hello</b> {{to.firstName}}!",
+      "templateType": "Front",
+      "postcardSize": "4x6",
+      "campaigns_used": ["Summer 2024 Campaign"],
+      "createdBy": {
+        "id": "98a88548-47d3-470d-ac40-ba10c9881d98",
+        "user_role": "ADMIN",
+        "full_name": "Admin User",
+        "created_at": "2025-01-13T10:00:00.000Z",
+        "updated_at": "2025-01-13T10:00:00.000Z"
+      },
+      "live": false,
+      "deleted": false,
+      "created_at": "2025-02-02T10:00:00.000Z",
+      "updated_at": "2025-02-02T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+### Delete Template API
+
+The `/deleteTemplate` endpoint deletes a template from both PostGrid and the database.
+
+#### Endpoint
+
+- **URL**: `/deleteTemplate`
+- **Method**: POST
+- **Authentication**: Required (Bearer Token)
+
+#### Request Body
+
+```json
+{
+  "templateId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "postgridApiKey": "live_sk_..."
+}
+```
+
+#### Request Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `templateId` | string (uuid) | Yes | Template ID to delete |
+| `postgridApiKey` | string | Yes | PostGrid API key |
+
+#### Response
+
+```json
+{
+  "status": "success",
+  "message": "Template deleted successfully",
+  "template": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "postgrid_template_id": "template_tBnVEzz878mXLbHQaz86j8",
+    "description": "Summer Campaign Front Template"
+  },
+  "processingTimeMs": 892
+}
+```
+
+### Template Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string (uuid) | Database template ID |
+| `postgrid_template_id` | string | PostGrid template ID |
+| `description` | string | Template description |
+| `html` | string | HTML content |
+| `templateType` | enum | "Front" or "Back" |
+| `postcardSize` | enum | "4x6", "6x9", or "6x11" |
+| `campaigns_used` | array | List of campaign names using this template |
+| `createdBy` | object | User who created the template |
+| `live` | boolean | Whether template is live in PostGrid |
+| `deleted` | boolean | Whether template is deleted |
+| `created_at` | string (ISO date) | Creation timestamp |
+| `updated_at` | string (ISO date) | Last update timestamp |
+
+### Business Rules
+
+1. **Organization Scope**: Templates belong to organizations
+2. **PostGrid Integration**: Creates actual templates in PostGrid
+3. **Soft Delete**: Deletion marks template as deleted but preserves data
+4. **Campaign Tracking**: Tracks which campaigns use each template
+5. **Creator Attribution**: Stores who created each template
+
+### Error Responses
+
+| Status Code | Error | Description |
+|-------------|-------|-------------|
+| 400 | INVALID_INPUT | Missing or invalid request parameters |
+| 401 | Unauthorized | Missing or invalid authentication token |
+| 403 | Forbidden | User not in organization |
+| 404 | TEMPLATE_NOT_FOUND | Template not found or doesn't belong to organization |
+| 500 | POSTGRID_API_ERROR | PostGrid API error |
+| 500 | DATABASE_ERROR | Database operation error |
+
+### Use Cases
+
+1. **Campaign Creation**: Create templates for postcard front and back
+2. **Template Library**: Maintain reusable templates for marketing campaigns
+3. **Brand Consistency**: Standardize postcard designs across campaigns
+4. **Template Management**: Organize and track template usage
+5. **Multi-Size Support**: Create templates for different postcard sizes
+
 ## Viewing the Documentation
 
 ### Option 1: Open Locally
