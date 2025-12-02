@@ -97,6 +97,10 @@ tags:
     description: Campaign creation, management, and PostGrid template operations
   - name: Template Management
     description: PostGrid template creation, retrieval, and deletion operations
+  - name: Settings Management
+    description: User settings, branding, and font management operations
+  - name: Address Discovery
+    description: Address discovery and verification operations
 
 paths:
   /signUp:
@@ -727,26 +731,31 @@ paths:
   /getAppContent:
     get:
       tags:
-        - User Management
-      summary: Get role-based application content
+        - Settings Management
+      summary: Get role-based application content and branding
       description: |
-        Retrieves application content configuration based on the authenticated user's role and organization.
-        
+        Retrieves application content configuration and user branding settings based on the authenticated user's role and organization.
+
         **Role-Based Access:**
         - **ADMIN**: Full access to all application features
         - **MARKETER**: Access to campaigns, referrals, analytics, targeting, and notifications
         - **TECHNICIAN**: Access to referrals and notifications only
         - **All roles**: Get notifications and basic navigation
-        
+
         **Organization-Based:**
         - Content is scoped to the user's organization
         - Each organization can have customized menu configurations
         - Auto-creates default content if not found
-        
+
+        **User Branding:**
+        - Returns user-specific theme settings (colors and fonts)
+        - Default theme provided if user hasn't customized
+
         **Returns:**
         - Menu items array with permissions, titles, descriptions
         - Extended options for complex menu structures
         - Role-appropriate quick actions
+        - User branding theme (colors and fonts)
       operationId: getAppContent
       security:
         - SupabaseAuth: []
@@ -765,11 +774,42 @@ paths:
                     type: object
                     required:
                       - menu_items
+                      - theme
                     properties:
                       menu_items:
                         type: array
                         items:
                           $ref: '#/components/schemas/MenuItem'
+                      theme:
+                        type: object
+                        properties:
+                          colors:
+                            type: object
+                            properties:
+                              primary:
+                                type: string
+                                example: "#E36A00"
+                              secondary:
+                                type: string
+                                example: "#1D1D20"
+                              accent:
+                                type: string
+                                example: "#47BAD7"
+                          fonts:
+                            type: object
+                            properties:
+                              primary:
+                                type: object
+                                properties:
+                                  name:
+                                    type: string
+                                    example: "Poppins"
+                              body:
+                                type: object
+                                properties:
+                                  name:
+                                    type: string
+                                    example: "Poppins"
               examples:
                 adminContent:
                   summary: ADMIN user content (full access)
@@ -6506,6 +6546,211 @@ paths:
                   value:
                     error: ORGANIZATION_NOT_FOUND
                     message: You are not associated with any organization
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /getAllFonts:
+    get:
+      tags:
+        - Settings Management
+      summary: Get all available Google Fonts
+      description: |
+        Returns a list of all available Google Fonts for use in branding settings.
+
+        **Business Rules:**
+        - Returns list of popular Google Fonts
+        - Falls back to curated list if API unavailable
+        - User must be authenticated
+
+        **Returns:** Array of fonts with name, category, variants, and subsets
+      operationId: getAllFonts
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Fonts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Retrieved 15 fonts"
+                  fonts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          example: "Poppins"
+                        category:
+                          type: string
+                          example: "sans-serif"
+                        variants:
+                          type: array
+                          items:
+                            type: string
+                          example: ["regular", "500", "600", "700"]
+                        subsets:
+                          type: array
+                          items:
+                            type: string
+                          example: ["latin"]
+                  processingTimeMs:
+                    type: integer
+                    example: 245
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /updateBrandingSettings:
+    post:
+      tags:
+        - Settings Management
+      summary: Update user branding settings
+      description: |
+        Updates user-specific branding settings including theme colors and fonts.
+
+        **Business Rules:**
+        - Settings are user-specific (not organization-wide)
+        - Colors must be valid hex format
+        - Font names should match Google Fonts
+        - Updates are reflected in getAppContent response
+
+        **Returns:** Updated branding settings
+      operationId: updateBrandingSettings
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - theme
+              properties:
+                theme:
+                  type: object
+                  required:
+                    - colors
+                    - fonts
+                  properties:
+                    colors:
+                      type: object
+                      required:
+                        - primary
+                        - secondary
+                        - accent
+                      properties:
+                        primary:
+                          type: string
+                          example: "#E36A00"
+                        secondary:
+                          type: string
+                          example: "#1D1D20"
+                        accent:
+                          type: string
+                          example: "#47BAD7"
+                    fonts:
+                      type: object
+                      required:
+                        - primary
+                        - body
+                      properties:
+                        primary:
+                          type: object
+                          required:
+                            - name
+                          properties:
+                            name:
+                              type: string
+                              example: "Poppins"
+                        body:
+                          type: object
+                          required:
+                            - name
+                          properties:
+                            name:
+                              type: string
+                              example: "Poppins"
+            example:
+              theme:
+                colors:
+                  primary: "#E36A00"
+                  secondary: "#1D1D20"
+                  accent: "#47BAD7"
+                fonts:
+                  primary:
+                    name: "Poppins"
+                  body:
+                    name: "Poppins"
+      responses:
+        '200':
+          description: Branding settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Branding settings updated successfully"
+                  branding_settings:
+                    type: object
+                  processingTimeMs:
+                    type: integer
+                    example: 128
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidColor:
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "primary color must be a valid hex color (e.g., #E36A00)"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
           content:

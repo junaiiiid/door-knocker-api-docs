@@ -1843,6 +1843,235 @@ PostGrid postcards can have the following status values:
 
 ---
 
+## Settings Management APIs
+
+### Get App Content API
+
+#### Endpoint
+`GET /getAppContent`
+
+#### Description
+Retrieves role-based application content and user-specific branding settings.
+
+#### Features
+- **Role-Based Access**: Different menu items based on ADMIN, MARKETER, or TECHNICIAN role
+- **User Branding**: Returns theme colors and fonts specific to the user
+- **Default Theme**: Provides standard theme if user hasn't customized
+
+####Response Format
+
+```json
+{
+  "data": {
+    "menu_items": [
+      {
+        "name": "dashboard",
+        "title": "Dashboard",
+        "description": "Create, Navigate, Lead & Iterate",
+        "id": 1,
+        "enabled": true,
+        "extended": false,
+        "extended_options": []
+      }
+    ],
+    "theme": {
+      "colors": {
+        "primary": "#E36A00",
+        "secondary": "#1D1D20",
+        "accent": "#47BAD7"
+      },
+      "fonts": {
+        "primary": {
+          "name": "Poppins"
+        },
+        "body": {
+          "name": "Poppins"
+        }
+      }
+    }
+  }
+}
+```
+
+---
+
+### Get All Fonts API
+
+#### Endpoint
+`GET /getAllFonts`
+
+#### Description
+Returns all available Google Fonts for use in branding settings.
+
+#### Features
+- **Google Fonts Integration**: Fetches fonts from Google Fonts API
+- **Fallback List**: Provides curated popular fonts if API unavailable
+- **Font Metadata**: Returns font name, category, variants, and subsets
+
+#### Response Format
+
+```json
+{
+  "status": "success",
+  "message": "Retrieved 15 fonts",
+  "fonts": [
+    {
+      "name": "Poppins",
+      "category": "sans-serif",
+      "variants": ["regular", "500", "600", "700"],
+      "subsets": ["latin"]
+    },
+    {
+      "name": "Roboto",
+      "category": "sans-serif",
+      "variants": ["regular", "500", "700"],
+      "subsets": ["latin"]
+    }
+  ],
+  "processingTimeMs": 245
+}
+```
+
+#### Example Usage
+
+```bash
+curl -X GET https://iywivotqnphrjijztxtu.supabase.co/functions/v1/getAllFonts \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
+### Update Branding Settings API
+
+#### Endpoint
+`POST /updateBrandingSettings`
+
+#### Description
+Updates user-specific branding settings including theme colors and fonts.
+
+#### Features
+- **User-Specific**: Settings apply only to the authenticated user
+- **Color Validation**: Validates hex color format
+- **Font Validation**: Ensures font names are valid
+- **Immediate Effect**: Changes reflected in getAppContent response
+
+#### Request Body
+
+```json
+{
+  "theme": {
+    "colors": {
+      "primary": "#E36A00",
+      "secondary": "#1D1D20",
+      "accent": "#47BAD7"
+    },
+    "fonts": {
+      "primary": {
+        "name": "Poppins"
+      },
+      "body": {
+        "name": "Poppins"
+      }
+    }
+  }
+}
+```
+
+#### Required Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `theme.colors.primary` | string | Primary brand color (hex format) |
+| `theme.colors.secondary` | string | Secondary brand color (hex format) |
+| `theme.colors.accent` | string | Accent color (hex format) |
+| `theme.fonts.primary.name` | string | Primary font name (Google Font) |
+| `theme.fonts.body.name` | string | Body font name (Google Font) |
+
+#### Response Format
+
+```json
+{
+  "status": "success",
+  "message": "Branding settings updated successfully",
+  "branding_settings": {
+    "theme": {
+      "colors": {
+        "primary": "#E36A00",
+        "secondary": "#1D1D20",
+        "accent": "#47BAD7"
+      },
+      "fonts": {
+        "primary": {
+          "name": "Poppins"
+        },
+        "body": {
+          "name": "Poppins"
+        }
+      }
+    }
+  },
+  "processingTimeMs": 128
+}
+```
+
+#### Business Rules
+
+1. **User-Level Settings**: Branding is per-user, not per-organization
+2. **Color Format**: Colors must be valid 3 or 6-digit hex codes (e.g., #FFF or #FFFFFF)
+3. **Font Names**: Should match Google Fonts names from getAllFonts
+4. **Default Values**: New users get default theme automatically
+
+#### Error Responses
+
+| Status Code | Error | Description |
+|-------------|-------|-------------|
+| 400 | INVALID_INPUT | Invalid hex color or missing required fields |
+| 401 | UNAUTHORIZED | Missing or invalid authentication token |
+| 403 | NO_ORGANIZATION | User not associated with any organization |
+| 500 | UPDATE_FAILED | Database update error |
+
+#### Example Usage
+
+```bash
+curl -X POST https://iywivotqnphrjijztxtu.supabase.co/functions/v1/updateBrandingSettings \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "theme": {
+      "colors": {
+        "primary": "#E36A00",
+        "secondary": "#1D1D20",
+        "accent": "#47BAD7"
+      },
+      "fonts": {
+        "primary": {
+          "name": "Montserrat"
+        },
+        "body": {
+          "name": "Open Sans"
+        }
+      }
+    }
+  }'
+```
+
+#### Use Cases
+
+1. **Brand Customization**: Allow users to match app colors to their brand
+2. **Accessibility**: Users can choose high-contrast colors for better visibility
+3. **Font Preferences**: Select fonts that match brand guidelines
+4. **Multi-Brand**: Different users can have different branding
+5. **White-Label**: Customize appearance per user account
+
+#### Notes
+
+- Default theme uses Orange (#E36A00), Dark Gray (#1D1D20), and Cyan (#47BAD7)
+- Default fonts are Poppins for both primary and body
+- Changes apply immediately to all app sessions
+- Settings are stored in user's profile in the database
+
+---
+
 ## Viewing the Documentation
 
 ### Option 1: Open Locally
