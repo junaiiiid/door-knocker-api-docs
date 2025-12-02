@@ -1149,6 +1149,170 @@ The `/deleteTemplate` endpoint deletes a template from both PostGrid and the dat
 
 ---
 
+## Update Template API
+
+### Endpoint
+`POST /updateTemplate`
+
+### Description
+Updates a template in both PostGrid and the database. Supports partial updates - you only need to provide the fields you want to update.
+
+### Features
+- **Dual ID Support**: Accepts both database UUID and PostGrid template ID
+- **Organization Scoped**: Templates must belong to user's organization
+- **Partial Updates**: Update only html, description, or both
+- **Sync with PostGrid**: Updates PostGrid first, then database
+- **Validation**: Cannot update deleted templates
+
+### Request Method
+- **POST** or **PATCH**: Send update data in request body
+
+### Request Body
+
+```json
+{
+  "postgridApiKey": "live_sk_...",
+  "templateId": "template_tBnVEzz878mXLbHQaz86j8",
+  "html": "<b>Hello</b> updated world!",
+  "description": "Updated template description"
+}
+```
+
+### Request Headers
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+Content-Type: application/json
+```
+
+### Required Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `postgridApiKey` | string | PostGrid API key for authentication |
+| `templateId` | string | Template ID (database UUID or PostGrid ID) |
+
+### Optional Fields (at least one required)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `html` | string | Updated HTML content for the template |
+| `description` | string | Updated description for the template |
+
+### Response Format
+
+#### Success Response (200 OK)
+
+```json
+{
+  "status": "success",
+  "message": "Template updated successfully",
+  "template": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "postgrid_template_id": "template_tBnVEzz878mXLbHQaz86j8",
+    "description": "Updated template description",
+    "html": "<b>Hello</b> updated world!",
+    "templateType": "Front",
+    "postcardSize": "4x6",
+    "campaigns_used": ["Summer Campaign 2025"],
+    "createdBy": {
+      "id": "98a88548-47d3-470d-ac40-ba10c9881d98",
+      "user_role": "ADMIN",
+      "full_name": "Admin User",
+      "created_at": "2025-01-13T10:00:00.000Z",
+      "updated_at": "2025-01-13T10:00:00.000Z"
+    },
+    "live": true,
+    "deleted": false,
+    "created_at": "2025-02-02T10:00:00.000Z",
+    "updated_at": "2025-02-02T15:30:00.000Z"
+  },
+  "processingTimeMs": 892
+}
+```
+
+### Template ID Flexibility
+
+The API automatically detects the type of ID provided:
+- **UUID Format** (e.g., `a7b3c4d5-e6f7-8901-2345-6789abcdef01`): Looks up by database `id`
+- **Non-UUID Format** (e.g., `template_abc123xyz`): Looks up by `postgrid_template_id`
+
+### Business Rules
+
+1. **Organization Verification**: Template must belong to user's organization
+2. **Deleted Templates**: Cannot update templates marked as deleted (returns 410)
+3. **Partial Updates**: Provide only the fields you want to update
+4. **PostGrid First**: Updates PostGrid template before updating database
+5. **Atomic Operations**: If PostGrid update fails, database is not updated
+
+### Error Responses
+
+| Status Code | Error | Description |
+|-------------|-------|-------------|
+| 400 | INVALID_INPUT | Missing required fields or no update fields provided |
+| 401 | UNAUTHORIZED | Missing or invalid authentication token |
+| 403 | NO_ORGANIZATION | User not associated with any organization |
+| 404 | TEMPLATE_NOT_FOUND | Template not found or doesn't belong to organization |
+| 410 | TEMPLATE_DELETED | Cannot update a deleted template |
+| 500 | POSTGRID_API_ERROR | PostGrid API error |
+| 500 | DATABASE_ERROR | Database update error |
+
+### Example Usage
+
+#### Update HTML Only (Using Database UUID)
+```bash
+curl -X POST https://iywivotqnphrjijztxtu.supabase.co/functions/v1/updateTemplate \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "postgridApiKey": "live_sk_...",
+    "templateId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "html": "<b>Hello</b> updated world!"
+  }'
+```
+
+#### Update Description Only (Using PostGrid Template ID)
+```bash
+curl -X POST https://iywivotqnphrjijztxtu.supabase.co/functions/v1/updateTemplate \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "postgridApiKey": "live_sk_...",
+    "templateId": "template_tBnVEzz878mXLbHQaz86j8",
+    "description": "Updated Summer Campaign Front Template"
+  }'
+```
+
+#### Update Both HTML and Description
+```bash
+curl -X POST https://iywivotqnphrjijztxtu.supabase.co/functions/v1/updateTemplate \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "postgridApiKey": "live_sk_...",
+    "templateId": "template_tBnVEzz878mXLbHQaz86j8",
+    "html": "<b>Hello</b> updated world!",
+    "description": "Updated template with new content"
+  }'
+```
+
+### Use Cases
+
+1. **Content Updates**: Modify template HTML for design changes
+2. **Description Changes**: Update template descriptions for better organization
+3. **Template Refinement**: Iterate on template designs based on campaign results
+4. **Bulk Updates**: Programmatically update multiple templates
+5. **Version Control**: Update templates while maintaining campaign associations
+
+### Notes
+
+- Updates are applied to both PostGrid and database atomically
+- The `updated_at` timestamp is automatically updated
+- The `live` status from PostGrid is synced to database
+- Template type and postcard size cannot be changed after creation
+- Campaigns using this template will use the updated version
+
+---
+
 ## Get Template by ID API
 
 ### Endpoint

@@ -3346,6 +3346,163 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /updateTemplate:
+    post:
+      tags:
+        - Template Management
+      summary: Update a template
+      description: |
+        Updates a template in both PostGrid and the database.
+
+        **Business Rules:**
+        - Template ID can be either database UUID or PostGrid template ID
+        - Template must belong to user's organization
+        - Updates PostGrid template first, then updates database
+        - Cannot update deleted templates
+        - Supports partial updates (provide only fields to update)
+
+        **Template ID Flexibility:**
+        - Accepts either database UUID or PostGrid template ID
+        - Automatically detects ID type and looks up template
+
+        **Returns:** Updated template information
+      operationId: updateTemplate
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - postgridApiKey
+                - templateId
+              properties:
+                postgridApiKey:
+                  type: string
+                  description: "PostGrid API key"
+                  example: "live_sk_..."
+                templateId:
+                  type: string
+                  description: "Template ID (database UUID or PostGrid template ID)"
+                  example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                html:
+                  type: string
+                  description: "Updated HTML content (optional)"
+                  example: "<b>Hello</b> updated world!"
+                description:
+                  type: string
+                  description: "Updated description (optional)"
+                  example: "Updated Summer Campaign Front Template"
+            example:
+              postgridApiKey: "live_sk_..."
+              templateId: "template_tBnVEzz878mXLbHQaz86j8"
+              html: "<b>Hello</b> updated world!"
+              description: "Updated template description"
+      responses:
+        '200':
+          description: Template updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Template updated successfully"
+                  template:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      postgrid_template_id:
+                        type: string
+                      description:
+                        type: string
+                      html:
+                        type: string
+                      templateType:
+                        type: string
+                        enum: ["Front", "Back"]
+                      postcardSize:
+                        type: string
+                        enum: ["4x6", "6x9", "6x11"]
+                      campaigns_used:
+                        type: array
+                        items:
+                          type: string
+                      createdBy:
+                        $ref: '#/components/schemas/CreatedByInfo'
+                      live:
+                        type: boolean
+                      deleted:
+                        type: boolean
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+                  processingTimeMs:
+                    type: integer
+                    example: 892
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingField:
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "At least one field (html or description) must be provided for update"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Template not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFound:
+                  value:
+                    error: "TEMPLATE_NOT_FOUND"
+                    message: "Template not found or doesn't belong to your organization"
+        '410':
+          description: Template is deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                deleted:
+                  value:
+                    error: "TEMPLATE_DELETED"
+                    message: "Cannot update a deleted template"
+        '500':
+          description: PostGrid API or database error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /deleteTemplate:
     post:
       tags:
