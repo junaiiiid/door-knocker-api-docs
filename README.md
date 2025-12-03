@@ -928,6 +928,198 @@ async function excludeAddress(addressObject, authToken) {
 5. **Notification**: Notify relevant stakeholders when addresses are excluded
 6. **Verify Results**: Check `addressesUpdated` to confirm the operation succeeded
 
+---
+
+## Add Address To Zone By ID API
+
+### Endpoint
+`POST /addAddressToZoneById`
+
+### Description
+Adds a single address to an existing location zone after validating and geocoding it using Google Maps API. This endpoint is useful for manually adding specific addresses to a targeting zone.
+
+### Features
+- **Address Validation**: Validates address using Google Maps Geocoding API
+- **Automatic Formatting**: Formats address to match zone's address structure
+- **Organization Scoped**: Zone must belong to user's organization
+- **Duplicate Detection**: Checks for duplicate addresses (same lat/lng)
+- **Distance Calculation**: Automatically calculates distance from zone center
+- **Status Assignment**: Marks new address as "UnVerified"
+- **Full Metadata**: Generates complete address object with all tracking fields
+
+### Request Method
+- **POST**: Send address components and zone ID in request body
+
+### Request Body
+
+```json
+{
+  "zone_id": "c9abd41e-56a2-448e-942c-a0b37f796972",
+  "street_address": "1024 Alta Ave",
+  "city": "Mountain View",
+  "state": "CA",
+  "zip": "94043",
+  "googleMapsApiKey": "AIzaSyDummyKey123456789"
+}
+```
+
+### Request Headers
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+Content-Type: application/json
+```
+
+### Required Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `zone_id` | string (uuid) | ID of the zone to add address to |
+| `street_address` | string | Street address (number and street name) |
+| `city` | string | City name |
+| `state` | string | State abbreviation (e.g., "CA") |
+| `zip` | string | ZIP code |
+| `googleMapsApiKey` | string | Google Maps API key for geocoding |
+
+### Response Format
+
+#### Success Response (201 Created)
+
+```json
+{
+  "status": "success",
+  "message": "Address added to zone successfully",
+  "data": {
+    "zone_id": "c9abd41e-56a2-448e-942c-a0b37f796972",
+    "address_added": {
+      "lat": 37.4190968,
+      "long": -122.0856435,
+      "address": "1024 Alta Ave, Mountain View, CA 94043, USA",
+      "residential": true,
+      "building_type": "house",
+      "osm_id": "",
+      "propertyType": "Single Family Home",
+      "distanceFromCenter": 396,
+      "targeting_zone_name": "Zone at 37.4225, -122.0842",
+      "campaigns_used_in": [],
+      "zoneType": "radius(0.6km)",
+      "postcards_sent": 0,
+      "first_post_card_sent_date": null,
+      "status": "UnVerified",
+      "createdBy": {
+        "id": "98a88548-47d3-470d-ac40-ba10c9881d98",
+        "user_role": "ADMIN",
+        "full_name": "Admin User",
+        "created_at": "2025-11-20T16:58:32.847402+00:00",
+        "updated_at": "2025-11-20T16:58:32.847402+00:00"
+      }
+    },
+    "total_addresses": 15
+  },
+  "processingTimeMs": 350
+}
+```
+
+### Business Rules
+
+1. **Authentication Required**: Valid JWT token must be provided
+2. **Organization Verification**: User must be associated with an organization
+3. **Zone Ownership**: Zone must belong to user's organization
+4. **Address Validation**: Address is validated and geocoded via Google Maps
+5. **Duplicate Prevention**: Prevents adding addresses with same lat/lng
+6. **Automatic Metadata**: System generates all required address metadata
+7. **Status Assignment**: New addresses always start as "UnVerified"
+
+### Error Responses
+
+| Status Code | Error | Description |
+|-------------|-------|-------------|
+| 400 | INVALID_INPUT | Missing or invalid required fields |
+| 400 | INVALID_ADDRESS | Address could not be validated or found |
+| 400 | DUPLICATE_ADDRESS | Address already exists in zone (same coordinates) |
+| 401 | UNAUTHORIZED | Missing or invalid authentication token |
+| 403 | NO_ORGANIZATION | User not associated with any organization |
+| 403 | GOOGLE_MAPS_API_ERROR | Google Maps API key is invalid or denied |
+| 404 | ZONE_NOT_FOUND | Zone not found or doesn't belong to organization |
+| 500 | GOOGLE_MAPS_API_ERROR | Failed to connect to Google Maps API |
+| 500 | INTERNAL_ERROR | Unexpected server error |
+
+### Example Usage
+
+```bash
+curl -X POST https://iywivotqnphrjijztxtu.supabase.co/functions/v1/addAddressToZoneById \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "zone_id": "c9abd41e-56a2-448e-942c-a0b37f796972",
+    "street_address": "1024 Alta Ave",
+    "city": "Mountain View",
+    "state": "CA",
+    "zip": "94043",
+    "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+  }'
+```
+
+### Use Cases
+
+1. **Manual Address Addition**: Add specific addresses that weren't found by radius/count search
+2. **Customer Requests**: Add addresses requested by customers or sales team
+3. **Address Correction**: Replace invalid addresses with manually verified ones
+4. **Targeted Marketing**: Add high-value addresses to existing campaigns
+5. **Gap Filling**: Fill geographic gaps in zone coverage
+6. **List Import**: Import addresses from external lists one at a time
+
+### Google Maps API Setup
+
+To use this endpoint, you need a Google Maps API key with Geocoding API enabled:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing one
+3. Enable "Geocoding API"
+4. Create credentials (API Key)
+5. Restrict the key to Geocoding API for security
+6. Use the key in `googleMapsApiKey` field
+
+### Address Components Accepted
+
+The API accepts standard US address format:
+- **Street Address**: Full street number and name (e.g., "1024 Alta Ave")
+- **City**: City name (e.g., "Mountain View")
+- **State**: Two-letter state code (e.g., "CA")
+- **ZIP**: 5-digit or 9-digit ZIP code (e.g., "94043" or "94043-1234")
+
+The Google Maps API will:
+- Validate the address exists
+- Standardize the format
+- Provide accurate geocoding (lat/lng)
+- Return formatted address string
+
+### Property Type Detection
+
+The system automatically determines property type based on Google Maps data:
+- **Single Family Home**: Standard residential addresses
+- **Apartment/Condo**: Multi-unit residential (subpremise)
+- **Commercial**: Business establishments
+- **Unknown**: Could not be determined
+
+### Distance Calculation
+
+Distance from zone center is calculated using the Haversine formula:
+- Measured in meters
+- Accounts for Earth's curvature
+- Rounded to nearest meter
+- Used for sorting and filtering
+
+### Notes
+
+- **Residential Flag**: Automatically set based on Google Maps property types
+- **Building Type**: Set to "house" for residential, "commercial" for others
+- **OSM ID**: Not available from Google Maps (left empty)
+- **Zone Type**: Inherited from parent zone (e.g., "radius(0.6km)")
+- **Targeting Zone Name**: Auto-generated from zone center coordinates
+- **Created By**: Captured from authenticated user profile
+
+---
+
 ## Template Management APIs
 
 The template management APIs allow you to create, retrieve, and delete PostGrid templates for your postcards. All templates are organization-scoped.

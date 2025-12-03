@@ -2414,6 +2414,159 @@ paths:
         '500':
           description: Internal server error
 
+  /addAddressToZoneById:
+    post:
+      tags:
+        - Address Zones
+      summary: Add address to zone by ID
+      description: |
+        Adds a single address to an existing location zone after validating and geocoding it.
+
+        **Business Rules:**
+        - Validates address using Google Maps Geocoding API
+        - Formats address to match zone's address structure
+        - Zone must belong to user's organization
+        - Automatically marks new address as "UnVerified"
+        - Checks for duplicate addresses (same lat/lng)
+        - Calculates distance from zone center
+        - Requires Google Maps API key
+
+        **Returns:** The newly added address with full metadata
+      operationId: addAddressToZoneById
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - zone_id
+                - street_address
+                - city
+                - state
+                - zip
+                - googleMapsApiKey
+              properties:
+                zone_id:
+                  type: string
+                  format: uuid
+                  description: "ID of the zone to add address to"
+                  example: "c9abd41e-56a2-448e-942c-a0b37f796972"
+                street_address:
+                  type: string
+                  description: "Street address (number and street name)"
+                  example: "1024 Alta Ave"
+                city:
+                  type: string
+                  description: "City name"
+                  example: "Mountain View"
+                state:
+                  type: string
+                  description: "State abbreviation"
+                  example: "CA"
+                zip:
+                  type: string
+                  description: "ZIP code"
+                  example: "94043"
+                googleMapsApiKey:
+                  type: string
+                  description: "Google Maps API key for geocoding"
+                  example: "AIzaSyDummyKey123456789"
+            example:
+              zone_id: "c9abd41e-56a2-448e-942c-a0b37f796972"
+              street_address: "1024 Alta Ave"
+              city: "Mountain View"
+              state: "CA"
+              zip: "94043"
+              googleMapsApiKey: "AIzaSyDummyKey123456789"
+      responses:
+        '201':
+          description: Address added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Address added to zone successfully"
+                  data:
+                    type: object
+                    properties:
+                      zone_id:
+                        type: string
+                        format: uuid
+                      address_added:
+                        $ref: '#/components/schemas/AddressObject'
+                      total_addresses:
+                        type: integer
+                        example: 15
+                  processingTimeMs:
+                    type: integer
+                    example: 350
+        '400':
+          description: Invalid input or duplicate address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidAddress:
+                  value:
+                    error: "INVALID_ADDRESS"
+                    message: "Address is invalid or could not be found"
+                duplicateAddress:
+                  value:
+                    error: "DUPLICATE_ADDRESS"
+                    message: "This address already exists in the zone"
+                missingField:
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "street_address is required and must be a string"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization or API key denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                noOrganization:
+                  value:
+                    error: "NO_ORGANIZATION"
+                    message: "User is not associated with any organization"
+                apiKeyDenied:
+                  value:
+                    error: "GOOGLE_MAPS_API_ERROR"
+                    message: "Google Maps API key is invalid or request was denied"
+        '404':
+          description: Zone not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFound:
+                  value:
+                    error: "ZONE_NOT_FOUND"
+                    message: "Zone not found or doesn't belong to your organization"
+        '500':
+          description: Internal server error or Google Maps API error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /getAllAddresses:
     get:
       tags:
