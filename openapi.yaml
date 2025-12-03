@@ -231,20 +231,27 @@ paths:
     post:
       tags:
         - User Management
-      summary: Create MARKETER or TECHNICIAN user and add to organization (ADMIN only)
+      summary: Create user and send invitation email (ADMIN only)
       description: |
-        Allows ADMIN users to create new MARKETER or TECHNICIAN users and automatically adds them to the organization.
+        Allows ADMIN users to create new ADMIN, MARKETER, or TECHNICIAN users via email invitation.
 
         **Access Control:**
         - Only authenticated ADMIN users can access this endpoint
-        - Cannot create ADMIN users via this endpoint (use /signUp for ADMIN creation)
+        - Can now create ADMIN, MARKETER, or TECHNICIAN users
         - Requires valid JWT Bearer token from an ADMIN user
+
+        **Invitation Flow:**
+        - No password required - user receives invitation email
+        - User sets their own password via email link
+        - Email automatically sent by Supabase Auth
+        - Tracks who created the user via created_by field
 
         **Automatic Organization Membership:**
         - Created user is automatically added to the ADMIN's organization_members array
         - Includes member_uid and member_role in the organization record
 
         **Created User Roles:**
+        - ADMIN: Full administrative access
         - MARKETER: Marketing-specific dashboard access, member of organization
         - TECHNICIAN: Technical operations dashboard access, member of organization
       operationId: createUser
@@ -258,44 +265,36 @@ paths:
               type: object
               required:
                 - email
-                - password
                 - role
               properties:
                 email:
                   type: string
                   format: email
-                  description: Email address for the new user
-                password:
-                  type: string
-                  format: password
-                  minLength: 8
-                  description: |
-                    Password must meet the following requirements:
-                    - At least 8 characters long
-                    - At least one uppercase letter (A-Z)
-                    - At least one lowercase letter (a-z)
-                    - At least one number (0-9)
-                    - At least one special character (!@#$%^&* etc.)
+                  description: Email address for the new user (will receive invitation email)
                 fullName:
                   type: string
                   description: Full name of the user
                 role:
                   type: string
-                  enum: [MARKETER, TECHNICIAN]
-                  description: "Role to assign (MARKETER or TECHNICIAN only)"
+                  enum: [ADMIN, MARKETER, TECHNICIAN]
+                  description: "Role to assign (ADMIN, MARKETER, or TECHNICIAN)"
             examples:
+              admin:
+                summary: Create admin user
+                value:
+                  email: admin@example.com
+                  fullName: Alex Admin
+                  role: ADMIN
               marketer:
                 summary: Create marketer user
                 value:
                   email: marketer@example.com
-                  password: SecurePass123!
                   fullName: Jane Marketer
                   role: MARKETER
               technician:
                 summary: Create technician user
                 value:
                   email: tech@example.com
-                  password: SecurePass123!
                   fullName: John Technician
                   role: TECHNICIAN
       responses:
@@ -307,7 +306,7 @@ paths:
                 $ref: '#/components/schemas/SignUpResponse'
               example:
                 status: success
-                message: User created successfully
+                message: "User invitation sent successfully. marketer@example.com will receive an email to set their password."
                 user:
                   id: 660e8400-e29b-41d4-a716-446655440001
                   email: marketer@example.com
@@ -324,47 +323,17 @@ paths:
                   summary: Missing required fields
                   value:
                     error: INVALID_INPUT
-                    message: Email, password, and role are required
+                    message: Email and role are required
                 invalidEmail:
                   summary: Invalid email format
                   value:
                     error: INVALID_EMAIL
                     message: Invalid email format
-                weakPassword:
-                  summary: Password too weak - too short
-                  value:
-                    error: WEAK_PASSWORD
-                    message: Password must be at least 8 characters long
-                missingUppercase:
-                  summary: Password missing uppercase letter
-                  value:
-                    error: WEAK_PASSWORD
-                    message: Password must contain at least one uppercase letter
-                missingLowercase:
-                  summary: Password missing lowercase letter
-                  value:
-                    error: WEAK_PASSWORD
-                    message: Password must contain at least one lowercase letter
-                missingNumber:
-                  summary: Password missing number
-                  value:
-                    error: WEAK_PASSWORD
-                    message: Password must contain at least one number
-                missingSpecialChar:
-                  summary: Password missing special character
-                  value:
-                    error: WEAK_PASSWORD
-                    message: Password must contain at least one special character (!@#$%^&* etc.)
                 invalidRole:
                   summary: Invalid role
                   value:
                     error: INVALID_ROLE
-                    message: Invalid role. Must be MARKETER or TECHNICIAN
-                adminRole:
-                  summary: Attempting to create ADMIN user
-                  value:
-                    error: INVALID_ROLE
-                    message: Cannot create ADMIN users via this endpoint. ADMIN users should use /signUp endpoint.
+                    message: Invalid role. Must be ADMIN, MARKETER, or TECHNICIAN
         '401':
           description: Unauthorized - Missing or invalid token
           content:
