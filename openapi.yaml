@@ -376,6 +376,160 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /deleteUser:
+    post:
+      tags:
+        - User Management
+      summary: Delete user (ADMIN only)
+      description: |
+        Allows ADMIN users to delete ADMIN, MARKETER, or TECHNICIAN users.
+
+        **Access Control:**
+        - Only authenticated ADMIN users can access this endpoint
+        - Can delete users with ADMIN, MARKETER, or TECHNICIAN roles
+        - Admin cannot delete themselves (safety measure)
+        - Can only delete users from their own organization
+        - Requires valid JWT Bearer token from an ADMIN user
+
+        **Deletion Process:**
+        - Removes user from organization_members array
+        - Deletes user from Supabase Auth (cascades to profiles table)
+        - Cannot be undone
+
+        **Use Cases:**
+        - Removing employees who left the organization
+        - Cleaning up test accounts
+        - Managing organization membership
+      operationId: deleteUser
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+                  description: UUID of the user to delete
+            example:
+              userId: 660e8400-e29b-41d4-a716-446655440001
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+                  deletedUser:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      email:
+                        type: string
+                      fullName:
+                        type: string
+                      role:
+                        type: string
+                  processingTimeMs:
+                    type: number
+              example:
+                status: success
+                message: User deleted successfully
+                deletedUser:
+                  id: 660e8400-e29b-41d4-a716-446655440001
+                  email: marketer@example.com
+                  fullName: Jane Marketer
+                  role: MARKETER
+                processingTimeMs: 245
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingUserId:
+                  summary: Missing userId field
+                  value:
+                    error: INVALID_INPUT
+                    message: userId is required and must be a string
+                selfDelete:
+                  summary: Attempting to delete own account
+                  value:
+                    error: INVALID_OPERATION
+                    message: You cannot delete your own account
+        '401':
+          description: Unauthorized - Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingAuth:
+                  summary: Missing authorization header
+                  value:
+                    error: UNAUTHORIZED
+                    message: Unable to authenticate user
+                invalidToken:
+                  summary: Invalid token
+                  value:
+                    error: UNAUTHORIZED
+                    message: Unable to authenticate user
+        '403':
+          description: Forbidden - Non-admin user or user from different organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notAdmin:
+                  summary: Non-admin user attempting to delete
+                  value:
+                    error: FORBIDDEN
+                    message: Only ADMIN users can delete users
+                differentOrg:
+                  summary: User from different organization
+                  value:
+                    error: FORBIDDEN
+                    message: User does not belong to your organization
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: USER_NOT_FOUND
+                message: User not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                deleteFailed:
+                  summary: Failed to delete user
+                  value:
+                    error: USER_DELETE_FAILED
+                    message: Failed to delete user
+                orgUpdateFailed:
+                  summary: Failed to update organization
+                  value:
+                    error: ORGANIZATION_UPDATE_FAILED
+                    message: Failed to remove user from organization
+
   /login:
     post:
       tags:
