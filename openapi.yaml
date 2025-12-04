@@ -3399,19 +3399,181 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /createNewUniversalTemplate:
+    post:
+      tags:
+        - Template Management
+      summary: Create a new universal PostGrid template (ADMIN only)
+      description: |
+        Creates a universal template in PostGrid and saves it to the database.
+        Universal templates are visible to ALL organizations via the /getAllTemplates endpoint.
+
+        **Business Rules:**
+        - Only ADMIN users can create universal templates
+        - Creates template using PostGrid API
+        - Saves template metadata to database with is_universal=true
+        - Template has no organization restrictions (organization_id is null)
+        - Visible to all organizations
+        - Tracks creator via createdBy field
+        - Initializes empty campaigns_used array
+
+        **Required Fields:**
+        - postgridApiKey: PostGrid API key for authentication
+        - description: Template description
+        - html: HTML content for the template
+        - templateType: Front or Back
+        - postcardSize: 4x6, 6x9, or 6x11
+
+        **Use Cases:**
+        - Creating default templates for all organizations
+        - Sharing branded templates across all users
+        - Providing template library for all organizations
+      operationId: createNewUniversalTemplate
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - postgridApiKey
+                - description
+                - html
+                - templateType
+                - postcardSize
+              properties:
+                postgridApiKey:
+                  type: string
+                  description: "PostGrid API key"
+                  example: "live_sk_..."
+                description:
+                  type: string
+                  description: "Template description"
+                  example: "Universal Welcome Template"
+                html:
+                  type: string
+                  description: "HTML content for the template"
+                  example: "<b>Welcome</b> {{to.firstName}}!"
+                templateType:
+                  type: string
+                  enum: ["Front", "Back"]
+                  description: "Template type: Front or Back of postcard"
+                  example: "Front"
+                postcardSize:
+                  type: string
+                  enum: ["4x6", "6x9", "6x11"]
+                  description: "Postcard size"
+                  example: "4x6"
+      responses:
+        '201':
+          description: Universal template created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Universal template created successfully"
+                  template:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                      postgrid_template_id:
+                        type: string
+                        example: "template_tBnVEzz878mXLbHQaz86j8"
+                      description:
+                        type: string
+                        example: "Universal Welcome Template"
+                      html:
+                        type: string
+                        example: "<b>Welcome</b> {{to.firstName}}!"
+                      templateType:
+                        type: string
+                        enum: ["Front", "Back"]
+                        example: "Front"
+                      postcardSize:
+                        type: string
+                        enum: ["4x6", "6x9", "6x11"]
+                        example: "4x6"
+                      isUniversal:
+                        type: boolean
+                        example: true
+                      campaigns_used:
+                        type: array
+                        items:
+                          type: string
+                        example: []
+                      createdBy:
+                        $ref: '#/components/schemas/CreatedByInfo'
+                      live:
+                        type: boolean
+                        example: false
+                      deleted:
+                        type: boolean
+                        example: false
+                      created_at:
+                        type: string
+                        format: date-time
+                        example: "2025-02-04T10:00:00.000Z"
+                      updated_at:
+                        type: string
+                        format: date-time
+                        example: "2025-02-04T10:00:00.000Z"
+                  processingTimeMs:
+                    type: integer
+                    example: 1523
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Only ADMIN users can create universal templates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: FORBIDDEN
+                message: Only ADMIN users can create universal templates
+        '500':
+          description: PostGrid API or database error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /getAllTemplates:
     get:
       tags:
         - Template Management
-      summary: Get all templates for organization
+      summary: Get all templates for organization plus universal templates
       description: |
-        Returns all templates belonging to the user's organization.
+        Returns all templates belonging to the user's organization PLUS universal templates.
 
         **Business Rules:**
-        - Returns only templates from user's organization
+        - Returns templates from user's organization AND universal templates (is_universal=true)
+        - Universal templates are visible to all organizations
         - Excludes deleted templates by default
         - Supports filtering by templateType and postcardSize
         - Returns templates ordered by created_at (newest first)
+        - Each template includes isUniversal flag to identify universal templates
       operationId: getAllTemplates
       security:
         - BearerAuth: []
@@ -3494,6 +3656,9 @@ paths:
                         postcardSize:
                           type: string
                           enum: ["4x6", "6x9", "6x11"]
+                        isUniversal:
+                          type: boolean
+                          description: "True if template is universal (visible to all organizations), false if organization-scoped"
                         campaigns_used:
                           type: array
                           items:
