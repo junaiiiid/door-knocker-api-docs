@@ -3704,9 +3704,11 @@ paths:
 
         **Business Rules:**
         - Accepts either database UUID or PostGrid template ID
-        - Template must belong to user's organization
+        - Template must belong to user's organization OR be a universal template
+        - Universal templates (is_universal=true) are accessible to all organizations
         - Returns error if template is deleted
         - User must be authenticated
+        - Response includes isUniversal flag
 
         **ID Detection:**
         - UUID format (8-4-4-4-12): Treated as database ID
@@ -3768,6 +3770,9 @@ paths:
                       postcardSize:
                         type: string
                         enum: ["4x6", "6x9", "6x11"]
+                      isUniversal:
+                        type: boolean
+                        description: "True if template is universal (visible to all organizations), false if organization-scoped"
                       campaigns_used:
                         type: array
                         items:
@@ -3913,6 +3918,9 @@ paths:
                       postcardSize:
                         type: string
                         enum: ["4x6", "6x9", "6x11"]
+                      isUniversal:
+                        type: boolean
+                        description: "True if template is universal (visible to all organizations), false if organization-scoped"
                       campaigns_used:
                         type: array
                         items:
@@ -5974,7 +5982,7 @@ paths:
         Creates a draft campaign linked to a referral with a campaign name.
 
         **Step 2: Select Templates**
-        Selects templates for front and back of the postcard. Accepts both database UUIDs and PostGrid template IDs. Updates templates' campaigns_used array with campaign name.
+        Selects templates for front and back of the postcard. Accepts both database UUIDs and PostGrid template IDs. Supports organization templates and universal templates (is_universal=true). Updates templates' campaigns_used array with campaign name.
 
         **Step 3: Add Offer Details**
         Adds offer headline, description, dates, CTA, and disclaimer.
@@ -6037,11 +6045,11 @@ paths:
                       format: uuid
                     front_template_id:
                       type: string
-                      description: Template ID for front of postcard (accepts both database UUID or PostGrid template ID)
+                      description: Template ID for front of postcard (accepts database UUID or PostGrid template ID, supports organization and universal templates)
                       example: "a7b3c4d5-e6f7-8901-2345-6789abcdef01"
                     back_template_id:
                       type: string
-                      description: Template ID for back of postcard (accepts both database UUID or PostGrid template ID)
+                      description: Template ID for back of postcard (accepts database UUID or PostGrid template ID, supports organization and universal templates)
                       example: "template_abc123xyz"
                 - type: object
                   title: Step 3
