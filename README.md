@@ -465,7 +465,7 @@ The address-related APIs (`/getAddressesFromZone`, `/verifyAddresses`, `/getAddr
 | `zoneType` | string | Type of zone search performed | "radius(1.0km)" or "point(50 addresses)" |
 | `postcards_sent` | number | Number of postcards sent to this address | 0 |
 | `first_post_card_sent_date` | string\|null | ISO date when first postcard was sent | "2024-01-15T10:30:00.000Z" |
-| `status` | enum | Verification status of address | "Valid", "Duplicate", "Opt-out", "UnVerified" |
+| `status` | enum | Verification status of address | "Valid", "Duplicate", "Opt-out", "Unverified" |
 | `createdBy` | object | Information about user who created/modified the address | See below |
 
 #### createdBy Field Structure
