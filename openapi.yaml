@@ -101,6 +101,8 @@ tags:
     description: User settings, branding, and font management operations
   - name: Address Discovery
     description: Address discovery and verification operations
+  - name: Analytics
+    description: Organization-level analytics with intelligent daily caching
 
 paths:
   /signUp:
@@ -7328,6 +7330,163 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /getAnalytics:
+    post:
+      tags:
+        - Analytics
+      summary: Get organization-level analytics with daily caching
+      description: |
+        Returns organization-level analytics with intelligent daily caching.
+
+        **Features:**
+        - ✅ Daily caching - First request computes, subsequent requests fetch from cache
+        - ✅ Automatic refresh each day
+        - ✅ Organization-scoped data
+        - ✅ Multiple analytics types supported
+
+        **Supported Analytics Types:**
+        - **REFERRALS**: Total referrals, campaign-ready referrals, campaign-published referrals, and average referral value
+        - **TEMPLATES**: Template usage analytics by campaign status (active, draft, inactive)
+
+        **Caching Behavior:**
+        - First request of the day: Computes analytics from database, saves to cache, returns `cached: false`
+        - Subsequent requests (same day): Fetches from cache, returns `cached: true` (~50-100ms)
+        - Next day: Cache refreshes automatically with new date
+
+        **Authentication:** Required (JWT token)
+
+        **Authorization:** Organization-based (ADMIN, MARKETER, TECHNICIAN)
+      operationId: getAnalytics
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+              properties:
+                type:
+                  type: string
+                  enum: ["REFERRALS", "TEMPLATES"]
+                  description: "Type of analytics to retrieve"
+                  example: "REFERRALS"
+            examples:
+              referrals:
+                summary: Get referrals analytics
+                value:
+                  type: "REFERRALS"
+              templates:
+                summary: Get templates analytics
+                value:
+                  type: "TEMPLATES"
+      responses:
+        '200':
+          description: Analytics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Analytics retrieved from cache"
+                  cached:
+                    type: boolean
+                    description: "True if data was retrieved from cache, false if freshly computed"
+                    example: true
+                  data:
+                    oneOf:
+                      - $ref: '#/components/schemas/ReferralsAnalytics'
+                      - $ref: '#/components/schemas/TemplatesAnalytics'
+              examples:
+                referralsCached:
+                  summary: Referrals analytics (from cache)
+                  value:
+                    status: "success"
+                    message: "Analytics retrieved from cache"
+                    cached: true
+                    data:
+                      total_referrals: 25
+                      campaign_ready_referrals: 8
+                      campaign_published_referrals: 12
+                      avg_referrals_value: 5250.75
+                      overview:
+                        currency: "USD"
+                        total_referrals_breakdown: "3 This week"
+                        campaign_ready_referrals_breakdown: "2 This week"
+                        campaign_published_referrals_breakdown: "1 This week"
+                referralsFresh:
+                  summary: Referrals analytics (freshly computed)
+                  value:
+                    status: "success"
+                    message: "Analytics computed successfully"
+                    cached: false
+                    data:
+                      total_referrals: 25
+                      campaign_ready_referrals: 8
+                      campaign_published_referrals: 12
+                      avg_referrals_value: 5250.75
+                      overview:
+                        currency: "USD"
+                        total_referrals_breakdown: "3 This week"
+                        campaign_ready_referrals_breakdown: "2 This week"
+                        campaign_published_referrals_breakdown: "1 This week"
+                templates:
+                  summary: Templates analytics
+                  value:
+                    status: "success"
+                    message: "Analytics computed successfully"
+                    cached: false
+                    data:
+                      total_templates: 15
+                      active_templates: 8
+                      draft_templates: 5
+                      inactive_templates: 2
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidType:
+                  value:
+                    error: "INVALID_TYPE"
+                    message: "Analytics type \"INVALID\" is not supported. Supported types: REFERRALS, TEMPLATES"
+                missingType:
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "type is required and must be a string"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                noOrganization:
+                  value:
+                    error: "NO_ORGANIZATION"
+                    message: "User is not associated with any organization"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 components:
   schemas:
     SignUpRequest:
@@ -8325,6 +8484,68 @@ components:
           format: date-time
           description: "When the user profile was last updated"
           example: "2025-01-13T10:00:00.000Z"
+
+    ReferralsAnalytics:
+      type: object
+      description: "Referrals analytics data"
+      properties:
+        total_referrals:
+          type: integer
+          description: "Total number of referrals in organization"
+          example: 25
+        campaign_ready_referrals:
+          type: integer
+          description: "Referrals with campaigns at step 5 or 6 and status Draft/InActive"
+          example: 8
+        campaign_published_referrals:
+          type: integer
+          description: "Referrals with Active campaigns"
+          example: 12
+        avg_referrals_value:
+          type: number
+          format: float
+          description: "Average value from job_details.value"
+          example: 5250.75
+        overview:
+          type: object
+          properties:
+            currency:
+              type: string
+              description: "Most common currency from job_details"
+              example: "USD"
+            total_referrals_breakdown:
+              type: string
+              description: "Count of referrals created this week"
+              example: "3 This week"
+            campaign_ready_referrals_breakdown:
+              type: string
+              description: "Count of campaigns that became ready this week"
+              example: "2 This week"
+            campaign_published_referrals_breakdown:
+              type: string
+              description: "Count of campaigns published this week"
+              example: "1 This week"
+
+    TemplatesAnalytics:
+      type: object
+      description: "Templates analytics data"
+      properties:
+        total_templates:
+          type: integer
+          description: "Total number of templates in organization"
+          example: 15
+        active_templates:
+          type: integer
+          description: "Templates with at least one Active campaign in campaigns_used"
+          example: 8
+        draft_templates:
+          type: integer
+          description: "Templates with at least one Draft campaign in campaigns_used"
+          example: 5
+        inactive_templates:
+          type: integer
+          description: "Templates with at least one InActive campaign in campaigns_used"
+          example: 2
 
   securitySchemes:
     SupabaseAuth:
