@@ -2451,7 +2451,7 @@ Get organization-level analytics with intelligent daily caching.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| type | string | Yes | Type of analytics (currently: "REFERRALS") |
+| type | string | Yes | Type of analytics: "REFERRALS" or "TEMPLATES" |
 
 #### Response (Success - 200 OK)
 
@@ -2508,7 +2508,7 @@ A referral is **campaign published** when:
 
 **Next Day**: Cache refreshes automatically with new date
 
-#### Example Request
+#### Example Request (REFERRALS)
 
 ```bash
 curl -X POST "https://YOUR-PROJECT.supabase.co/functions/v1/getAnalytics" \
@@ -2517,13 +2517,75 @@ curl -X POST "https://YOUR-PROJECT.supabase.co/functions/v1/getAnalytics" \
   -d '{"type":"REFERRALS"}'
 ```
 
+---
+
+### TEMPLATES Analytics Type
+
+Get template usage analytics by campaign status.
+
+#### Request Body
+
+```json
+{
+  "type": "TEMPLATES"
+}
+```
+
+#### Response (Success - 200 OK)
+
+```json
+{
+  "status": "success",
+  "message": "Analytics computed successfully",
+  "cached": false,
+  "data": {
+    "total_templates": 15,
+    "active_templates": 8,
+    "draft_templates": 5,
+    "inactive_templates": 2
+  }
+}
+```
+
+#### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| data.total_templates | integer | Total number of templates in organization |
+| data.active_templates | integer | Templates with at least one Active campaign in campaigns_used |
+| data.draft_templates | integer | Templates with at least one Draft campaign in campaigns_used |
+| data.inactive_templates | integer | Templates with at least one InActive campaign in campaigns_used |
+
+**Note**: A template can be counted in multiple categories if it has campaigns with different statuses.
+
+#### Templates Logic
+
+Templates are counted based on the campaigns they're used in:
+
+1. **Active Templates**: Template has at least one campaign ID in `campaigns_used` where campaign status is "Active"
+2. **Draft Templates**: Template has at least one campaign ID in `campaigns_used` where campaign status is "Draft"
+3. **InActive Templates**: Template has at least one campaign ID in `campaigns_used` where campaign status is "InActive"
+
+Templates with empty `campaigns_used` arrays are not counted in status categories (only in total_templates).
+
+#### Example Request (TEMPLATES)
+
+```bash
+curl -X POST "https://YOUR-PROJECT.supabase.co/functions/v1/getAnalytics" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"TEMPLATES"}'
+```
+
+---
+
 #### Error Responses
 
 **Invalid Type (400)**:
 ```json
 {
   "error": "INVALID_TYPE",
-  "message": "Analytics type \"INVALID\" is not supported. Supported types: REFERRALS"
+  "message": "Analytics type \"INVALID\" is not supported. Supported types: REFERRALS, TEMPLATES"
 }
 ```
 
