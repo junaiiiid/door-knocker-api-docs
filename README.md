@@ -30,6 +30,7 @@ This API provides a secure authentication system with three user roles:
 5. **POST /logout** - Invalidate user session
 6. **POST /forgotPassword** - Request password reset email
 7. **POST /resetPassword** - Reset password with token
+8. **POST /getAnalytics** - Get organization analytics with daily caching (REFERRALS type)
 
 ## Setup Instructions
 
@@ -2419,6 +2420,159 @@ curl -X POST https://iywivotqnphrjijztxtu.supabase.co/functions/v1/updateBrandin
 - Default fonts are Poppins for both primary and body
 - Changes apply immediately to all app sessions
 - Settings are stored in user's profile in the database
+
+---
+
+## Analytics API
+
+### POST /getAnalytics
+
+Get organization-level analytics with intelligent daily caching.
+
+**Authentication**: Required (JWT token)
+
+**Authorization**: Organization-based (ADMIN, MARKETER, TECHNICIAN)
+
+**Features**:
+- ✅ Daily caching - First request computes, subsequent requests fetch from cache
+- ✅ Automatic refresh each day
+- ✅ Organization-scoped data
+- ✅ Extensible for multiple analytics types
+
+#### Request Body
+
+```json
+{
+  "type": "REFERRALS"
+}
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| type | string | Yes | Type of analytics (currently: "REFERRALS") |
+
+#### Response (Success - 200 OK)
+
+```json
+{
+  "status": "success",
+  "message": "Analytics retrieved from cache",
+  "cached": true,
+  "data": {
+    "total_referrals": 25,
+    "campaign_ready_referrals": 8,
+    "campaign_published_referrals": 12,
+    "avg_referrals_value": 5250.75,
+    "overview": {
+      "currency": "USD",
+      "total_referrals_breakdown": "3 This week",
+      "campaign_ready_referrals_breakdown": "2 This week",
+      "campaign_published_referrals_breakdown": "1 This week"
+    }
+  }
+}
+```
+
+#### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| status | string | Always "success" for successful requests |
+| message | string | Describes whether data was cached or computed |
+| cached | boolean | true if from cache, false if freshly computed |
+| data.total_referrals | integer | Total number of referrals in organization |
+| data.campaign_ready_referrals | integer | Referrals with campaigns at step 5 or 6 and status Draft/InActive |
+| data.campaign_published_referrals | integer | Referrals with Active campaigns |
+| data.avg_referrals_value | number | Average value from job_details.value |
+| data.overview.currency | string | Most common currency from job_details |
+| data.overview.*_breakdown | string | Count of items created/updated this week |
+
+#### Campaign Readiness Logic
+
+A referral is **campaign ready** when:
+1. campaign_id is not null
+2. Campaign current_step is 5 or 6
+3. Campaign status is "Draft" or "InActive"
+
+A referral is **campaign published** when:
+1. campaign_id is not null
+2. Campaign status is "Active"
+
+#### Caching Behavior
+
+**First Request of Day**: Computes from database, saves cache, returns `cached: false`
+
+**Subsequent Requests (Same Day)**: Fetches from cache, returns `cached: true` (~50-100ms)
+
+**Next Day**: Cache refreshes automatically with new date
+
+#### Example Request
+
+```bash
+curl -X POST "https://YOUR-PROJECT.supabase.co/functions/v1/getAnalytics" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"REFERRALS"}'
+```
+
+#### Error Responses
+
+**Invalid Type (400)**:
+```json
+{
+  "error": "INVALID_TYPE",
+  "message": "Analytics type \"INVALID\" is not supported. Supported types: REFERRALS"
+}
+```
+
+**Missing Type (400)**:
+```json
+{
+  "error": "INVALID_INPUT",
+  "message": "type is required and must be a string"
+}
+```
+
+**Unauthorized (401)**:
+```json
+{
+  "error": "UNAUTHORIZED",
+  "message": "Unable to authenticate user"
+}
+```
+
+**No Organization (403)**:
+```json
+{
+  "error": "NO_ORGANIZATION",
+  "message": "User is not associated with any organization"
+}
+```
+
+#### Performance
+
+- **Cached Request**: ~50-100ms
+- **Fresh Computation**: ~500-1500ms (depends on data volume)
+- **Keep-Alive**: Warmed every 5 minutes via cron job
+
+#### Database Table
+
+Analytics are cached in the `analytics` table:
+
+```sql
+CREATE TABLE analytics (
+    id UUID PRIMARY KEY,
+    organization_id UUID NOT NULL,
+    analytics_type TEXT NOT NULL,
+    analytics_date DATE NOT NULL,
+    data JSONB NOT NULL,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    UNIQUE(organization_id, analytics_type, analytics_date)
+);
+```
 
 ---
 
