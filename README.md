@@ -2451,7 +2451,7 @@ Get organization-level analytics with intelligent daily caching.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| type | string | Yes | Type of analytics: "REFERRALS" or "TEMPLATES" |
+| type | string | Yes | Type of analytics: "REFERRALS", "TEMPLATES", or "CAMPAIGNS" |
 
 #### Response (Success - 200 OK)
 
@@ -2579,13 +2579,63 @@ curl -X POST "https://YOUR-PROJECT.supabase.co/functions/v1/getAnalytics" \
 
 ---
 
+### CAMPAIGNS Analytics Type
+
+Get campaign analytics including active campaigns and spending.
+
+#### Request Body
+
+```json
+{
+  "type": "CAMPAIGNS"
+}
+```
+
+#### Response (Success - 200 OK)
+
+```json
+{
+  "status": "success",
+  "message": "Analytics computed successfully",
+  "cached": false,
+  "data": {
+    "active_campaigns": 12,
+    "total_postcards_sent": 5420,
+    "total_spent": 16260,
+    "overview": {
+      "currency": "USD"
+    }
+  }
+}
+```
+
+#### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| data.active_campaigns | integer | All campaigns in organization with status "Active" |
+| data.total_postcards_sent | integer | Sum of all campaigns' postcards_sent |
+| data.total_spent | number | Total spent (postcards_sent × 3) |
+| data.overview.currency | string | Currency (always "USD") |
+
+#### Example Request (CAMPAIGNS)
+
+```bash
+curl -X POST "https://YOUR-PROJECT.supabase.co/functions/v1/getAnalytics" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"CAMPAIGNS"}'
+```
+
+---
+
 #### Error Responses
 
 **Invalid Type (400)**:
 ```json
 {
   "error": "INVALID_TYPE",
-  "message": "Analytics type \"INVALID\" is not supported. Supported types: REFERRALS, TEMPLATES"
+  "message": "Analytics type \"INVALID\" is not supported. Supported types: REFERRALS, TEMPLATES, CAMPAIGNS"
 }
 ```
 

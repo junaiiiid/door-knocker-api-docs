@@ -7370,7 +7370,7 @@ paths:
               properties:
                 type:
                   type: string
-                  enum: ["REFERRALS", "TEMPLATES"]
+                  enum: ["REFERRALS", "TEMPLATES", "CAMPAIGNS"]
                   description: "Type of analytics to retrieve"
                   example: "REFERRALS"
             examples:
@@ -7382,6 +7382,10 @@ paths:
                 summary: Get templates analytics
                 value:
                   type: "TEMPLATES"
+              campaigns:
+                summary: Get campaigns analytics
+                value:
+                  type: "CAMPAIGNS"
       responses:
         '200':
           description: Analytics retrieved successfully
@@ -7404,6 +7408,7 @@ paths:
                     oneOf:
                       - $ref: '#/components/schemas/ReferralsAnalytics'
                       - $ref: '#/components/schemas/TemplatesAnalytics'
+                      - $ref: '#/components/schemas/CampaignsAnalytics'
               examples:
                 referralsCached:
                   summary: Referrals analytics (from cache)
@@ -7448,6 +7453,18 @@ paths:
                       active_templates: 8
                       draft_templates: 5
                       inactive_templates: 2
+                campaigns:
+                  summary: Campaigns analytics
+                  value:
+                    status: "success"
+                    message: "Analytics computed successfully"
+                    cached: false
+                    data:
+                      active_campaigns: 12
+                      total_postcards_sent: 5420
+                      total_spent: 16260
+                      overview:
+                        currency: "USD"
         '400':
           description: Invalid input
           content:
@@ -7458,7 +7475,7 @@ paths:
                 invalidType:
                   value:
                     error: "INVALID_TYPE"
-                    message: "Analytics type \"INVALID\" is not supported. Supported types: REFERRALS, TEMPLATES"
+                    message: "Analytics type \"INVALID\" is not supported. Supported types: REFERRALS, TEMPLATES, CAMPAIGNS"
                 missingType:
                   value:
                     error: "INVALID_INPUT"
@@ -8546,6 +8563,31 @@ components:
           type: integer
           description: "Templates with at least one InActive campaign in campaigns_used"
           example: 2
+
+    CampaignsAnalytics:
+      type: object
+      description: "Campaigns analytics data"
+      properties:
+        active_campaigns:
+          type: integer
+          description: "All campaigns in organization with status Active"
+          example: 12
+        total_postcards_sent:
+          type: integer
+          description: "Sum of all campaigns' postcards_sent"
+          example: 5420
+        total_spent:
+          type: number
+          format: float
+          description: "Total spent (postcards_sent × 3)"
+          example: 16260
+        overview:
+          type: object
+          properties:
+            currency:
+              type: string
+              description: "Currency (always USD)"
+              example: "USD"
 
   securitySchemes:
     SupabaseAuth:
