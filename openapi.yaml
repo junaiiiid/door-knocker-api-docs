@@ -8701,7 +8701,7 @@ components:
           example: 8
         total_addresses_targetted:
           type: integer
-          description: "Sum of all addresses in all location zones"
+          description: "Sum of all addresses with status verified in all location zones"
           example: 1540
         duplicate_supressions:
           type: integer
@@ -8759,7 +8759,7 @@ components:
           example: 87
         manual_entries:
           type: integer
-          description: "Addresses manually added via /addAddressToZoneById (status Unverified with createdBy field)"
+          description: "Addresses manually added via /addAddressToZoneById (have manual_entry flag set to true)"
           example: 156
 
   securitySchemes:
