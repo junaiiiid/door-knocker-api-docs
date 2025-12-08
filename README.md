@@ -2728,7 +2728,7 @@ Get targeting zones analytics including active zones, addresses, duplicates, and
 | Field | Type | Description |
 |-------|------|-------------|
 | data.active_targeting_zones | integer | Location zones with Active campaign (campaign_id not null and campaign status is "Active") |
-| data.total_addresses_targetted | integer | Sum of all addresses with status "verified" in all location zones |
+| data.total_addresses_targetted | integer | Sum of all addresses with status "verified" or "Valid" in all location zones |
 | data.duplicate_supressions | integer | Number of duplicate addresses across all location zones |
 | data.average_radius | number | Average radius from center.radius across all location zones (in meters) |
 | data.overview.unit | string | Unit of measurement (always "miles") |
@@ -2737,7 +2737,7 @@ Get targeting zones analytics including active zones, addresses, duplicates, and
 #### Targeting Zones Logic
 
 - **active_targeting_zones**: Location zones where `campaign_id` is not null AND the campaign's `status` is "Active"
-- **total_addresses_targetted**: Count of addresses with `status` "verified" across all location zones in the organization
+- **total_addresses_targetted**: Count of addresses with `status` "verified" or "Valid" across all location zones in the organization
 - **duplicate_supressions**: Count of addresses that appear more than once across all location zones (duplicate occurrences minus 1)
 - **average_radius**: Average of `center.radius` values across all location zones (value is in meters, frontend converts to miles)
 
@@ -2785,14 +2785,14 @@ Get address collection analytics including total addresses, validated addresses,
 | Field | Type | Description |
 |-------|------|-------------|
 | data.total_addresses | integer | Total sum of all addresses in all location zones (sum of addresses array lengths) |
-| data.validated_addresses | integer | Addresses with status "verified" |
+| data.validated_addresses | integer | Addresses with status "verified" or "Valid" |
 | data.duplicates | integer | Number of duplicate addresses across all location zones |
 | data.opt_outs | integer | Addresses with Opt-out "verified" |
 
 #### Address Collection Logic
 
 - **total_addresses**: Sum of the count of all addresses in the `addresses` field across all location zones in the organization
-- **validated_addresses**: Count of addresses where `status` field equals "verified"
+- **validated_addresses**: Count of addresses where `status` field equals "verified" or "Valid"
 - **duplicates**: Count of addresses that appear more than once across all location zones (duplicate occurrences minus 1)
 - **opt_outs**: Count of addresses where `Opt-out` field equals "verified"
 
@@ -2838,13 +2838,13 @@ Get global exclusions analytics including total excluded addresses, opt-outs, an
 
 | Field | Type | Description |
 |-------|------|-------------|
-| data.total_excluded | integer | Addresses with status not equal to "verified" and not equal to "Opt-out" |
+| data.total_excluded | integer | Addresses with status not equal to "verified", not equal to "Valid", and not equal to "Opt-out" |
 | data.opt_outs | integer | Addresses with status equal to "Opt-out" |
 | data.manual_entries | integer | Addresses manually added via /addAddressToZoneById (have manual_entry flag set to true) |
 
 #### Global Exclusions Logic
 
-- **total_excluded**: Count of addresses where `status` field is NOT "verified" AND NOT "Opt-out"
+- **total_excluded**: Count of addresses where `status` field is NOT "verified" AND NOT "Valid" AND NOT "Opt-out"
 - **opt_outs**: Count of addresses where `status` field equals "Opt-out"
 - **manual_entries**: Count of addresses with `manual_entry` field set to `true` (set by /addAddressToZoneById API when addresses are manually added)
 

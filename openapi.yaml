@@ -8701,7 +8701,7 @@ components:
           example: 8
         total_addresses_targetted:
           type: integer
-          description: "Sum of all addresses with status verified in all location zones"
+          description: "Sum of all addresses with status verified or Valid in all location zones"
           example: 1540
         duplicate_supressions:
           type: integer
@@ -8734,7 +8734,7 @@ components:
           example: 3250
         validated_addresses:
           type: integer
-          description: "Addresses with status verified"
+          description: "Addresses with status verified or Valid"
           example: 2890
         duplicates:
           type: integer
@@ -8751,7 +8751,7 @@ components:
       properties:
         total_excluded:
           type: integer
-          description: "Addresses with status not equal to verified and not equal to Opt-out"
+          description: "Addresses with status not equal to verified, not equal to Valid, and not equal to Opt-out"
           example: 425
         opt_outs:
           type: integer
