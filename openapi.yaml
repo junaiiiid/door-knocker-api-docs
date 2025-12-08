@@ -7370,7 +7370,7 @@ paths:
               properties:
                 type:
                   type: string
-                  enum: ["REFERRALS", "TEMPLATES", "CAMPAIGNS"]
+                  enum: ["REFERRALS", "TEMPLATES", "CAMPAIGNS", "DASHBOARD", "TARGETING_ZONES", "ADDRESS_COLLECTION", "GLOBAL_EXCLUSIONS"]
                   description: "Type of analytics to retrieve"
                   example: "REFERRALS"
             examples:
@@ -7386,6 +7386,22 @@ paths:
                 summary: Get campaigns analytics
                 value:
                   type: "CAMPAIGNS"
+              dashboard:
+                summary: Get dashboard analytics
+                value:
+                  type: "DASHBOARD"
+              targeting_zones:
+                summary: Get targeting zones analytics
+                value:
+                  type: "TARGETING_ZONES"
+              address_collection:
+                summary: Get address collection analytics
+                value:
+                  type: "ADDRESS_COLLECTION"
+              global_exclusions:
+                summary: Get global exclusions analytics
+                value:
+                  type: "GLOBAL_EXCLUSIONS"
       responses:
         '200':
           description: Analytics retrieved successfully
@@ -7409,6 +7425,10 @@ paths:
                       - $ref: '#/components/schemas/ReferralsAnalytics'
                       - $ref: '#/components/schemas/TemplatesAnalytics'
                       - $ref: '#/components/schemas/CampaignsAnalytics'
+                      - $ref: '#/components/schemas/DashboardAnalytics'
+                      - $ref: '#/components/schemas/TargetingZonesAnalytics'
+                      - $ref: '#/components/schemas/AddressCollectionAnalytics'
+                      - $ref: '#/components/schemas/GlobalExclusionsAnalytics'
               examples:
                 referralsCached:
                   summary: Referrals analytics (from cache)
@@ -7465,6 +7485,55 @@ paths:
                       total_spent: 16260
                       overview:
                         currency: "USD"
+                dashboard:
+                  summary: Dashboard analytics
+                  value:
+                    status: "success"
+                    message: "Analytics computed successfully"
+                    cached: false
+                    data:
+                      total_referrals: 25
+                      active_campaigns: 12
+                      total_spent: 16260
+                      overview:
+                        currency: "USD"
+                        total_referrals_breakdown: "3 This week"
+                        active_campaigns_breakdown: "2 This week"
+                targeting_zones:
+                  summary: Targeting zones analytics
+                  value:
+                    status: "success"
+                    message: "Analytics computed successfully"
+                    cached: false
+                    data:
+                      active_targeting_zones: 8
+                      total_addresses_targetted: 1540
+                      duplicate_supressions: 45
+                      average_radius: 1609.34
+                      overview:
+                        unit: "miles"
+                        symbol: "mi"
+                address_collection:
+                  summary: Address collection analytics
+                  value:
+                    status: "success"
+                    message: "Analytics computed successfully"
+                    cached: false
+                    data:
+                      total_addresses: 3250
+                      validated_addresses: 2890
+                      duplicates: 125
+                      opt_outs: 87
+                global_exclusions:
+                  summary: Global exclusions analytics
+                  value:
+                    status: "success"
+                    message: "Analytics computed successfully"
+                    cached: false
+                    data:
+                      total_excluded: 425
+                      opt_outs: 87
+                      manual_entries: 156
         '400':
           description: Invalid input
           content:
@@ -7475,7 +7544,7 @@ paths:
                 invalidType:
                   value:
                     error: "INVALID_TYPE"
-                    message: "Analytics type \"INVALID\" is not supported. Supported types: REFERRALS, TEMPLATES, CAMPAIGNS"
+                    message: "Analytics type \"INVALID\" is not supported. Supported types: REFERRALS, TEMPLATES, CAMPAIGNS, DASHBOARD, TARGETING_ZONES, ADDRESS_COLLECTION, GLOBAL_EXCLUSIONS"
                 missingType:
                   value:
                     error: "INVALID_INPUT"
@@ -8588,6 +8657,110 @@ components:
               type: string
               description: "Currency (always USD)"
               example: "USD"
+
+    DashboardAnalytics:
+      type: object
+      description: "Dashboard analytics data combining referrals and campaigns"
+      properties:
+        total_referrals:
+          type: integer
+          description: "Total number of referrals in organization"
+          example: 25
+        active_campaigns:
+          type: integer
+          description: "All campaigns in organization with status Active"
+          example: 12
+        total_spent:
+          type: number
+          format: float
+          description: "Total spent (sum of all campaigns' postcards_sent × 3)"
+          example: 16260
+        overview:
+          type: object
+          properties:
+            currency:
+              type: string
+              description: "Currency (always USD)"
+              example: "USD"
+            total_referrals_breakdown:
+              type: string
+              description: "Count of referrals created in last 7 days"
+              example: "3 This week"
+            active_campaigns_breakdown:
+              type: string
+              description: "Count of active campaigns created in last 7 days"
+              example: "2 This week"
+
+    TargetingZonesAnalytics:
+      type: object
+      description: "Targeting zones analytics data"
+      properties:
+        active_targeting_zones:
+          type: integer
+          description: "Location zones with Active campaign (campaign_id not null and campaign status is Active)"
+          example: 8
+        total_addresses_targetted:
+          type: integer
+          description: "Sum of all addresses in all location zones"
+          example: 1540
+        duplicate_supressions:
+          type: integer
+          description: "Number of duplicate addresses across all location zones"
+          example: 45
+        average_radius:
+          type: number
+          format: float
+          description: "Average radius from center.radius across all location zones (in meters)"
+          example: 1609.34
+        overview:
+          type: object
+          properties:
+            unit:
+              type: string
+              description: "Unit of measurement (always miles)"
+              example: "miles"
+            symbol:
+              type: string
+              description: "Symbol for unit (always mi)"
+              example: "mi"
+
+    AddressCollectionAnalytics:
+      type: object
+      description: "Address collection analytics data"
+      properties:
+        total_addresses:
+          type: integer
+          description: "Total sum of all addresses in all location zones"
+          example: 3250
+        validated_addresses:
+          type: integer
+          description: "Addresses with status verified"
+          example: 2890
+        duplicates:
+          type: integer
+          description: "Number of duplicate addresses across all location zones"
+          example: 125
+        opt_outs:
+          type: integer
+          description: "Addresses with Opt-out verified"
+          example: 87
+
+    GlobalExclusionsAnalytics:
+      type: object
+      description: "Global exclusions analytics data"
+      properties:
+        total_excluded:
+          type: integer
+          description: "Addresses with status not equal to verified and not equal to Opt-out"
+          example: 425
+        opt_outs:
+          type: integer
+          description: "Addresses with status equal to Opt-out"
+          example: 87
+        manual_entries:
+          type: integer
+          description: "Addresses manually added via /addAddressToZoneById (status Unverified with createdBy field)"
+          example: 156
 
   securitySchemes:
     SupabaseAuth:

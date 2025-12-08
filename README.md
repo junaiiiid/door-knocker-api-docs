@@ -2451,7 +2451,7 @@ Get organization-level analytics with intelligent daily caching.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| type | string | Yes | Type of analytics: "REFERRALS", "TEMPLATES", or "CAMPAIGNS" |
+| type | string | Yes | Type of analytics: "REFERRALS", "TEMPLATES", "CAMPAIGNS", "DASHBOARD", "TARGETING_ZONES", "ADDRESS_COLLECTION", or "GLOBAL_EXCLUSIONS" |
 
 #### Response (Success - 200 OK)
 
@@ -2629,13 +2629,243 @@ curl -X POST "https://YOUR-PROJECT.supabase.co/functions/v1/getAnalytics" \
 
 ---
 
+### DASHBOARD Analytics Type
+
+Get comprehensive dashboard analytics combining referrals and campaigns data with weekly breakdowns.
+
+#### Request Body
+
+```json
+{
+  "type": "DASHBOARD"
+}
+```
+
+#### Response (Success - 200 OK)
+
+```json
+{
+  "status": "success",
+  "message": "Analytics computed successfully",
+  "cached": false,
+  "data": {
+    "total_referrals": 25,
+    "active_campaigns": 12,
+    "total_spent": 16260,
+    "overview": {
+      "currency": "USD",
+      "total_referrals_breakdown": "3 This week",
+      "active_campaigns_breakdown": "2 This week"
+    }
+  }
+}
+```
+
+#### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| data.total_referrals | integer | Total number of referrals in organization |
+| data.active_campaigns | integer | All campaigns in organization with status "Active" |
+| data.total_spent | number | Total spent (sum of all campaigns' postcards_sent × 3) |
+| data.overview.currency | string | Currency (always "USD") |
+| data.overview.total_referrals_breakdown | string | Count of referrals created in last 7 days |
+| data.overview.active_campaigns_breakdown | string | Count of active campaigns created in last 7 days |
+
+#### Dashboard Logic
+
+- **total_referrals**: Count of all referrals in organization
+- **active_campaigns**: Count of campaigns with status "Active"
+- **total_spent**: Sum of `postcards_sent` across all campaigns × 3
+- **total_referrals_breakdown**: Referrals where `created_at` is within last 7 days
+- **active_campaigns_breakdown**: Active campaigns where `created_at` is within last 7 days
+
+#### Example Request (DASHBOARD)
+
+```bash
+curl -X POST "https://YOUR-PROJECT.supabase.co/functions/v1/getAnalytics" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"DASHBOARD"}'
+```
+
+---
+
+### TARGETING_ZONES Analytics Type
+
+Get targeting zones analytics including active zones, addresses, duplicates, and average radius.
+
+#### Request Body
+
+```json
+{
+  "type": "TARGETING_ZONES"
+}
+```
+
+#### Response (Success - 200 OK)
+
+```json
+{
+  "status": "success",
+  "message": "Analytics computed successfully",
+  "cached": false,
+  "data": {
+    "active_targeting_zones": 8,
+    "total_addresses_targetted": 1540,
+    "duplicate_supressions": 45,
+    "average_radius": 1609.34,
+    "overview": {
+      "unit": "miles",
+      "symbol": "mi"
+    }
+  }
+}
+```
+
+#### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| data.active_targeting_zones | integer | Location zones with Active campaign (campaign_id not null and campaign status is "Active") |
+| data.total_addresses_targetted | integer | Sum of all addresses in all location zones (sum of addresses array lengths) |
+| data.duplicate_supressions | integer | Number of duplicate addresses across all location zones |
+| data.average_radius | number | Average radius from center.radius across all location zones (in meters) |
+| data.overview.unit | string | Unit of measurement (always "miles") |
+| data.overview.symbol | string | Symbol for unit (always "mi") |
+
+#### Targeting Zones Logic
+
+- **active_targeting_zones**: Location zones where `campaign_id` is not null AND the campaign's `status` is "Active"
+- **total_addresses_targetted**: Sum of the count of all addresses in the `addresses` field across all location zones
+- **duplicate_supressions**: Count of addresses that appear more than once across all location zones (duplicate occurrences minus 1)
+- **average_radius**: Average of `center.radius` values across all location zones (value is in meters, frontend converts to miles)
+
+#### Example Request (TARGETING_ZONES)
+
+```bash
+curl -X POST "https://YOUR-PROJECT.supabase.co/functions/v1/getAnalytics" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"TARGETING_ZONES"}'
+```
+
+---
+
+### ADDRESS_COLLECTION Analytics Type
+
+Get address collection analytics including total addresses, validated addresses, duplicates, and opt-outs.
+
+#### Request Body
+
+```json
+{
+  "type": "ADDRESS_COLLECTION"
+}
+```
+
+#### Response (Success - 200 OK)
+
+```json
+{
+  "status": "success",
+  "message": "Analytics computed successfully",
+  "cached": false,
+  "data": {
+    "total_addresses": 3250,
+    "validated_addresses": 2890,
+    "duplicates": 125,
+    "opt_outs": 87
+  }
+}
+```
+
+#### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| data.total_addresses | integer | Total sum of all addresses in all location zones (sum of addresses array lengths) |
+| data.validated_addresses | integer | Addresses with status "verified" |
+| data.duplicates | integer | Number of duplicate addresses across all location zones |
+| data.opt_outs | integer | Addresses with Opt-out "verified" |
+
+#### Address Collection Logic
+
+- **total_addresses**: Sum of the count of all addresses in the `addresses` field across all location zones in the organization
+- **validated_addresses**: Count of addresses where `status` field equals "verified"
+- **duplicates**: Count of addresses that appear more than once across all location zones (duplicate occurrences minus 1)
+- **opt_outs**: Count of addresses where `Opt-out` field equals "verified"
+
+#### Example Request (ADDRESS_COLLECTION)
+
+```bash
+curl -X POST "https://YOUR-PROJECT.supabase.co/functions/v1/getAnalytics" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"ADDRESS_COLLECTION"}'
+```
+
+---
+
+### GLOBAL_EXCLUSIONS Analytics Type
+
+Get global exclusions analytics including total excluded addresses, opt-outs, and manual entries.
+
+#### Request Body
+
+```json
+{
+  "type": "GLOBAL_EXCLUSIONS"
+}
+```
+
+#### Response (Success - 200 OK)
+
+```json
+{
+  "status": "success",
+  "message": "Analytics computed successfully",
+  "cached": false,
+  "data": {
+    "total_excluded": 425,
+    "opt_outs": 87,
+    "manual_entries": 156
+  }
+}
+```
+
+#### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| data.total_excluded | integer | Addresses with status not equal to "verified" and not equal to "Opt-out" |
+| data.opt_outs | integer | Addresses with status equal to "Opt-out" |
+| data.manual_entries | integer | Addresses manually added via /addAddressToZoneById (status "Unverified" with createdBy field) |
+
+#### Global Exclusions Logic
+
+- **total_excluded**: Count of addresses where `status` field is NOT "verified" AND NOT "Opt-out"
+- **opt_outs**: Count of addresses where `status` field equals "Opt-out"
+- **manual_entries**: Count of addresses with `status` "Unverified" AND has a `createdBy` field (indicates manual addition via /addAddressToZoneById API)
+
+#### Example Request (GLOBAL_EXCLUSIONS)
+
+```bash
+curl -X POST "https://YOUR-PROJECT.supabase.co/functions/v1/getAnalytics" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"GLOBAL_EXCLUSIONS"}'
+```
+
+---
+
 #### Error Responses
 
 **Invalid Type (400)**:
 ```json
 {
   "error": "INVALID_TYPE",
-  "message": "Analytics type \"INVALID\" is not supported. Supported types: REFERRALS, TEMPLATES, CAMPAIGNS"
+  "message": "Analytics type \"INVALID\" is not supported. Supported types: REFERRALS, TEMPLATES, CAMPAIGNS, DASHBOARD, TARGETING_ZONES, ADDRESS_COLLECTION, GLOBAL_EXCLUSIONS"
 }
 ```
 
