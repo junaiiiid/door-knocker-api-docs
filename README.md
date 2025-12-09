@@ -2918,6 +2918,165 @@ CREATE TABLE analytics (
 
 ---
 
+## GET /getNotifications
+
+Retrieve role-based notifications for the authenticated user.
+
+### Overview
+
+Returns notifications based on user's role (ADMIN, MARKETER, TECHNICIAN) and organization. Automatically marks all returned notifications as read after fetching.
+
+### Authentication
+
+Requires valid JWT token in Authorization header.
+
+### Request
+
+```http
+GET /getNotifications
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+### Response (Success - 200 OK)
+
+```json
+{
+  "data": [
+    {
+      "title": "Campaign Linked",
+      "description": "Campaign 'My Awesome Campaign' has been linked to your Referral 'Referral Name'",
+      "isUnread": true
+    },
+    {
+      "title": "Status Changed",
+      "description": "Referral 'Referral Name' status changed to 'Completed'",
+      "isUnread": true
+    }
+  ],
+  "processingTimeMs": 45
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| data | array | Array of notification objects |
+| data[].title | string | Short notification title |
+| data[].description | string | Full notification message |
+| data[].isUnread | boolean | Whether notification was unread (true for unread before this call) |
+| processingTimeMs | number | Request processing time in milliseconds |
+
+### Notifications by Role
+
+#### TECHNICIAN Notifications
+- Campaign linked to referral
+- Referral status changed
+- New user added to organization
+
+#### MARKETER Notifications
+All TECHNICIAN notifications plus:
+- Postcards sent from campaign
+- Campaign status changed
+- New targeting zone added
+- New address added to targeting zone
+- Address opted out
+
+#### ADMIN Notifications
+All MARKETER notifications plus:
+- Template used in campaign
+- New template created
+
+### Behavior
+
+1. **Fetches** all notifications for user's organization and role
+2. **Returns** notifications in reverse chronological order (newest first)
+3. **Marks** all returned unread notifications as read
+4. **Sets** `isUnread: true` for notifications that were unread before this call
+
+### Integration with getAppContent
+
+The `/getAppContent` API includes an `isUnread` flag on the notifications menu item:
+
+```json
+{
+  "id": 8,
+  "name": "notifications",
+  "title": "Notifications",
+  "enabled": true,
+  "isUnread": true
+}
+```
+
+This flag is `true` when there are unread notifications, and becomes `false` after calling `/getNotifications`.
+
+### Example Request
+
+```bash
+curl -X GET "https://YOUR-PROJECT.supabase.co/functions/v1/getNotifications" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Error Responses
+
+**Unauthorized (401)**:
+```json
+{
+  "error": "UNAUTHORIZED",
+  "message": "Unable to authenticate user"
+}
+```
+
+**No Organization (403)**:
+```json
+{
+  "error": "NO_ORGANIZATION",
+  "message": "User is not associated with any organization"
+}
+```
+
+**Profile Not Found (404)**:
+```json
+{
+  "error": "PROFILE_NOT_FOUND",
+  "message": "User profile not found"
+}
+```
+
+**Invalid Role (403)**:
+```json
+{
+  "error": "INVALID_ROLE",
+  "message": "Invalid user role"
+}
+```
+
+### Database Table
+
+Notifications are stored in the `notifications` table:
+
+```sql
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY,
+    organization_id UUID NOT NULL,
+    user_id UUID,
+    notification_type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    metadata JSONB DEFAULT '{}',
+    is_read BOOLEAN DEFAULT FALSE,
+    target_roles TEXT[] NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### Creating Notifications
+
+Notifications are created automatically by other APIs when relevant events occur. Each notification specifies `target_roles` (e.g., `['ADMIN', 'MARKETER']`) to control visibility.
+
+---
+
 ## Viewing the Documentation
 
 ### Option 1: Open Locally

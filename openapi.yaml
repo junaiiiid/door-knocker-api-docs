@@ -7573,6 +7573,124 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /getNotifications:
+    get:
+      tags:
+        - Notifications
+      summary: Get role-based notifications for authenticated user
+      description: |
+        Returns notifications for the authenticated user based on their role within their organization.
+
+        **Features:**
+        - ✅ Role-based filtering (ADMIN, MARKETER, TECHNICIAN)
+        - ✅ Organization-scoped notifications
+        - ✅ Automatically marks all returned notifications as read
+        - ✅ Returns notifications in reverse chronological order
+        - ✅ Used by /getAppContent to show unread notification badge
+
+        **Business Rules:**
+        - Returns only notifications for user's organization
+        - Returns only notifications that target the user's role
+        - All returned notifications are marked as read automatically
+        - Returns both previously read and newly read notifications
+
+        **Response Format:**
+        ```json
+        {
+          "data": [
+            {
+              "title": "Campaign linked",
+              "description": "Campaign 'My Campaign' has been linked to your Referral 'Referral Name'",
+              "isUnread": true
+            }
+          ],
+          "processingTimeMs": 45
+        }
+        ```
+
+        **Authentication:** Required (JWT token)
+
+        **Authorization:** Organization-based (ADMIN, MARKETER, TECHNICIAN)
+      operationId: getNotifications
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Notifications retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        title:
+                          type: string
+                          description: "Notification title"
+                          example: "Campaign Linked"
+                        description:
+                          type: string
+                          description: "Notification detailed description"
+                          example: "Campaign 'My Awesome Campaign' has been linked to your Referral 'Referral Name'"
+                        isUnread:
+                          type: boolean
+                          description: "Whether the notification was unread before this request"
+                          example: true
+                  processingTimeMs:
+                    type: number
+                    description: "Processing time in milliseconds"
+                    example: 45
+              example:
+                data:
+                  - title: "Campaign Linked"
+                    description: "Campaign 'My Awesome Campaign' has been linked to your Referral 'Referral Name'"
+                    isUnread: true
+                  - title: "Referral Status Changed"
+                    description: "Referral 'My Referral' status changed to 'Completed'"
+                    isUnread: false
+                processingTimeMs: 45
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization or invalid role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                noOrganization:
+                  value:
+                    error: "NO_ORGANIZATION"
+                    message: "User is not associated with any organization"
+                invalidRole:
+                  value:
+                    error: "INVALID_ROLE"
+                    message: "Invalid user role"
+        '404':
+          description: User profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                profileNotFound:
+                  value:
+                    error: "PROFILE_NOT_FOUND"
+                    message: "User profile not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 components:
   schemas:
     SignUpRequest:
