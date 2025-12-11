@@ -103,6 +103,8 @@ tags:
     description: Address discovery and verification operations
   - name: Analytics
     description: Organization-level analytics with intelligent daily caching
+  - name: Billing
+    description: Stripe payment methods and billing history management (ADMIN only)
 
 paths:
   /signUp:
@@ -7691,6 +7693,844 @@ paths:
                   value:
                     error: "PROFILE_NOT_FOUND"
                     message: "User profile not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /addPaymentMethod:
+    post:
+      tags:
+        - Billing
+      summary: Add payment method to organization (ADMIN only)
+      description: |
+        Attaches a payment method to the organization's Stripe customer and optionally sets it as default.
+
+        **Features:**
+        - ✅ ADMIN only
+        - ✅ Creates Stripe customer if first time
+        - ✅ Automatically sets as default if it's the only payment method
+        - ✅ Organization-scoped
+        - ✅ Requires payment_method_id from Stripe.js frontend
+
+        **Business Rules:**
+        - Only ADMIN users can manage payment methods
+        - Creates Stripe customer on first payment method addition
+        - First payment method is automatically set as default
+        - Subsequent payment methods require explicit default setting
+
+        **Frontend Integration:**
+        1. Use Stripe.js to collect card details
+        2. Create payment method token: `stripe.createPaymentMethod()`
+        3. Send `payment_method_id` to this endpoint
+
+        **Authentication:** Required (JWT token)
+
+        **Authorization:** ADMIN only
+      operationId: addPaymentMethod
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - payment_method_id
+              properties:
+                payment_method_id:
+                  type: string
+                  description: "Payment method ID from Stripe.js (pm_xxxxx)"
+                  example: "pm_1234567890abcdefghijklmn"
+                isTestMode:
+                  type: boolean
+                  description: "If true, use Stripe test keys; if false or not provided, use production keys"
+                  example: true
+                  default: false
+      responses:
+        '201':
+          description: Payment method added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Payment method added and set as default"
+                  payment_method:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "pm_1234567890abcdefghijklmn"
+                      type:
+                        type: string
+                        example: "card"
+                      card:
+                        type: object
+                        properties:
+                          brand:
+                            type: string
+                            example: "visa"
+                          last4:
+                            type: string
+                            example: "4242"
+                          exp_month:
+                            type: integer
+                            example: 12
+                          exp_year:
+                            type: integer
+                            example: 2025
+                      is_default:
+                        type: boolean
+                        example: true
+                  processingTimeMs:
+                    type: integer
+                    example: 245
+        '400':
+          description: Invalid input or card error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidInput:
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "payment_method_id is required and must be a string"
+                cardError:
+                  value:
+                    error: "CARD_ERROR"
+                    message: "Your card was declined"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notAdmin:
+                  value:
+                    error: "FORBIDDEN"
+                    message: "Only ADMIN users can manage payment methods"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /getPaymentMethods:
+    post:
+      tags:
+        - Billing
+      summary: Get all payment methods for organization (ADMIN only)
+      description: |
+        Retrieves all payment methods stored in Stripe for the organization with default indicator.
+
+        **Features:**
+        - ✅ ADMIN only
+        - ✅ Returns all payment methods from Stripe
+        - ✅ Shows which one is the default
+        - ✅ Returns empty array if no payment methods yet
+        - ✅ Organization-scoped
+        - ✅ Supports test/production mode selection
+
+        **Business Rules:**
+        - Only ADMIN users can view payment methods
+        - Returns empty array if organization has no Stripe customer yet
+        - Indicates which payment method is set as default
+        - Shows card details (brand, last4, expiry)
+
+        **Authentication:** Required (JWT token)
+
+        **Authorization:** ADMIN only
+      operationId: getPaymentMethods
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isTestMode:
+                  type: boolean
+                  description: "If true, use Stripe test keys; if false or not provided, use production keys"
+                  example: true
+                  default: false
+      responses:
+        '200':
+          description: Payment methods retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  payment_methods:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: "pm_1234567890abcdefghijklmn"
+                        type:
+                          type: string
+                          example: "card"
+                        card:
+                          type: object
+                          properties:
+                            brand:
+                              type: string
+                              example: "visa"
+                            last4:
+                              type: string
+                              example: "4242"
+                            exp_month:
+                              type: integer
+                              example: 12
+                            exp_year:
+                              type: integer
+                              example: 2025
+                        is_default:
+                          type: boolean
+                          example: true
+                        created:
+                          type: string
+                          format: date-time
+                          example: "2025-02-11T10:30:00.000Z"
+                  processingTimeMs:
+                    type: integer
+                    example: 142
+              examples:
+                withMethods:
+                  value:
+                    status: "success"
+                    payment_methods:
+                      - id: "pm_1234567890abcdefghijklmn"
+                        type: "card"
+                        card:
+                          brand: "visa"
+                          last4: "4242"
+                          exp_month: 12
+                          exp_year: 2025
+                        is_default: true
+                        created: "2025-02-11T10:30:00.000Z"
+                    processingTimeMs: 142
+                noMethods:
+                  value:
+                    status: "success"
+                    payment_methods: []
+                    processingTimeMs: 45
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notAdmin:
+                  value:
+                    error: "FORBIDDEN"
+                    message: "Only ADMIN users can view payment methods"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /setDefaultPaymentMethod:
+    post:
+      tags:
+        - Billing
+      summary: Set default payment method for organization (ADMIN only)
+      description: |
+        Updates which payment method is used as the default for the organization.
+
+        **Features:**
+        - ✅ ADMIN only
+        - ✅ Updates default payment method in Stripe
+        - ✅ Payment method must belong to organization's customer
+        - ✅ Organization-scoped
+
+        **Business Rules:**
+        - Only ADMIN users can manage payment methods
+        - Payment method must already be attached to the customer
+        - Updates invoice_settings.default_payment_method in Stripe
+        - Returns updated payment method details
+
+        **Authentication:** Required (JWT token)
+
+        **Authorization:** ADMIN only
+      operationId: setDefaultPaymentMethod
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - payment_method_id
+              properties:
+                payment_method_id:
+                  type: string
+                  description: "Payment method ID from Stripe (pm_xxxxx)"
+                  example: "pm_1234567890abcdefghijklmn"
+                isTestMode:
+                  type: boolean
+                  description: "If true, use Stripe test keys; if false or not provided, use production keys"
+                  example: true
+                  default: false
+      responses:
+        '200':
+          description: Default payment method updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Default payment method updated successfully"
+                  payment_method:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "pm_1234567890abcdefghijklmn"
+                      type:
+                        type: string
+                        example: "card"
+                      card:
+                        type: object
+                        properties:
+                          brand:
+                            type: string
+                            example: "visa"
+                          last4:
+                            type: string
+                            example: "4242"
+                          exp_month:
+                            type: integer
+                            example: 12
+                          exp_year:
+                            type: integer
+                            example: 2025
+                      is_default:
+                        type: boolean
+                        example: true
+                  processingTimeMs:
+                    type: integer
+                    example: 189
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidInput:
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "payment_method_id is required and must be a string"
+                invalidRequest:
+                  value:
+                    error: "INVALID_REQUEST"
+                    message: "No such payment method: pm_invalid"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notAdmin:
+                  value:
+                    error: "FORBIDDEN"
+                    message: "Only ADMIN users can manage payment methods"
+        '404':
+          description: No Stripe customer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                noCustomer:
+                  value:
+                    error: "NO_CUSTOMER"
+                    message: "Organization does not have a Stripe customer. Please add a payment method first."
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /updatePaymentMethod:
+    post:
+      tags:
+        - Billing
+      summary: Update payment method expiration (ADMIN only)
+      description: |
+        Updates the expiration date of a payment method in Stripe.
+
+        **Features:**
+        - ✅ ADMIN only
+        - ✅ Updates card expiration month and year
+        - ✅ Payment method must belong to organization's customer
+        - ✅ Organization-scoped
+        - ✅ Supports test/production mode selection
+
+        **Business Rules:**
+        - Only ADMIN users can manage payment methods
+        - Can only update expiration date (cannot change card number or other details)
+        - Expiration month must be between 1-12
+        - Expiration year must be current year or future
+
+        **Authentication:** Required (JWT token)
+
+        **Authorization:** ADMIN only
+      operationId: updatePaymentMethod
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - payment_method_id
+                - exp_month
+                - exp_year
+              properties:
+                payment_method_id:
+                  type: string
+                  description: "Payment method ID from Stripe (pm_xxxxx)"
+                  example: "pm_1234567890abcdefghijklmn"
+                exp_month:
+                  type: integer
+                  description: "New expiration month (1-12)"
+                  minimum: 1
+                  maximum: 12
+                  example: 12
+                exp_year:
+                  type: integer
+                  description: "New expiration year (4 digits)"
+                  example: 2026
+                isTestMode:
+                  type: boolean
+                  description: "If true, use Stripe test keys; if false or not provided, use production keys"
+                  example: true
+                  default: false
+      responses:
+        '200':
+          description: Payment method updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Payment method updated successfully"
+                  payment_method:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "pm_1234567890abcdefghijklmn"
+                      type:
+                        type: string
+                        example: "card"
+                      card:
+                        type: object
+                        properties:
+                          brand:
+                            type: string
+                            example: "visa"
+                          last4:
+                            type: string
+                            example: "4242"
+                          exp_month:
+                            type: integer
+                            example: 12
+                          exp_year:
+                            type: integer
+                            example: 2026
+                  processingTimeMs:
+                    type: integer
+                    example: 156
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidInput:
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "exp_month is required and must be a number between 1 and 12"
+                invalidRequest:
+                  value:
+                    error: "INVALID_REQUEST"
+                    message: "No such payment method: pm_invalid"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notAdmin:
+                  value:
+                    error: "FORBIDDEN"
+                    message: "Only ADMIN users can manage payment methods"
+        '404':
+          description: No Stripe customer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                noCustomer:
+                  value:
+                    error: "NO_CUSTOMER"
+                    message: "Organization does not have a Stripe customer. Please add a payment method first."
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /deletePaymentMethod:
+    post:
+      tags:
+        - Billing
+      summary: Delete payment method from organization (ADMIN only)
+      description: |
+        Detaches a payment method from the organization's Stripe customer.
+
+        **Features:**
+        - ✅ ADMIN only
+        - ✅ Detaches payment method from customer
+        - ✅ Prevents deleting default payment method if others exist
+        - ✅ Organization-scoped
+        - ✅ Supports test/production mode selection
+
+        **Business Rules:**
+        - Only ADMIN users can manage payment methods
+        - Cannot delete the default payment method if other payment methods exist
+        - Must set another payment method as default before deleting the current default
+        - Payment method is detached (soft delete) in Stripe
+
+        **Authentication:** Required (JWT token)
+
+        **Authorization:** ADMIN only
+      operationId: deletePaymentMethod
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - payment_method_id
+              properties:
+                payment_method_id:
+                  type: string
+                  description: "Payment method ID from Stripe (pm_xxxxx)"
+                  example: "pm_1234567890abcdefghijklmn"
+                isTestMode:
+                  type: boolean
+                  description: "If true, use Stripe test keys; if false or not provided, use production keys"
+                  example: true
+                  default: false
+      responses:
+        '200':
+          description: Payment method deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Payment method deleted successfully"
+                  processingTimeMs:
+                    type: integer
+                    example: 134
+        '400':
+          description: Invalid input or cannot delete default
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidInput:
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "payment_method_id is required and must be a string"
+                cannotDeleteDefault:
+                  value:
+                    error: "CANNOT_DELETE_DEFAULT"
+                    message: "Cannot delete the default payment method. Please set another payment method as default first."
+                invalidRequest:
+                  value:
+                    error: "INVALID_REQUEST"
+                    message: "No such payment method: pm_invalid"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notAdmin:
+                  value:
+                    error: "FORBIDDEN"
+                    message: "Only ADMIN users can manage payment methods"
+        '404':
+          description: No Stripe customer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                noCustomer:
+                  value:
+                    error: "NO_CUSTOMER"
+                    message: "Organization does not have a Stripe customer. Please add a payment method first."
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /getBillingHistory:
+    post:
+      tags:
+        - Billing
+      summary: Get billing history for organization (ADMIN only)
+      description: |
+        Retrieves all charges and transactions from Stripe for the organization with pagination support.
+
+        **Features:**
+        - ✅ ADMIN only
+        - ✅ Returns all charges from Stripe
+        - ✅ Supports pagination via request body
+        - ✅ Shows amount, status, date, description, receipt URL
+        - ✅ Returns empty array if no billing history yet
+        - ✅ Organization-scoped
+        - ✅ Supports test/production mode selection
+
+        **Business Rules:**
+        - Only ADMIN users can view billing history
+        - Returns charges in reverse chronological order (newest first)
+        - Supports pagination with limit and starting_after parameters
+        - Shows refund information if applicable
+        - Returns empty array if organization has no Stripe customer yet
+
+        **Pagination:**
+        - Use `limit` to control number of results (default: 50, max: 100)
+        - Use `starting_after` with last charge ID for next page
+        - Check `has_more` to know if more results exist
+
+        **Authentication:** Required (JWT token)
+
+        **Authorization:** ADMIN only
+      operationId: getBillingHistory
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isTestMode:
+                  type: boolean
+                  description: "If true, use Stripe test keys; if false or not provided, use production keys"
+                  example: true
+                  default: false
+                limit:
+                  type: integer
+                  description: "Number of transactions to return (default: 50, max: 100)"
+                  minimum: 1
+                  maximum: 100
+                  default: 50
+                  example: 20
+                starting_after:
+                  type: string
+                  description: "Charge ID to start after (for pagination)"
+                  example: "ch_1234567890abcdefghijklmn"
+      responses:
+        '200':
+          description: Billing history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  transactions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: "ch_1234567890abcdefghijklmn"
+                        amount:
+                          type: integer
+                          description: "Amount in cents"
+                          example: 5000
+                        currency:
+                          type: string
+                          example: "usd"
+                        status:
+                          type: string
+                          enum: [succeeded, pending, failed]
+                          example: "succeeded"
+                        description:
+                          type: string
+                          example: "Campaign postcard printing"
+                        created:
+                          type: string
+                          format: date-time
+                          example: "2025-02-11T10:30:00.000Z"
+                        receipt_url:
+                          type: string
+                          format: uri
+                          example: "https://pay.stripe.com/receipts/xxxxx"
+                        payment_method:
+                          type: object
+                          nullable: true
+                          properties:
+                            brand:
+                              type: string
+                              example: "visa"
+                            last4:
+                              type: string
+                              example: "4242"
+                        refunded:
+                          type: boolean
+                          example: false
+                        amount_refunded:
+                          type: integer
+                          description: "Amount refunded in cents"
+                          example: 0
+                  has_more:
+                    type: boolean
+                    description: "Whether more results exist"
+                    example: true
+                  processingTimeMs:
+                    type: integer
+                    example: 178
+              examples:
+                withHistory:
+                  value:
+                    status: "success"
+                    transactions:
+                      - id: "ch_1234567890abcdefghijklmn"
+                        amount: 5000
+                        currency: "usd"
+                        status: "succeeded"
+                        description: "Campaign postcard printing"
+                        created: "2025-02-11T10:30:00.000Z"
+                        receipt_url: "https://pay.stripe.com/receipts/xxxxx"
+                        payment_method:
+                          brand: "visa"
+                          last4: "4242"
+                        refunded: false
+                        amount_refunded: 0
+                    has_more: true
+                    processingTimeMs: 178
+                noHistory:
+                  value:
+                    status: "success"
+                    transactions: []
+                    has_more: false
+                    processingTimeMs: 45
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notAdmin:
+                  value:
+                    error: "FORBIDDEN"
+                    message: "Only ADMIN users can view billing history"
         '500':
           description: Internal server error
           content:
