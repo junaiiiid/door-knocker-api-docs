@@ -7639,6 +7639,11 @@ paths:
                           type: boolean
                           description: "Whether the notification was unread before this request"
                           example: true
+                        timestamp:
+                          type: string
+                          format: date-time
+                          description: "When the notification was created (ISO 8601 format)"
+                          example: "2025-02-10T12:34:56.789Z"
                   processingTimeMs:
                     type: number
                     description: "Processing time in milliseconds"
@@ -7648,9 +7653,11 @@ paths:
                   - title: "Campaign Linked"
                     description: "Campaign 'My Awesome Campaign' has been linked to your Referral 'Referral Name'"
                     isUnread: true
+                    timestamp: "2025-02-10T12:34:56.789Z"
                   - title: "Referral Status Changed"
                     description: "Referral 'My Referral' status changed to 'Completed'"
                     isUnread: false
+                    timestamp: "2025-02-09T10:20:30.456Z"
                 processingTimeMs: 45
         '401':
           description: Unauthorized
