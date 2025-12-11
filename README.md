@@ -3421,3 +3421,50 @@ swagger-cli validate docs/openapi.yaml
 - [Swagger UI Documentation](https://swagger.io/docs/open-source-tools/swagger-ui/)
 - [OpenAPI Generator](https://openapi-generator.tech/)
 - [Postman OpenAPI Import](https://learning.postman.com/docs/integrations/available-integrations/working-with-openAPI/)
+### 11. Charge Payment Method (ADMIN only)
+
+```bash
+curl -X POST https://YOUR-PROJECT.supabase.co/functions/v1/chargePaymentMethod \
+  -H "Authorization: Bearer YOUR_ADMIN_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "payment_method_id": "pm_123456789",
+    "amount": 5000,
+    "currency": "usd",
+    "description": "Campaign postcard printing"
+  }'
+```
+
+**Parameters:**
+- `payment_method_id` (required): Stripe Payment Method ID
+- `amount` (required): Amount in cents (e.g., 5000 = $50.00)
+- `currency` (optional): Currency code (default: "usd")
+- `description` (optional): Description of the charge
+- `isTestMode` (optional): Set to true for test mode
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Payment succeeded",
+  "payment": {
+    "id": "pi_123456789",
+    "amount": 5000,
+    "currency": "usd",
+    "status": "succeeded",
+    "description": "Campaign postcard printing",
+    "created": "2025-01-13T10:00:00.000Z",
+    "receipt_url": "https://pay.stripe.com/receipts/...",
+    "payment_method": {
+      "id": "pm_123456789",
+      "type": "card",
+      "card": {
+        "brand": "visa",
+        "last4": "4242",
+        "exp_month": 12,
+        "exp_year": 2025
+      }
+    }
+  }
+}
+```
