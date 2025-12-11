@@ -5993,6 +5993,8 @@ paths:
 
         **Step 4: Add Business Details**
         Adds business name, phone, website, QR URL, and before/after images.
+        Automatically creates a shortened tracking link via Linkly API for the QR URL.
+        Requires Linkly credentials in request headers (x-linkly-api-key, x-linkly-workspace-id, x-linkly-csrf-token).
 
         **Step 5: Link Zone to Campaign**
         Links a location zone (from getAddressesFromZone) to the campaign by saving zone_id.
@@ -6011,6 +6013,28 @@ paths:
       operationId: createCampaign
       security:
         - BearerAuth: []
+      parameters:
+        - in: header
+          name: x-linkly-api-key
+          required: false
+          schema:
+            type: string
+          description: Linkly API key (required for Step 4 when qr_url is provided)
+          example: "ogIivdy75aUk1bTzk8XXow=="
+        - in: header
+          name: x-linkly-workspace-id
+          required: false
+          schema:
+            type: string
+          description: Linkly workspace ID (required for Step 4 when qr_url is provided)
+          example: "339418"
+        - in: header
+          name: x-linkly-csrf-token
+          required: false
+          schema:
+            type: string
+          description: Linkly CSRF token (required for Step 4 when qr_url is provided)
+          example: "QVgmNlhIDxAxcy8LHQUGRB9DVCE1MQE3s3dOi97TV5yOQdU2Zu1TATVp"
       requestBody:
         required: true
         content:
@@ -6123,6 +6147,7 @@ paths:
                           type: string
                         qr_url:
                           type: string
+                          description: The URL to be shortened and tracked via Linkly API (will be replaced with shortened link)
                         before_image_id:
                           type: string
                           format: uuid
