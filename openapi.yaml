@@ -8366,6 +8366,209 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /chargePaymentMethod:
+    post:
+      tags:
+        - Billing
+      summary: Charge a payment method (ADMIN only)
+      description: |
+        Creates and confirms a charge using a specific payment method.
+
+        **Features:**
+        - ✅ ADMIN only
+        - ✅ Creates Payment Intent in Stripe
+        - ✅ Confirms payment immediately
+        - ✅ Supports custom amount, currency, and description
+        - ✅ Organization-scoped
+        - ✅ Supports test/production mode selection
+
+        **Business Rules:**
+        - Only ADMIN users can charge payment methods
+        - Payment method must belong to the organization's customer
+        - Amount is in cents (e.g., 5000 = $50.00)
+        - Minimum charge is 50 cents
+        - Creates charge history visible in getBillingHistory
+        - Triggers Stripe webhook events (payment_intent.succeeded, etc.)
+
+        **Amount Format:**
+        - USD: amount in cents (5000 = $50.00)
+        - All currencies use smallest unit (no decimals)
+
+        **Authentication:** Required (JWT token)
+
+        **Authorization:** ADMIN only
+      operationId: chargePaymentMethod
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - payment_method_id
+                - amount
+              properties:
+                payment_method_id:
+                  type: string
+                  description: "Payment method ID from Stripe (pm_xxxxx)"
+                  example: "pm_1234567890abcdefghijklmn"
+                amount:
+                  type: integer
+                  description: "Amount to charge in cents (5000 = $50.00)"
+                  minimum: 50
+                  example: 5000
+                currency:
+                  type: string
+                  description: "Currency code (default: usd)"
+                  example: "usd"
+                  default: "usd"
+                description:
+                  type: string
+                  description: "Charge description (optional)"
+                  example: "Campaign postcard printing"
+                isTestMode:
+                  type: boolean
+                  description: "If true, use Stripe test keys; if false or not provided, use production keys"
+                  example: true
+                  default: false
+      responses:
+        '201':
+          description: Payment succeeded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Payment succeeded"
+                  payment:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: "Payment Intent ID"
+                        example: "pi_1234567890abcdefghijklmn"
+                      amount:
+                        type: integer
+                        description: "Amount charged in cents"
+                        example: 5000
+                      currency:
+                        type: string
+                        example: "usd"
+                      status:
+                        type: string
+                        example: "succeeded"
+                      description:
+                        type: string
+                        example: "Campaign postcard printing"
+                      created:
+                        type: string
+                        format: date-time
+                        example: "2025-02-11T10:30:00.000Z"
+                      receipt_url:
+                        type: string
+                        format: uri
+                        nullable: true
+                        example: "https://pay.stripe.com/receipts/xxxxx"
+                      payment_method:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            example: "pm_1234567890abcdefghijklmn"
+                          type:
+                            type: string
+                            example: "card"
+                          card:
+                            type: object
+                            properties:
+                              brand:
+                                type: string
+                                example: "visa"
+                              last4:
+                                type: string
+                                example: "4242"
+                              exp_month:
+                                type: integer
+                                example: 12
+                              exp_year:
+                                type: integer
+                                example: 2026
+                  processingTimeMs:
+                    type: integer
+                    example: 389
+        '400':
+          description: Invalid input or payment failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidInput:
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "amount is required and must be a positive number (in cents)"
+                invalidPaymentMethod:
+                  value:
+                    error: "INVALID_PAYMENT_METHOD"
+                    message: "Payment method does not belong to this organization"
+                cardError:
+                  value:
+                    error: "CARD_ERROR"
+                    message: "Your card was declined"
+                amountTooSmall:
+                  value:
+                    error: "AMOUNT_TOO_SMALL"
+                    message: "The amount is too small. Minimum charge amount is 50 cents."
+                paymentFailed:
+                  value:
+                    error: "PAYMENT_FAILED"
+                    message: "Payment failed. Please try a different payment method."
+                requiresAction:
+                  value:
+                    error: "REQUIRES_ACTION"
+                    message: "Payment requires additional authentication. Please use Stripe.js on the frontend for 3D Secure."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not ADMIN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notAdmin:
+                  value:
+                    error: "FORBIDDEN"
+                    message: "Only ADMIN users can charge payment methods"
+        '404':
+          description: No Stripe customer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                noCustomer:
+                  value:
+                    error: "NO_CUSTOMER"
+                    message: "Organization does not have a Stripe customer. Please add a payment method first."
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /getBillingHistory:
     post:
       tags:
