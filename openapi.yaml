@@ -2365,7 +2365,7 @@ paths:
                   type: number
                   format: double
                   default: 3.00
-                  description: Cost per postcard (optional, default: 3.00)
+                  description: "Cost per postcard (optional, default: 3.00)"
               example:
                 campaign_id: "123e4567-e89b-12d3-a456-426614174000"
                 amount_per_postcard: 3.00
