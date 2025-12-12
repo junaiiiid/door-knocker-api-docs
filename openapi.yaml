@@ -2078,7 +2078,7 @@ paths:
         - Returns all addresses with verified: true/false status (or only verified if showOnlyVerified=true)
         - Saves verified status to database in the zone
         - Only status='verified' is considered verified (not 'corrected')
-        - Batch processing up to 1000 addresses
+        - Batch processing up to 10,000 addresses
         - Optional filtering to return only verified addresses in response
 
         **Address Parsing:**
@@ -2330,7 +2330,7 @@ paths:
         **Business Rules:**
         - Only ADMIN and MARKETER users can launch campaigns
         - Campaign must be linked to a location zone (zone_id not null)
-        - Maximum 1000 addresses per zone
+        - Maximum 10,000 addresses per zone
         - Only verified addresses (status='verified') are counted
         - Final cost = validated_addresses × amount_per_postcard
         - Default amount_per_postcard is $3.00
@@ -2543,6 +2543,59 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - Campaign Management
+      summary: Update postcards sent count (Public)
+      description: |
+        Updates the postcards_sent count for a specific campaign.
+        This endpoint is public and does not require authentication.
+      operationId: updatePostCardsSentCount
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - campaign_id
+                - count
+              properties:
+                campaign_id:
+                  type: string
+                  format: uuid
+                  description: Campaign ID to update
+                count:
+                  type: integer
+                  minimum: 0
+                  description: New postcard count
+      responses:
+        '200':
+          description: Count updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Postcard count updated successfully
+                  campaign_id:
+                    type: string
+                    format: uuid
+                  count:
+                    type: integer
+        '400':
+          description: Invalid input
+        '404':
+          description: Campaign not found
+        '500':
+          description: Internal server error
 
   /getAddressZoneById:
     post:
@@ -6928,6 +6981,13 @@ paths:
                       type: string
                       format: uuid
                       description: Filter by creator user ID
+                postgrid_tracker_id:
+                  type: integer
+                  description: "Tracker ID from Linkly for QR code analytics"
+                current_step:
+                  type: integer
+                  minimum: 1
+                  maximum: 6
                 page:
                   type: integer
                   minimum: 1
