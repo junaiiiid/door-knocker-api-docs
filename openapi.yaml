@@ -2452,11 +2452,13 @@ paths:
         - Campaign Launch
       summary: Get campaign launch data (public access)
       description: |
-        Retrieves launch data for a campaign. This endpoint has public access for socket connections.
+        Retrieves complete launch data for a campaign including verified addresses, PostGrid templates with sizes, and campaign business data. This endpoint has public access for socket connections.
 
         **Features:**
         - Public access (no authentication required)
         - Returns launch_ready_campaign_data for the specified campaign
+        - Includes campaign PostGrid template IDs (front and back) with postcard sizes
+        - Includes campaign business_data from step 6
         - Useful for socket connections and public integrations
         - Returns most recent launch data if multiple exist
 
@@ -2464,6 +2466,13 @@ paths:
         - No authentication required
         - Returns latest launch data by created_at
         - Includes all verified addresses
+        - Fetches campaign template IDs and sizes from campaigns and templates tables
+        - Returns campaign's business_data field
+
+        **Response Data:**
+        - **launch_data**: Verified addresses, costs, and validation results
+        - **campaign_templates**: PostGrid template IDs and sizes (e.g., "6x4", "4x6")
+        - **business_data**: Campaign's business data from step 6
 
         **Authentication:** None required (public endpoint)
       operationId: getCampaignLaunchData
@@ -2529,6 +2538,32 @@ paths:
                       updated_at:
                         type: string
                         format: date-time
+                  campaign_templates:
+                    type: object
+                    description: PostGrid template IDs and sizes for the campaign
+                    properties:
+                      front_template_id:
+                        type: string
+                        description: PostGrid front template ID
+                        example: "template_abc123"
+                      front_template_size:
+                        type: string
+                        nullable: true
+                        description: Front template postcard size (e.g., "6x4", "4x6")
+                        example: "6x4"
+                      back_template_id:
+                        type: string
+                        description: PostGrid back template ID
+                        example: "template_def456"
+                      back_template_size:
+                        type: string
+                        nullable: true
+                        description: Back template postcard size (e.g., "6x4", "4x6")
+                        example: "6x4"
+                  business_data:
+                    type: object
+                    description: Campaign business data from step 6
+                    nullable: true
                   processingTimeMs:
                     type: integer
         '404':
