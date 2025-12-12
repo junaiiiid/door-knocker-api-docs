@@ -2553,7 +2553,6 @@ paths:
         Updates the postcards_sent count for a specific campaign.
         This endpoint is public and does not require authentication.
       operationId: updatePostCardsSentCount
-      security: []
       requestBody:
         required: true
         content:
