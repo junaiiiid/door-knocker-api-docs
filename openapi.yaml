@@ -2544,6 +2544,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /updatePostCardsSentCount:
     post:
       tags:
         - Campaign Management
