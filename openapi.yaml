@@ -7732,12 +7732,14 @@ paths:
         - ✅ Automatically sets as default if it's the only payment method
         - ✅ Organization-scoped
         - ✅ Requires payment_method_id from Stripe.js frontend
+        - ✅ Creates notification for ADMIN users
 
         **Business Rules:**
         - Only ADMIN users can manage payment methods
         - Creates Stripe customer on first payment method addition
         - First payment method is automatically set as default
         - Subsequent payment methods require explicit default setting
+        - Generates notification: "Payment Method {last4} added to your organization"
 
         **Frontend Integration:**
         1. Use Stripe.js to collect card details
@@ -8282,12 +8284,14 @@ paths:
         - ✅ Prevents deleting default payment method if others exist
         - ✅ Organization-scoped
         - ✅ Supports test/production mode selection
+        - ✅ Creates notification for ADMIN users
 
         **Business Rules:**
         - Only ADMIN users can manage payment methods
         - Cannot delete the default payment method if other payment methods exist
         - Must set another payment method as default before deleting the current default
         - Payment method is detached (soft delete) in Stripe
+        - Generates notification: "Payment Method {last4} removed from your organization"
 
         **Authentication:** Required (JWT token)
 
@@ -8399,6 +8403,7 @@ paths:
         - ✅ Supports custom amount, currency, and description
         - ✅ Organization-scoped
         - ✅ Supports test/production mode selection
+        - ✅ Creates notification for ADMIN users
 
         **Business Rules:**
         - Only ADMIN users can charge payment methods
@@ -8407,6 +8412,7 @@ paths:
         - Minimum charge is 50 cents
         - Creates charge history visible in getBillingHistory
         - Triggers Stripe webhook events (payment_intent.succeeded, etc.)
+        - Generates notification: "A charge of ${amount} made against {last4} card for campaign launch '{campaign_name}'"
 
         **Amount Format:**
         - USD: amount in cents (5000 = $50.00)
@@ -8446,6 +8452,10 @@ paths:
                   type: string
                   description: "Charge description (optional)"
                   example: "Campaign postcard printing"
+                campaign_name:
+                  type: string
+                  description: "Campaign name for notification (optional)"
+                  example: "Summer Sale 2024"
                 isTestMode:
                   type: boolean
                   description: "If true, use Stripe test keys; if false or not provided, use production keys"
