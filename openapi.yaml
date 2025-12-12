@@ -2310,6 +2310,240 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /launchReadyCampaign:
+    post:
+      tags:
+        - Campaign Launch
+      summary: Prepare campaign for launch with address verification (ADMIN/MARKETER only)
+      description: |
+        Verifies all addresses in a campaign's zone and calculates launch costs.
+
+        **Features:**
+        - ADMIN and MARKETER only
+        - Campaign must have zone_id set
+        - Verifies all addresses using PostGrid API
+        - Calculates final cost based on verified addresses
+        - Stores launch data in launch_ready_campaign_data table
+        - Updates campaign with launch_ready_id reference
+        - Organization-scoped
+
+        **Business Rules:**
+        - Only ADMIN and MARKETER users can launch campaigns
+        - Campaign must be linked to a location zone (zone_id not null)
+        - Maximum 1000 addresses per zone
+        - Only verified addresses (status='verified') are counted
+        - Final cost = validated_addresses × amount_per_postcard
+        - Default amount_per_postcard is $3.00
+
+        **Authentication:** Required (JWT token) and PostGrid API key in header
+
+        **Authorization:** ADMIN and MARKETER only
+      operationId: launchReadyCampaign
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: x-postgrid-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+          description: PostGrid API key for address verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - campaign_id
+              properties:
+                campaign_id:
+                  type: string
+                  format: uuid
+                  description: Campaign ID to prepare for launch
+                amount_per_postcard:
+                  type: number
+                  format: double
+                  default: 3.00
+                  description: Cost per postcard (optional, default: 3.00)
+            example:
+              campaign_id: "123e4567-e89b-12d3-a456-426614174000"
+              amount_per_postcard: 3.00
+      responses:
+        '201':
+          description: Campaign launch data prepared successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Campaign launch data prepared: 45 addresses verified"
+                  validated_addresses:
+                    type: integer
+                    description: Number of addresses that were successfully validated
+                    example: 45
+                  final_cost:
+                    type: number
+                    format: double
+                    description: Total cost (validated_addresses × amount_per_postcard)
+                    example: 135.00
+                  list_of_verified_addresses:
+                    type: array
+                    description: Array of verified address objects
+                    items:
+                      type: object
+                      properties:
+                        lat:
+                          type: number
+                        long:
+                          type: number
+                        address:
+                          type: string
+                        residential:
+                          type: boolean
+                        building_type:
+                          type: string
+                        verified:
+                          type: boolean
+                        verification_details:
+                          type: object
+                  launch_ready_id:
+                    type: string
+                    format: uuid
+                    description: ID of the launch_ready_campaign_data record
+                  processingTimeMs:
+                    type: integer
+        '400':
+          description: Invalid input or campaign requirements not met
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingZone:
+                  value:
+                    error: "INVALID_CAMPAIGN"
+                    message: "Campaign does not have a zone_id set. Please link a location zone first."
+                noAddresses:
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "Zone has no addresses to verify"
+        '403':
+          description: Not authorized (must be ADMIN or MARKETER)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Campaign or zone not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /getCampaignLaunchData:
+    post:
+      tags:
+        - Campaign Launch
+      summary: Get campaign launch data (public access)
+      description: |
+        Retrieves launch data for a campaign. This endpoint has public access for socket connections.
+
+        **Features:**
+        - Public access (no authentication required)
+        - Returns launch_ready_campaign_data for the specified campaign
+        - Useful for socket connections and public integrations
+        - Returns most recent launch data if multiple exist
+
+        **Business Rules:**
+        - No authentication required
+        - Returns latest launch data by created_at
+        - Includes all verified addresses
+
+        **Authentication:** None required (public endpoint)
+      operationId: getCampaignLaunchData
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - campaign_id
+              properties:
+                campaign_id:
+                  type: string
+                  format: uuid
+                  description: Campaign ID to get launch data for
+            example:
+              campaign_id: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Launch data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  launch_data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      campaign_id:
+                        type: string
+                        format: uuid
+                      zone_id:
+                        type: string
+                        format: uuid
+                      validated_addresses:
+                        type: integer
+                        description: Number of addresses that were successfully validated
+                        example: 45
+                      final_cost:
+                        type: number
+                        format: double
+                        description: Total cost
+                        example: 135.00
+                      amount_per_postcard:
+                        type: number
+                        format: double
+                        example: 3.00
+                      verified_addresses:
+                        type: array
+                        description: Array of verified address objects
+                        items:
+                          type: object
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+                  processingTimeMs:
+                    type: integer
+        '404':
+          description: No launch data found for this campaign
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /getAddressZoneById:
     post:
       tags:
