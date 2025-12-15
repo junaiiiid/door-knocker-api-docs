@@ -7952,7 +7952,7 @@ paths:
         - ✅ Geographic distribution analysis
         - ✅ Top performing campaigns and referrals
         - ✅ Campaign activity over time (daily, weekly, monthly)
-        - ✅ ROI calculations ($3 cost per lead, $10 revenue per lead assumed)
+        - ✅ ROI calculations ($3 cost per lead, $1000 revenue per lead assumed)
 
         **Business Rules:**
         - Requires Linkly API credentials in headers (x-linkly-api-key, x-linkly-workspace-id)
@@ -9930,7 +9930,7 @@ components:
           type: number
           format: decimal
           default: 0.00
-          description: Return on investment
+          description: "Estimated return on investment percentage. Calculated as ((revenue - cost) / cost) × 100, where cost = postcards_sent × $3 and revenue = leads_gen × $1000 (assumed). Updated automatically by syncLinklyAnalytics cron job."
         created_at:
           type: string
           format: date-time
@@ -10551,7 +10551,7 @@ components:
         total_estimated_average_roi:
           type: number
           format: float
-          description: "Estimated average ROI percentage (cost per lead = $3, revenue per lead = $10)"
+          description: "Estimated average ROI percentage (cost per lead = $3, revenue per lead = $1000)"
           example: 87.62
         top_performing_campaigns:
           type: array
@@ -10781,7 +10781,7 @@ components:
                     example: 3
                   revenue_per_lead:
                     type: integer
-                    example: 10
+                    example: 1000
 
     ROIAnalyticsData:
       type: object
@@ -10802,7 +10802,7 @@ components:
           example: -70.83
         estimated_revenue_generated:
           type: number
-          description: "Estimated revenue (leads_gen × assumed $10 per lead)"
+          description: "Estimated revenue (leads_gen × assumed $1000 per lead)"
           example: 4750
         estimated_cost_recovery_ratio:
           type: number
@@ -10823,7 +10823,7 @@ components:
                 example: 3000
               total_revenue_assumed:
                 type: number
-                description: "Revenue assuming $10 per lead"
+                description: "Revenue assuming $1000 per lead"
                 example: 1250
               total_revenue_actual:
                 type: number
