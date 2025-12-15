@@ -7702,6 +7702,8 @@ paths:
         **Supported Analytics Types:**
         - **REFERRALS**: Total referrals, campaign-ready referrals, campaign-published referrals, and average referral value
         - **TEMPLATES**: Template usage analytics by campaign status (active, draft, inactive)
+        - **CAMPAIGNS**: Active campaigns, postcards sent, total spent, total leads generated, and average scan rate
+        - **DASHBOARD**: Combined dashboard view with referrals, campaigns, estimated conversion rate, and average scan rate
 
         **Caching Behavior:**
         - First request of the day: Computes analytics from database, saves to cache, returns `cached: false`
@@ -7838,8 +7840,11 @@ paths:
                       active_campaigns: 12
                       total_postcards_sent: 5420
                       total_spent: 16260
+                      total_leads_generated: 342
+                      avg_scan_rate: 12.45
                       overview:
                         currency: "USD"
+                        total_leads_generated_breakdown: "15 This week"
                 dashboard:
                   summary: Dashboard analytics
                   value:
@@ -7850,10 +7855,13 @@ paths:
                       total_referrals: 25
                       active_campaigns: 12
                       total_spent: 16260
+                      estimated_conversion_rate: 8.75
+                      average_scan_rate: 12.45
                       overview:
                         currency: "USD"
                         total_referrals_breakdown: "3 This week"
                         active_campaigns_breakdown: "2 This week"
+                        estimated_conversion_rate_breakdown: "10.5% This week"
                 targeting_zones:
                   summary: Targeting zones analytics
                   value:
@@ -10181,6 +10189,15 @@ components:
           format: float
           description: "Total spent (postcards_sent × 3)"
           example: 16260
+        total_leads_generated:
+          type: integer
+          description: "Sum of all campaigns' leads_gen field"
+          example: 342
+        avg_scan_rate:
+          type: number
+          format: float
+          description: "Average scan_rate across all campaigns (rounded to 2 decimals)"
+          example: 12.45
         overview:
           type: object
           properties:
@@ -10188,6 +10205,10 @@ components:
               type: string
               description: "Currency (always USD)"
               example: "USD"
+            total_leads_generated_breakdown:
+              type: string
+              description: "Breakdown of leads generated this week"
+              example: "15 This week"
 
     DashboardAnalytics:
       type: object
@@ -10206,6 +10227,16 @@ components:
           format: float
           description: "Total spent (sum of all campaigns' postcards_sent × 3)"
           example: 16260
+        estimated_conversion_rate:
+          type: number
+          format: float
+          description: "Estimated conversion rate as percentage (leads_gen / postcards_sent × 100)"
+          example: 8.75
+        average_scan_rate:
+          type: number
+          format: float
+          description: "Average scan_rate across all campaigns in percentage (rounded to 2 decimals)"
+          example: 12.45
         overview:
           type: object
           properties:
@@ -10221,6 +10252,10 @@ components:
               type: string
               description: "Count of active campaigns created in last 7 days"
               example: "2 This week"
+            estimated_conversion_rate_breakdown:
+              type: string
+              description: "Estimated conversion rate for campaigns updated this week"
+              example: "10.5% This week"
 
     TargetingZonesAnalytics:
       type: object
