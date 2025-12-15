@@ -7991,8 +7991,8 @@ paths:
               properties:
                 type:
                   type: string
-                  enum: ["OVERVIEW"]
-                  description: "Type of analytics (currently only OVERVIEW supported)"
+                  enum: ["OVERVIEW", "CAMPAIGN_PERFORMANCE", "ROI"]
+                  description: "Type of analytics (OVERVIEW, CAMPAIGN_PERFORMANCE, or ROI)"
                   example: "OVERVIEW"
                 selected_campaign_id:
                   type: string
@@ -8025,6 +8025,14 @@ paths:
                   type: "OVERVIEW"
                   selected_start_date: "2025-01-01"
                   selected_end_date: "2025-01-31"
+              campaignPerformance:
+                summary: Campaign performance analytics
+                value:
+                  type: "CAMPAIGN_PERFORMANCE"
+              roi:
+                summary: ROI analytics
+                value:
+                  type: "ROI"
       responses:
         '200':
           description: Analytics data retrieved successfully
@@ -8047,7 +8055,10 @@ paths:
                     type: object
                     properties:
                       analytics_data:
-                        $ref: '#/components/schemas/OverviewAnalyticsData'
+                        oneOf:
+                          - $ref: '#/components/schemas/OverviewAnalyticsData'
+                          - $ref: '#/components/schemas/CampaignPerformanceAnalyticsData'
+                          - $ref: '#/components/schemas/ROIAnalyticsData'
               examples:
                 organizationAnalytics:
                   summary: Organization-wide analytics response
@@ -8097,7 +8108,7 @@ paths:
                 invalidType:
                   value:
                     error: "INVALID_TYPE"
-                    message: "Currently only \"OVERVIEW\" type is supported"
+                    message: "Supported types: \"OVERVIEW\", \"CAMPAIGN_PERFORMANCE\", \"ROI\""
                 missingDateRange:
                   value:
                     error: "INVALID_INPUT"
@@ -10630,6 +10641,270 @@ components:
                   type: string
                   format: date
                   example: "2025-01-31"
+
+    CampaignPerformanceAnalyticsData:
+      type: object
+      description: "Campaign performance analytics data with engagement and template metrics"
+      properties:
+        total_postcards_sent:
+          type: integer
+          description: "Total postcards sent across all campaigns"
+          example: 5420
+        total_qr_scans:
+          type: integer
+          description: "Total QR scans (sum of leads_gen)"
+          example: 475
+        total_conversion_rate:
+          type: number
+          format: float
+          description: "Conversion rate percentage (QR scans / postcards sent × 100)"
+          example: 8.76
+        cost_per_lead:
+          type: integer
+          description: "Cost per lead in USD (default: 3)"
+          example: 3
+        total_average_distance:
+          type: number
+          format: float
+          description: "Average radius from location_zones center (in meters)"
+          example: 1609.34
+        overview:
+          type: object
+          properties:
+            unit:
+              type: string
+              example: "miles"
+            symbol:
+              type: string
+              example: "mi"
+        engagement_overtime:
+          type: object
+          properties:
+            daily:
+              type: object
+              properties:
+                total_postcards_sent:
+                  type: integer
+                  example: 120
+                total_qr_scans:
+                  type: integer
+                  example: 12
+                overview:
+                  type: string
+                  example: "12 Today"
+            weekly:
+              type: object
+              properties:
+                total_postcards_sent:
+                  type: integer
+                  example: 850
+                total_qr_scans:
+                  type: integer
+                  example: 85
+                overview:
+                  type: string
+                  example: "85 This week"
+            monthly:
+              type: object
+              properties:
+                total_postcards_sent:
+                  type: integer
+                  example: 3420
+                total_qr_scans:
+                  type: integer
+                  example: 342
+                overview:
+                  type: string
+                  example: "342 This month"
+        delivery_vs_response:
+          type: object
+          properties:
+            delivery:
+              type: integer
+              description: "Postcards sent this month"
+              example: 3420
+            response:
+              type: integer
+              description: "QR scans this month"
+              example: 342
+            percentage:
+              type: number
+              format: float
+              description: "Response rate percentage"
+              example: 10.0
+        template_performance:
+          type: array
+          description: "Performance metrics for each template used"
+          items:
+            type: object
+            properties:
+              template:
+                type: object
+                description: "Full template object from templates table"
+              performance:
+                type: object
+                properties:
+                  usage:
+                    type: number
+                    format: float
+                    description: "Usage percentage (campaigns using this template / total campaigns × 100)"
+                    example: 33.33
+                  performance:
+                    type: number
+                    format: float
+                    description: "Performance percentage (leads / postcards sent × 100 for this template)"
+                    example: 12.5
+              estimated_roi_breakdown:
+                type: object
+                properties:
+                  total_cost:
+                    type: number
+                    description: "Total cost (postcards sent × 3)"
+                    example: 3000
+                  total_revenue:
+                    type: number
+                    description: "Total revenue (leads × 10)"
+                    example: 1250
+                  roi_percentage:
+                    type: number
+                    format: float
+                    description: "ROI percentage ((revenue - cost) / cost × 100)"
+                    example: -58.33
+                  total_postcards_sent:
+                    type: integer
+                    example: 1000
+                  total_leads_generated:
+                    type: integer
+                    example: 125
+                  cost_per_lead:
+                    type: integer
+                    example: 3
+                  revenue_per_lead:
+                    type: integer
+                    example: 10
+
+    ROIAnalyticsData:
+      type: object
+      description: "ROI analytics data with profit/expense breakdowns and timelines"
+      properties:
+        total_spent:
+          type: number
+          description: "Total spent (sum of all postcards_sent × 3)"
+          example: 16260
+        total_leads_gen:
+          type: integer
+          description: "Total leads generated (sum of all leads_gen)"
+          example: 475
+        avg_estimated_roi:
+          type: number
+          format: float
+          description: "Average estimated ROI percentage ((revenue - cost) / cost × 100)"
+          example: -70.83
+        estimated_revenue_generated:
+          type: number
+          description: "Estimated revenue (leads_gen × assumed $10 per lead)"
+          example: 4750
+        estimated_cost_recovery_ratio:
+          type: number
+          format: float
+          description: "Cost recovery ratio (revenue / cost)"
+          example: 0.29
+        estimated_profit_vs_expense_breakdown:
+          type: array
+          description: "Monthly profit vs expense breakdown (chart-ready)"
+          items:
+            type: object
+            properties:
+              month:
+                type: string
+                example: "2025-01"
+              total_expense:
+                type: number
+                example: 3000
+              total_revenue_assumed:
+                type: number
+                description: "Revenue assuming $10 per lead"
+                example: 1250
+              total_revenue_actual:
+                type: number
+                description: "Actual revenue from referral job_details.value"
+                example: 5000
+              profit_assumed:
+                type: number
+                example: -1750
+              profit_actual:
+                type: number
+                example: 2000
+        cost_breakdown:
+          type: array
+          description: "Cost breakdown by campaign (chart-ready)"
+          items:
+            type: object
+            properties:
+              campaign_id:
+                type: string
+                example: "campaign-uuid"
+              campaign_created_at:
+                type: string
+                format: date-time
+              postcards_sent:
+                type: integer
+                example: 1000
+              cost_per_postcard:
+                type: integer
+                example: 3
+              total_campaign_cost:
+                type: number
+                example: 3000
+              percentage_of_total:
+                type: number
+                format: float
+                description: "Percentage of total cost"
+                example: 18.45
+        estimated_roi_timeline_per_campaign:
+          type: array
+          description: "ROI timeline per campaign with cumulative metrics (chart-ready)"
+          items:
+            type: object
+            properties:
+              campaign_id:
+                type: string
+                example: "campaign-uuid"
+              date:
+                type: string
+                format: date-time
+              postcards_sent:
+                type: integer
+                example: 1000
+              leads_generated:
+                type: integer
+                example: 125
+              cost:
+                type: number
+                example: 3000
+              revenue:
+                type: number
+                example: 1250
+              profit:
+                type: number
+                example: -1750
+              roi_percentage:
+                type: number
+                format: float
+                example: -58.33
+              cumulative_cost:
+                type: number
+                description: "Running total of costs"
+                example: 16260
+              cumulative_revenue:
+                type: number
+                description: "Running total of revenue"
+                example: 4750
+              cumulative_roi:
+                type: number
+                format: float
+                description: "Running ROI percentage"
+                example: -70.83
 
   securitySchemes:
     SupabaseAuth:
