@@ -2323,9 +2323,10 @@ paths:
         - Campaign must have zone_id set
         - Verifies all addresses using PostGrid API
         - Calculates final cost based on verified addresses
-        - Stores launch data in launch_ready_campaign_data table
+        - Stores/updates launch data in launch_ready_campaign_data table (upserts based on campaign_id)
         - Updates campaign with launch_ready_id reference
         - Organization-scoped
+        - Prevents duplicates: If called multiple times for the same campaign, it updates the existing entry
 
         **Business Rules:**
         - Only ADMIN and MARKETER users can launch campaigns
@@ -2452,13 +2453,13 @@ paths:
         - Campaign Launch
       summary: Get campaign launch data (public access)
       description: |
-        Retrieves complete launch data for a campaign including verified addresses, PostGrid templates with sizes, and campaign business data. This endpoint has public access for socket connections.
+        Retrieves complete launch data for a campaign including verified addresses, PostGrid templates with sizes, and campaign business/offer data. This endpoint has public access for socket connections.
 
         **Features:**
         - Public access (no authentication required)
         - Returns launch_ready_campaign_data for the specified campaign
         - Includes campaign PostGrid template IDs (front and back) with postcard sizes
-        - Includes campaign business_data from step 6
+        - Includes campaign business_data from step 6 and offer_data from step 5
         - Useful for socket connections and public integrations
         - Returns most recent launch data if multiple exist
 
@@ -2467,12 +2468,13 @@ paths:
         - Returns latest launch data by created_at
         - Includes all verified addresses
         - Fetches campaign template IDs and sizes from campaigns and templates tables
-        - Returns campaign's business_data field
+        - Returns campaign's business_data and offer_data fields
 
         **Response Data:**
         - **launch_data**: Verified addresses, costs, and validation results
         - **campaign_templates**: PostGrid template IDs and sizes (e.g., "6x4", "4x6")
         - **business_data**: Campaign's business data from step 6
+        - **offer_data**: Campaign's offer data from step 5
 
         **Authentication:** None required (public endpoint)
       operationId: getCampaignLaunchData
@@ -2563,6 +2565,10 @@ paths:
                   business_data:
                     type: object
                     description: Campaign business data from step 6
+                    nullable: true
+                  offer_data:
+                    type: object
+                    description: Campaign offer data from step 5
                     nullable: true
                   processingTimeMs:
                     type: integer
