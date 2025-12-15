@@ -7936,6 +7936,195 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /getAnalyticsPageData:
+    post:
+      tags:
+        - Analytics
+      summary: Get detailed analytics page data with comprehensive metrics
+      description: |
+        Returns detailed analytics data for the analytics dashboard page with comprehensive metrics and insights.
+
+        **Features:**
+        - ✅ Real-time data computation using Linkly API for QR scan tracking
+        - ✅ Caching for fallback if computation fails
+        - ✅ Supports organization-wide or single campaign analytics
+        - ✅ Optional date range filtering
+        - ✅ Geographic distribution analysis
+        - ✅ Top performing campaigns and referrals
+        - ✅ Campaign activity over time (daily, weekly, monthly)
+        - ✅ ROI calculations ($3 cost per lead, $10 revenue per lead assumed)
+
+        **Business Rules:**
+        - Requires Linkly API credentials in headers (x-linkly-api-key, x-linkly-workspace-id)
+        - If selected_campaign_id provided, returns single campaign analytics
+        - Date range requires both start and end dates
+        - Top performers excluded for single campaign view
+        - Fallback to cached data if real-time computation fails
+
+        **Authentication:** Required (JWT token)
+
+        **Authorization:** Organization-based (ADMIN, MARKETER, TECHNICIAN)
+      operationId: getAnalyticsPageData
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: x-linkly-api-key
+          required: true
+          schema:
+            type: string
+          description: "Linkly API key for QR tracking data"
+        - in: header
+          name: x-linkly-workspace-id
+          required: true
+          schema:
+            type: string
+          description: "Linkly workspace ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+              properties:
+                type:
+                  type: string
+                  enum: ["OVERVIEW"]
+                  description: "Type of analytics (currently only OVERVIEW supported)"
+                  example: "OVERVIEW"
+                selected_campaign_id:
+                  type: string
+                  format: uuid
+                  description: "Optional campaign ID for single campaign analytics"
+                  example: "fab934ac-8d27-45ee-9c6f-a2e19cc5bc7f"
+                selected_start_date:
+                  type: string
+                  format: date
+                  description: "Optional start date (requires selected_end_date)"
+                  example: "2025-01-01"
+                selected_end_date:
+                  type: string
+                  format: date
+                  description: "Optional end date (requires selected_start_date)"
+                  example: "2025-01-31"
+            examples:
+              organizationView:
+                summary: Organization-wide analytics
+                value:
+                  type: "OVERVIEW"
+              singleCampaign:
+                summary: Single campaign analytics
+                value:
+                  type: "OVERVIEW"
+                  selected_campaign_id: "fab934ac-8d27-45ee-9c6f-a2e19cc5bc7f"
+              dateRange:
+                summary: Analytics with date range
+                value:
+                  type: "OVERVIEW"
+                  selected_start_date: "2025-01-01"
+                  selected_end_date: "2025-01-31"
+      responses:
+        '200':
+          description: Analytics data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Analytics computed successfully"
+                  cached:
+                    type: boolean
+                    description: "True if data retrieved from cache, false if freshly computed"
+                    example: false
+                  data:
+                    type: object
+                    properties:
+                      analytics_data:
+                        $ref: '#/components/schemas/OverviewAnalyticsData'
+              examples:
+                organizationAnalytics:
+                  summary: Organization-wide analytics response
+                  value:
+                    status: "success"
+                    message: "Analytics computed successfully"
+                    cached: false
+                    data:
+                      analytics_data:
+                        total_campaigns: 15
+                        total_postcards_sent: 5420
+                        total_qr_scans: 475
+                        total_estimated_leads_generated: 475
+                        total_estimated_average_roi: 87.62
+                        top_performing_campaigns:
+                          - id: "campaign-uuid-1"
+                            postcards_sent: 1000
+                            leads_gen: 120
+                        top_referrals_by_leads:
+                          - id: "referral-uuid-1"
+                            campaign_id: "campaign-uuid-1"
+                        geographic_distribution:
+                          reach:
+                            - line1: "123 Main St"
+                              city: "New York"
+                              state: "NY"
+                          qr_scans:
+                            total: 475
+                            overview: "85 This week"
+                        campaign_activity_overtime:
+                          daily:
+                            total: 12
+                            overview: "12 Today"
+                          weekly:
+                            total: 85
+                            overview: "85 This week"
+                          monthly:
+                            total: 342
+                            overview: "342 This month"
+        '400':
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidType:
+                  value:
+                    error: "INVALID_TYPE"
+                    message: "Currently only \"OVERVIEW\" type is supported"
+                missingDateRange:
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "Both selected_start_date and selected_end_date must be provided together"
+                missingCredentials:
+                  value:
+                    error: "MISSING_CREDENTIALS"
+                    message: "Linkly credentials required in headers: x-linkly-api-key, x-linkly-workspace-id"
+        '401':
+          description: Unauthorized - Invalid or missing authentication
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /getNotifications:
     get:
       tags:
@@ -10327,6 +10516,120 @@ components:
           type: integer
           description: "Addresses manually added via /addAddressToZoneById (have manual_entry flag set to true)"
           example: 156
+
+    OverviewAnalyticsData:
+      type: object
+      description: "Overview analytics data for analytics page dashboard"
+      properties:
+        total_campaigns:
+          type: integer
+          description: "Total number of campaigns in organization"
+          example: 15
+        total_postcards_sent:
+          type: integer
+          description: "Total postcards sent across all campaigns"
+          example: 5420
+        total_qr_scans:
+          type: integer
+          description: "Total QR scans (sum of leads_gen from all campaigns)"
+          example: 475
+        total_estimated_leads_generated:
+          type: integer
+          description: "Total estimated leads generated (same as total_qr_scans, assuming 100% conversion)"
+          example: 475
+        total_estimated_average_roi:
+          type: number
+          format: float
+          description: "Estimated average ROI percentage (cost per lead = $3, revenue per lead = $10)"
+          example: 87.62
+        top_performing_campaigns:
+          type: array
+          description: "List of top performing campaigns (excluded for single campaign view)"
+          items:
+            type: object
+            description: "Campaign object with performance metrics"
+        top_referrals_by_leads:
+          type: array
+          description: "List of referrals from top performing campaigns (excluded for single campaign view)"
+          items:
+            type: object
+            description: "Referral object"
+        geographic_distribution:
+          type: object
+          properties:
+            reach:
+              type: array
+              description: "List of verified addresses from all campaigns"
+              items:
+                type: object
+                description: "Address object"
+            qr_scans:
+              type: object
+              properties:
+                total:
+                  type: integer
+                  description: "Total QR scans"
+                  example: 475
+                overview:
+                  type: string
+                  description: "QR scans this week breakdown"
+                  example: "85 This week"
+        campaign_activity_overtime:
+          type: object
+          properties:
+            daily:
+              type: object
+              properties:
+                total:
+                  type: integer
+                  description: "Total QR scans today"
+                  example: 12
+                overview:
+                  type: string
+                  description: "Daily overview"
+                  example: "12 Today"
+            weekly:
+              type: object
+              properties:
+                total:
+                  type: integer
+                  description: "Total QR scans this week"
+                  example: 85
+                overview:
+                  type: string
+                  description: "Weekly overview"
+                  example: "85 This week"
+            monthly:
+              type: object
+              properties:
+                total:
+                  type: integer
+                  description: "Total QR scans this month"
+                  example: 342
+                overview:
+                  type: string
+                  description: "Monthly overview"
+                  example: "342 This month"
+            custom_range:
+              type: object
+              description: "Optional custom date range metrics (only present when date range provided)"
+              properties:
+                total:
+                  type: integer
+                  description: "Total QR scans in selected date range"
+                  example: 150
+                overview:
+                  type: string
+                  description: "Custom range overview"
+                  example: "150 in selected range"
+                start_date:
+                  type: string
+                  format: date
+                  example: "2025-01-01"
+                end_date:
+                  type: string
+                  format: date
+                  example: "2025-01-31"
 
   securitySchemes:
     SupabaseAuth:
