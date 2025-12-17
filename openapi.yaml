@@ -1738,8 +1738,9 @@ paths:
 
         **Returns:**
         - Array of states with id, name, abbreviation, and cities
-        - Each state includes an array of cities with id and name
+        - Each state includes an array of city names (strings)
         - Sorted alphabetically by state name
+        - Updated with comprehensive city data from GitHub (1000+ cities across all states)
       operationId: getAllStates
       responses:
         '200':
@@ -1768,36 +1769,30 @@ paths:
                           example: CA
                         cities:
                           type: array
-                          description: Major cities in this state
+                          description: Array of city names in this state
                           items:
-                            type: object
-                            properties:
-                              id:
-                                type: string
-                                format: uuid
-                                description: City ID
-                              name:
-                                type: string
-                                description: City name
-                                example: Los Angeles
+                            type: string
+                            example: Los Angeles
               example:
                 data:
                   - id: "9ecfafd6-9738-41e2-a2cc-35a84be5e7e1"
                     name: Alabama
                     abbreviation: AL
                     cities:
-                      - id: "ba7d6b4f-8052-4e6a-be89-bc5f533e962f"
-                        name: Birmingham
-                      - id: "96214170-abe2-4ca5-a438-d985a56b7bc3"
-                        name: Montgomery
+                      - Birmingham
+                      - Montgomery
+                      - Mobile
+                      - Huntsville
+                      - Tuscaloosa
                   - id: "e5af919b-80da-4c29-bab0-900bf44df74e"
                     name: California
                     abbreviation: CA
                     cities:
-                      - id: "74fc41aa-4437-48e2-b201-335a71fe5b04"
-                        name: Los Angeles
-                      - id: "3606499a-a7b4-4474-85df-ab73f713ab92"
-                        name: San Francisco
+                      - Los Angeles
+                      - San Diego
+                      - San Jose
+                      - San Francisco
+                      - Fresno
         '405':
           description: Method not allowed
           content:
