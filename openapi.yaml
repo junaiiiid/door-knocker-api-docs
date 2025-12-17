@@ -5004,7 +5004,7 @@ paths:
     get:
       tags:
         - Referral Management
-      summary: Get all referrals with pagination
+      summary: Get all referrals with pagination (GET)
       description: |
         Returns a paginated list of referrals from the database, ordered by creation date (newest first).
 
@@ -5021,7 +5021,9 @@ paths:
         **Returns:**
         - Array of complete referral objects with image_url (first image from gallery, empty string if no images)
         - Pagination metadata
-      operationId: getAllReferrals
+
+        **Note:** Use POST method if you need to filter by status (showOnlyActive)
+      operationId: getAllReferralsGet
       security:
         - BearerAuth: []
       parameters:
@@ -5071,6 +5073,123 @@ paths:
                         type: integer
                         example: 47
                         description: Total number of referrals
+                      total_pages:
+                        type: integer
+                        example: 5
+                        description: Total number of pages
+                      has_next_page:
+                        type: boolean
+                        example: true
+                        description: Whether there is a next page
+                      has_previous_page:
+                        type: boolean
+                        example: false
+                        description: Whether there is a previous page
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - Referral Management
+      summary: Get all referrals with pagination and optional filtering (POST)
+      description: |
+        Returns a paginated list of referrals from the database, ordered by creation date (newest first).
+
+        **Pagination:**
+        - Use `page` query parameter to specify page number (default: 1)
+        - Use `limit` query parameter to specify results per page (default: 10, max: 100)
+        - Returns pagination metadata including total count and page information
+
+        **Filtering:**
+        - Optional body parameter: `{"showOnlyActive": true}` to filter only Ready and In Use statuses
+        - If body is empty or `showOnlyActive` is false/not provided, returns all referrals
+
+        **Examples:**
+        - `POST /getAllReferrals` with empty body - Returns all referrals (same as GET)
+        - `POST /getAllReferrals` with `{"showOnlyActive": true}` - Returns only Ready and In Use referrals
+        - `POST /getAllReferrals?page=2&limit=20` with `{"showOnlyActive": true}` - Returns 20 active referrals on page 2
+
+        **Returns:**
+        - Array of complete referral objects with image_url (first image from gallery, empty string if no images)
+        - Pagination metadata
+      operationId: getAllReferralsPost
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: "Page number (default: 1, min: 1)"
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        - name: limit
+          in: query
+          description: "Number of results per page (default: 10, min: 1, max: 100)"
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+            example: 10
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                showOnlyActive:
+                  type: boolean
+                  description: "If true, returns only referrals with status Ready or In Use (excludes Draft)"
+                  example: true
+            examples:
+              allReferrals:
+                summary: Get all referrals (default)
+                value: {}
+              activeOnly:
+                summary: Get only active referrals
+                value:
+                  showOnlyActive: true
+      responses:
+        '200':
+          description: Referrals retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Referral'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        example: 1
+                        description: Current page number
+                      limit:
+                        type: integer
+                        example: 10
+                        description: Results per page
+                      total_count:
+                        type: integer
+                        example: 47
+                        description: Total number of referrals (filtered)
                       total_pages:
                         type: integer
                         example: 5
@@ -9782,6 +9901,10 @@ components:
               type: string
               description: Additional notes
               example: Customer requested urgent service.
+        hasOwnerConsent:
+          type: boolean
+          description: Indicates whether the homeowner has given consent for the referral
+          example: false
         status:
           type: object
           properties:
@@ -9792,7 +9915,7 @@ components:
               example: d7db3360-6d15-4379-989c-560ae96bfa28
             name:
               type: string
-              description: Status name
+              description: Status name (Draft, Ready, or In Use)
               example: Draft
         created_at:
           type: string
