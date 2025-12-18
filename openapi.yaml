@@ -2587,6 +2587,13 @@ paths:
       summary: Update postcards sent count (Public)
       description: |
         Updates the postcards_sent count for a specific campaign.
+
+        **Business Rules:**
+        - Public access (no JWT auth required)
+        - Updates only the postcards_sent count
+        - Does NOT change campaign or referral status (use /changeCampaignStatus for that)
+        - Designed for webhook integrations (e.g., PostGrid)
+
         This endpoint is public and does not require authentication.
       operationId: updatePostCardsSentCount
       requestBody:
@@ -2632,6 +2639,84 @@ paths:
           description: Campaign not found
         '500':
           description: Internal server error
+
+  /changeCampaignStatus:
+    post:
+      tags:
+        - Campaign Management
+      summary: Change campaign status to Active (Public)
+      description: |
+        Changes campaign status to Active and associated referral status to "In Use".
+
+        **Business Rules:**
+        - Public access (no JWT auth required)
+        - Changes campaign status to "Active"
+        - If campaign has a linked referral, changes referral status to "In Use"
+        - Designed for webhook integrations (e.g., PostGrid)
+        - Does NOT update postcards_sent count (use /updatePostCardsSentCount for that)
+
+        This endpoint is public and does not require authentication.
+      operationId: changeCampaignStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - campaign_id
+              properties:
+                campaign_id:
+                  type: string
+                  format: uuid
+                  description: Campaign ID to change status for
+            example:
+              campaign_id: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Status changed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Campaign status changed to Active successfully
+                  campaign_id:
+                    type: string
+                    format: uuid
+                    example: "123e4567-e89b-12d3-a456-426614174000"
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: INVALID_INPUT
+                message: campaign_id is required
+        '404':
+          description: Campaign not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: CAMPAIGN_NOT_FOUND
+                message: Campaign not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: UPDATE_FAILED
+                message: Failed to update campaign status
 
   /getAddressZoneById:
     post:
