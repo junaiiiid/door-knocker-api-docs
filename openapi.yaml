@@ -4124,9 +4124,13 @@ paths:
                         created_at:
                           type: string
                           format: date-time
+                        created_at_tz:
+                          $ref: '#/components/schemas/TimezoneEnrichment'
                         updated_at:
                           type: string
                           format: date-time
+                        updated_at_tz:
+                          $ref: '#/components/schemas/TimezoneEnrichment'
         '401':
           description: Unauthorized
           content:
@@ -4238,9 +4242,13 @@ paths:
                       created_at:
                         type: string
                         format: date-time
+                      created_at_tz:
+                        $ref: '#/components/schemas/TimezoneEnrichment'
                       updated_at:
                         type: string
                         format: date-time
+                      updated_at_tz:
+                        $ref: '#/components/schemas/TimezoneEnrichment'
                   processingTimeMs:
                     type: integer
                     example: 145
@@ -5008,6 +5016,8 @@ paths:
                             created_at:
                               type: string
                               format: date-time
+                            created_at_tz:
+                              $ref: '#/components/schemas/TimezoneEnrichment'
                       count:
                         type: integer
                         example: 5
@@ -6123,6 +6133,8 @@ paths:
                         type: string
                         format: date-time
                         example: "2025-02-19T10:00:00.000Z"
+                      created_at_tz:
+                        $ref: '#/components/schemas/TimezoneEnrichment'
                       updated_at:
                         type: string
                         format: date-time
@@ -6743,6 +6755,8 @@ paths:
                             created_at:
                               type: string
                               format: date-time
+                            created_at_tz:
+                              $ref: '#/components/schemas/TimezoneEnrichment'
                         example:
                           - id: 123e4567-e89b-12d3-a456-426614174000
                             referral_id: 550e8400-e29b-41d4-a716-446655440000
@@ -7388,9 +7402,13 @@ paths:
                       created_at:
                         type: string
                         format: date-time
+                      created_at_tz:
+                        $ref: '#/components/schemas/TimezoneEnrichment'
                       updated_at:
                         type: string
                         format: date-time
+                      updated_at_tz:
+                        $ref: '#/components/schemas/TimezoneEnrichment'
         '400':
           description: Invalid input
           content:
@@ -8808,6 +8826,8 @@ paths:
                           format: date-time
                           description: "When the notification was created (ISO 8601 format)"
                           example: "2025-02-10T12:34:56.789Z"
+                        timestamp_tz:
+                          $ref: '#/components/schemas/TimezoneEnrichment'
                   processingTimeMs:
                     type: number
                     description: "Processing time in milliseconds"
@@ -9081,6 +9101,8 @@ paths:
                           type: string
                           format: date-time
                           example: "2025-02-11T10:30:00.000Z"
+                        created_tz:
+                          $ref: '#/components/schemas/TimezoneEnrichment'
                   processingTimeMs:
                     type: integer
                     example: 142
@@ -10647,6 +10669,8 @@ components:
               type: string
               description: Currency code
               example: USD
+            value_display:
+              $ref: '#/components/schemas/CurrencyEnrichment'
             referral_percentage:
               type: number
               description: Referral percentage
@@ -10676,6 +10700,8 @@ components:
           format: date-time
           description: Creation timestamp
           example: '2025-01-19T10:00:00.000Z'
+        created_at_tz:
+          $ref: '#/components/schemas/TimezoneEnrichment'
         updated_at:
           type: string
           format: date-time
@@ -10731,6 +10757,10 @@ components:
           format: date-time
           description: Gallery last update timestamp
           example: '2025-01-19T11:30:00.000Z'
+        created_at_tz:
+          $ref: '#/components/schemas/TimezoneEnrichment'
+        updated_at_tz:
+          $ref: '#/components/schemas/TimezoneEnrichment'
 
     Campaign:
       type: object
@@ -10816,6 +10846,10 @@ components:
           type: string
           format: date-time
           description: Campaign last update timestamp
+        created_at_tz:
+          $ref: '#/components/schemas/TimezoneEnrichment'
+        updated_at_tz:
+          $ref: '#/components/schemas/TimezoneEnrichment'
 
     CampaignHistoryEntry:
       type: object
@@ -10842,6 +10876,8 @@ components:
           type: string
           format: date-time
           description: When the action was performed
+        created_at_tz:
+          $ref: '#/components/schemas/TimezoneEnrichment'
 
     LocationZone:
       type: object
@@ -11028,6 +11064,8 @@ components:
           format: date-time
           description: Zone last update timestamp
           example: "2025-01-18T15:30:00.000Z"
+        created_at_tz:
+          $ref: '#/components/schemas/TimezoneEnrichment'
 
     AddressObject:
       type: object
@@ -11158,6 +11196,10 @@ components:
               format: date-time
               description: "When the user profile was last updated"
               example: "2025-01-13T10:00:00.000Z"
+            created_at_tz:
+              $ref: '#/components/schemas/TimezoneEnrichment'
+            updated_at_tz:
+              $ref: '#/components/schemas/TimezoneEnrichment'
 
     CreatedByInfo:
       type: object
@@ -11188,6 +11230,10 @@ components:
           format: date-time
           description: "When the user profile was last updated"
           example: "2025-01-13T10:00:00.000Z"
+        created_at_tz:
+          $ref: '#/components/schemas/TimezoneEnrichment'
+        updated_at_tz:
+          $ref: '#/components/schemas/TimezoneEnrichment'
 
     ReferralsAnalytics:
       type: object
@@ -11682,6 +11728,8 @@ components:
           type: number
           description: "Total spent (sum of all postcards_sent × 3)"
           example: 16260
+        total_spent_display:
+          $ref: '#/components/schemas/CurrencyEnrichment'
         total_leads_gen:
           type: integer
           description: "Total leads generated (sum of all leads_gen)"
@@ -11695,6 +11743,8 @@ components:
           type: number
           description: "Estimated revenue (leads_gen × assumed $1000 per lead)"
           example: 4750
+        estimated_revenue_generated_display:
+          $ref: '#/components/schemas/CurrencyEnrichment'
         estimated_cost_recovery_ratio:
           type: number
           format: float
