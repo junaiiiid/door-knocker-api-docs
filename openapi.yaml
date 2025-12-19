@@ -156,12 +156,12 @@ paths:
               password: SecurePass123!
               fullName: Admin User
       responses:
-        '201':
+        "201":
           description: User created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SignUpResponse'
+                $ref: "#/components/schemas/SignUpResponse"
               example:
                 status: success
                 message: User created successfully
@@ -170,12 +170,12 @@ paths:
                   email: admin@example.com
                   fullName: Admin User
                   role: ADMIN
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingFields:
                   summary: Missing required fields
@@ -217,21 +217,21 @@ paths:
                   value:
                     error: INVALID_ROLE
                     message: signUp endpoint only creates ADMIN users. Use /createUser endpoint for MARKETER and TECHNICIAN roles.
-        '409':
+        "409":
           description: Email already exists
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: EMAIL_EXISTS
                 message: An account with this email already exists
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /createUser:
     post:
@@ -304,12 +304,12 @@ paths:
                   fullName: John Technician
                   role: TECHNICIAN
       responses:
-        '201':
+        "201":
           description: User created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SignUpResponse'
+                $ref: "#/components/schemas/SignUpResponse"
               example:
                 status: success
                 message: "User invitation sent successfully. marketer@example.com will receive an email to set their password."
@@ -318,12 +318,12 @@ paths:
                   email: marketer@example.com
                   fullName: Jane Marketer
                   role: MARKETER
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingFields:
                   summary: Missing required fields
@@ -340,12 +340,12 @@ paths:
                   value:
                     error: INVALID_ROLE
                     message: Invalid role. Must be ADMIN, MARKETER, or TECHNICIAN
-        '401':
+        "401":
           description: Unauthorized - Missing or invalid token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingAuth:
                   summary: Missing authorization header
@@ -357,30 +357,30 @@ paths:
                   value:
                     error: INVALID_TOKEN
                     message: Invalid or expired token
-        '403':
+        "403":
           description: Forbidden - Non-admin user attempting to create users
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: FORBIDDEN
                 message: Only ADMIN users can create new users
-        '409':
+        "409":
           description: Email already exists
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: EMAIL_EXISTS
                 message: An account with this email already exists
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /deleteUser:
     post:
@@ -425,7 +425,7 @@ paths:
             example:
               userId: 660e8400-e29b-41d4-a716-446655440001
       responses:
-        '200':
+        "200":
           description: User deleted successfully
           content:
             application/json:
@@ -458,12 +458,12 @@ paths:
                   fullName: Jane Marketer
                   role: MARKETER
                 processingTimeMs: 245
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingUserId:
                   summary: Missing userId field
@@ -475,12 +475,12 @@ paths:
                   value:
                     error: INVALID_OPERATION
                     message: You cannot delete your own account
-        '401':
+        "401":
           description: Unauthorized - Missing or invalid token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingAuth:
                   summary: Missing authorization header
@@ -492,12 +492,12 @@ paths:
                   value:
                     error: UNAUTHORIZED
                     message: Unable to authenticate user
-        '403':
+        "403":
           description: Forbidden - Non-admin user or user from different organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 notAdmin:
                   summary: Non-admin user attempting to delete
@@ -509,21 +509,21 @@ paths:
                   value:
                     error: FORBIDDEN
                     message: User does not belong to your organization
-        '404':
+        "404":
           description: User not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: USER_NOT_FOUND
                 message: User not found
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 deleteFailed:
                   summary: Failed to delete user
@@ -555,17 +555,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              $ref: "#/components/schemas/LoginRequest"
             example:
               email: user@example.com
               password: SecurePass123!
       responses:
-        '200':
+        "200":
           description: Login successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LoginResponse'
+                $ref: "#/components/schemas/LoginResponse"
               example:
                 status: success
                 message: Login successful
@@ -577,12 +577,12 @@ paths:
                   id: 550e8400-e29b-41d4-a716-446655440000
                   email: user@example.com
                   fullName: John Doe
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingFields:
                   summary: Missing required fields
@@ -594,30 +594,30 @@ paths:
                   value:
                     error: INVALID_EMAIL
                     message: Invalid email format
-        '401':
+        "401":
           description: Invalid credentials
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: INVALID_CREDENTIALS
                 message: Invalid email or password
-        '404':
+        "404":
           description: User profile not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: PROFILE_NOT_FOUND
                 message: User profile not found. Please contact support.
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /logout:
     post:
@@ -633,21 +633,21 @@ paths:
         - SupabaseAuth: []
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: Logout successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MessageResponse'
+                $ref: "#/components/schemas/MessageResponse"
               example:
                 status: success
                 message: Logout successful
-        '401':
+        "401":
           description: Unauthorized - Missing or invalid token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingAuth:
                   summary: Missing authorization header
@@ -659,12 +659,12 @@ paths:
                   value:
                     error: INVALID_TOKEN
                     message: Invalid or expired token
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /refreshToken:
     post:
@@ -698,7 +698,7 @@ paths:
             example:
               refreshToken: xYz123RefreshToken456...
       responses:
-        '200':
+        "200":
           description: Token refreshed successfully
           content:
             application/json:
@@ -727,30 +727,30 @@ paths:
                 token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
                 refreshToken: aBc456NewRefreshToken789...
                 expiresIn: 3600
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: INVALID_INPUT
                 message: Refresh token is required
-        '401':
+        "401":
           description: Invalid or expired refresh token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: INVALID_TOKEN
                 message: Invalid or expired refresh token
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getUser:
     get:
@@ -780,12 +780,12 @@ paths:
             format: uuid
           example: 550e8400-e29b-41d4-a716-446655440000
       responses:
-        '200':
+        "200":
           description: User profile retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetUserResponse'
+                $ref: "#/components/schemas/GetUserResponse"
               examples:
                 ownProfile:
                   summary: Get own profile
@@ -796,7 +796,7 @@ paths:
                       email: tech@example.com
                       role: TECHNICIAN
                       full_name: John Technician
-                      created_at: '2025-01-13T10:00:00.000Z'
+                      created_at: "2025-01-13T10:00:00.000Z"
                 adminViewingOther:
                   summary: Admin viewing another user (with user_id param)
                   value:
@@ -806,13 +806,13 @@ paths:
                       email: marketer@example.com
                       role: MARKETER
                       full_name: Jane Marketer
-                      created_at: '2025-01-12T15:30:00.000Z'
-        '401':
+                      created_at: "2025-01-12T15:30:00.000Z"
+        "401":
           description: Unauthorized - Missing or invalid token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingAuth:
                   summary: Missing authorization header
@@ -824,21 +824,21 @@ paths:
                   value:
                     error: INVALID_TOKEN
                     message: Invalid or expired token
-        '403':
+        "403":
           description: Forbidden - Non-admin trying to access another user's profile
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: FORBIDDEN
                 message: Only ADMIN users can view other users' profiles
-        '404':
+        "404":
           description: User or profile not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 userNotFound:
                   summary: User not found
@@ -850,12 +850,12 @@ paths:
                   value:
                     error: PROFILE_NOT_FOUND
                     message: User profile not found. Please contact support.
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getAppContent:
     get:
@@ -890,7 +890,7 @@ paths:
         - SupabaseAuth: []
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: App content retrieved successfully
           content:
             application/json:
@@ -908,7 +908,7 @@ paths:
                       menu_items:
                         type: array
                         items:
-                          $ref: '#/components/schemas/MenuItem'
+                          $ref: "#/components/schemas/MenuItem"
                       theme:
                         type: object
                         properties:
@@ -1137,12 +1137,12 @@ paths:
                           enabled: true
                           extended: false
                           extended_options: []
-        '401':
+        "401":
           description: Unauthorized - Missing or invalid token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingAuth:
                   summary: Missing authorization header
@@ -1154,30 +1154,30 @@ paths:
                   value:
                     error: UNAUTHORIZED
                     message: Unable to authenticate user
-        '403':
+        "403":
           description: Forbidden - User not associated with organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: NO_ORGANIZATION
                 message: User is not associated with any organization
-        '404':
+        "404":
           description: User profile not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: PROFILE_NOT_FOUND
                 message: User profile not found
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /forgotPassword:
     post:
@@ -1201,25 +1201,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ForgotPasswordRequest'
+              $ref: "#/components/schemas/ForgotPasswordRequest"
             example:
               email: user@example.com
       responses:
-        '200':
+        "200":
           description: "Request processed (always returns success)"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MessageResponse'
+                $ref: "#/components/schemas/MessageResponse"
               example:
                 status: success
                 message: If the email exists in our system, a password reset link has been sent
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingEmail:
                   summary: Missing email
@@ -1231,12 +1231,12 @@ paths:
                   value:
                     error: INVALID_EMAIL
                     message: Invalid email format
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /resetPassword:
     post:
@@ -1261,26 +1261,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ResetPasswordRequest'
+              $ref: "#/components/schemas/ResetPasswordRequest"
             example:
               access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
               newPassword: NewSecurePass123!
       responses:
-        '200':
+        "200":
           description: Password reset successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MessageResponse'
+                $ref: "#/components/schemas/MessageResponse"
               example:
                 status: success
                 message: Password has been reset successfully
-        '400':
+        "400":
           description: Invalid input or weak password
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingFields:
                   summary: Missing required fields
@@ -1317,21 +1317,21 @@ paths:
                   value:
                     error: SAME_PASSWORD
                     message: New password cannot be the same as your current password
-        '401':
+        "401":
           description: Invalid or expired token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: INVALID_TOKEN
                 message: Invalid or expired reset token
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /saveOrganization:
     post:
@@ -1366,7 +1366,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SaveOrganizationRequest'
+              $ref: "#/components/schemas/SaveOrganizationRequest"
             example:
               business_name: Tech Solutions Inc
               business_address: 123 Main Street, Silicon Valley, CA 94025
@@ -1376,7 +1376,7 @@ paths:
               phone_number: +1-555-123-4567
               website_url: https://techsolutions.com
       responses:
-        '200':
+        "200":
           description: Organization updated successfully
           content:
             application/json:
@@ -1390,7 +1390,7 @@ paths:
                     type: string
                     example: Organization updated successfully
                   data:
-                    $ref: '#/components/schemas/Organization'
+                    $ref: "#/components/schemas/Organization"
               example:
                 status: success
                 message: Organization updated successfully
@@ -1409,14 +1409,14 @@ paths:
                       member_role: MARKETER
                     - member_uid: 660e8400-e29b-41d4-a716-446655440002
                       member_role: TECHNICIAN
-                  created_at: '2025-01-18T10:00:00.000Z'
-                  updated_at: '2025-01-18T15:30:00.000Z'
-        '400':
+                  created_at: "2025-01-18T10:00:00.000Z"
+                  updated_at: "2025-01-18T15:30:00.000Z"
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingFields:
                   summary: Missing required fields
@@ -1428,12 +1428,12 @@ paths:
                   value:
                     error: INVALID_EMAIL
                     message: Invalid business email format
-        '401':
+        "401":
           description: Unauthorized - Missing or invalid token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingAuth:
                   summary: Missing authorization header
@@ -1445,21 +1445,21 @@ paths:
                   value:
                     error: INVALID_TOKEN
                     message: Invalid or expired token
-        '404':
+        "404":
           description: Organization not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: ORGANIZATION_NOT_FOUND
                 message: Organization not found. Please contact support.
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getIndustry:
     get:
@@ -1479,7 +1479,7 @@ paths:
         - Total count of available industries
       operationId: getIndustry
       responses:
-        '200':
+        "200":
           description: Industries retrieved successfully
           content:
             application/json:
@@ -1554,21 +1554,21 @@ paths:
                     - Telecommunications
                     - Transportation
                   total: 40
-        '405':
+        "405":
           description: Method not allowed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: METHOD_NOT_ALLOWED
                 message: Only GET method is allowed
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getAllJobs:
     get:
@@ -1589,7 +1589,7 @@ paths:
         - Sorted alphabetically by name
       operationId: getAllJobs
       responses:
-        '200':
+        "200":
           description: Job types retrieved successfully
           content:
             application/json:
@@ -1644,21 +1644,21 @@ paths:
                     name: HVAC Installation
                   - id: 5550e8400-e29b-41d4-a716-446655440015
                     name: Other
-        '405':
+        "405":
           description: Method not allowed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: METHOD_NOT_ALLOWED
                 message: Only GET method is allowed
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getAllJobStatus:
     get:
@@ -1679,7 +1679,7 @@ paths:
         - Sorted alphabetically by name
       operationId: getAllJobStatus
       responses:
-        '200':
+        "200":
           description: Job status types retrieved successfully
           content:
             application/json:
@@ -1708,21 +1708,21 @@ paths:
                     name: In Use
                   - id: 770e8400-e29b-41d4-a716-446655440002
                     name: Ready
-        '405':
+        "405":
           description: Method not allowed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: METHOD_NOT_ALLOWED
                 message: Only GET method is allowed
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getAllStates:
     get:
@@ -1745,7 +1745,7 @@ paths:
         - Updated with comprehensive city data from GitHub (1000+ cities across all states)
       operationId: getAllStates
       responses:
-        '200':
+        "200":
           description: States and cities retrieved successfully
           content:
             application/json:
@@ -1795,18 +1795,18 @@ paths:
                       - San Jose
                       - San Francisco
                       - Fresno
-        '405':
+        "405":
           description: Method not allowed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getAddressesFromZone:
     post:
@@ -1909,7 +1909,7 @@ paths:
                     searchType: "ALL"
                   campaign_id: "660e8400-e29b-41d4-a716-446655440001"
       responses:
-        '200':
+        "200":
           description: Addresses retrieved successfully
           content:
             application/json:
@@ -2041,18 +2041,18 @@ paths:
                     postcards_sent: 0
                     first_post_card_sent_date: null
                     status: "UnVerified"
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /verifyAddresses:
     post:
@@ -2116,7 +2116,7 @@ paths:
               zone_id: "123e4567-e89b-12d3-a456-426614174000"
               showOnlyVerified: false
       responses:
-        '200':
+        "200":
           description: Addresses verified successfully
           content:
             application/json:
@@ -2294,18 +2294,18 @@ paths:
                     postcards_sent: 0
                     first_post_card_sent_date: null
                     status: "Valid"
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /launchReadyCampaign:
     post:
@@ -2368,7 +2368,7 @@ paths:
                 campaign_id: "123e4567-e89b-12d3-a456-426614174000"
                 amount_per_postcard: 3.00
       responses:
-        '201':
+        "201":
           description: Campaign launch data prepared successfully
           content:
             application/json:
@@ -2416,12 +2416,12 @@ paths:
                     description: ID of the launch_ready_campaign_data record
                   processingTimeMs:
                     type: integer
-        '400':
+        "400":
           description: Invalid input or campaign requirements not met
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingZone:
                   value:
@@ -2431,18 +2431,18 @@ paths:
                   value:
                     error: "INVALID_INPUT"
                     message: "Zone has no addresses to verify"
-        '403':
+        "403":
           description: Not authorized (must be ADMIN or MARKETER)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '404':
+                $ref: "#/components/schemas/Error"
+        "404":
           description: Campaign or zone not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getCampaignLaunchData:
     post:
@@ -2491,7 +2491,7 @@ paths:
               example:
                 campaign_id: "123e4567-e89b-12d3-a456-426614174000"
       responses:
-        '200':
+        "200":
           description: Launch data retrieved successfully
           content:
             application/json:
@@ -2538,16 +2538,16 @@ paths:
                         type: string
                         format: date-time
                       created_at_tz:
-                        $ref: '#/components/schemas/TimezoneEnrichment'
+                        $ref: "#/components/schemas/TimezoneEnrichment"
                       updated_at_tz:
-                        $ref: '#/components/schemas/TimezoneEnrichment'
+                        $ref: "#/components/schemas/TimezoneEnrichment"
                       cost_display:
                         type: object
                         properties:
                           final_cost:
-                            $ref: '#/components/schemas/CurrencyEnrichment'
+                            $ref: "#/components/schemas/CurrencyEnrichment"
                           per_postcard:
-                            $ref: '#/components/schemas/CurrencyEnrichment'
+                            $ref: "#/components/schemas/CurrencyEnrichment"
                           currency_code:
                             type: string
                             example: "USD"
@@ -2583,18 +2583,18 @@ paths:
                     nullable: true
                   processingTimeMs:
                     type: integer
-        '404':
+        "404":
           description: No launch data found for this campaign
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '400':
+                $ref: "#/components/schemas/Error"
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /updatePostCardsSentCount:
     post:
@@ -2631,7 +2631,7 @@ paths:
                   minimum: 0
                   description: New postcard count
       responses:
-        '200':
+        "200":
           description: Count updated successfully
           content:
             application/json:
@@ -2649,11 +2649,11 @@ paths:
                     format: uuid
                   count:
                     type: integer
-        '400':
+        "400":
           description: Invalid input
-        '404':
+        "404":
           description: Campaign not found
-        '500':
+        "500":
           description: Internal server error
 
   /changeCampaignStatus:
@@ -2689,7 +2689,7 @@ paths:
             example:
               campaign_id: "123e4567-e89b-12d3-a456-426614174000"
       responses:
-        '200':
+        "200":
           description: Status changed successfully
           content:
             application/json:
@@ -2706,30 +2706,30 @@ paths:
                     type: string
                     format: uuid
                     example: "123e4567-e89b-12d3-a456-426614174000"
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: INVALID_INPUT
                 message: campaign_id is required
-        '404':
+        "404":
           description: Campaign not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: CAMPAIGN_NOT_FOUND
                 message: Campaign not found
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: UPDATE_FAILED
                 message: Failed to update campaign status
@@ -2765,7 +2765,7 @@ paths:
             example:
               id: "123e4567-e89b-12d3-a456-426614174000"
       responses:
-        '200':
+        "200":
           description: Zone retrieved successfully
           content:
             application/json:
@@ -2778,14 +2778,14 @@ paths:
                   message:
                     type: string
                   data:
-                    $ref: '#/components/schemas/LocationZone'
-        '401':
+                    $ref: "#/components/schemas/LocationZone"
+        "401":
           description: Unauthorized
-        '403':
+        "403":
           description: User not in organization
-        '404':
+        "404":
           description: Zone not found
-        '500':
+        "500":
           description: Internal server error
 
   /getAllAddressZones:
@@ -2805,7 +2805,7 @@ paths:
         - SupabaseAuth: []
           BearerAuth: []
       responses:
-        '200':
+        "200":
           description: Zones retrieved successfully
           content:
             application/json:
@@ -2820,14 +2820,14 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/LocationZone'
+                      $ref: "#/components/schemas/LocationZone"
                   count:
                     type: integer
-        '401':
+        "401":
           description: Unauthorized
-        '403':
+        "403":
           description: User not in organization
-        '500':
+        "500":
           description: Internal server error
 
   /updateAddressZoneById:
@@ -2881,7 +2881,7 @@ paths:
               metadata:
                 note: "Updated zone"
       responses:
-        '200':
+        "200":
           description: Zone updated successfully
           content:
             application/json:
@@ -2894,16 +2894,16 @@ paths:
                   message:
                     type: string
                   data:
-                    $ref: '#/components/schemas/LocationZone'
-        '400':
+                    $ref: "#/components/schemas/LocationZone"
+        "400":
           description: Invalid input or attempting to update protected fields
-        '401':
+        "401":
           description: Unauthorized
-        '403':
+        "403":
           description: User not in organization
-        '404':
+        "404":
           description: Zone not found
-        '500':
+        "500":
           description: Internal server error
 
   /deleteAddressZone:
@@ -2937,7 +2937,7 @@ paths:
             example:
               id: "123e4567-e89b-12d3-a456-426614174000"
       responses:
-        '200':
+        "200":
           description: Zone deleted successfully
           content:
             application/json:
@@ -2956,13 +2956,13 @@ paths:
                         type: string
                       deleted:
                         type: boolean
-        '401':
+        "401":
           description: Unauthorized
-        '403':
+        "403":
           description: User not in organization
-        '404':
+        "404":
           description: Zone not found
-        '500':
+        "500":
           description: Internal server error
 
   /addAddressToZoneById:
@@ -3033,7 +3033,7 @@ paths:
               zip: "94043"
               googleMapsApiKey: "AIzaSyDummyKey123456789"
       responses:
-        '201':
+        "201":
           description: Address added successfully
           content:
             application/json:
@@ -3053,19 +3053,19 @@ paths:
                         type: string
                         format: uuid
                       address_added:
-                        $ref: '#/components/schemas/AddressObject'
+                        $ref: "#/components/schemas/AddressObject"
                       total_addresses:
                         type: integer
                         example: 15
                   processingTimeMs:
                     type: integer
                     example: 350
-        '400':
+        "400":
           description: Invalid input or duplicate address
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 invalidAddress:
                   value:
@@ -3079,18 +3079,18 @@ paths:
                   value:
                     error: "INVALID_INPUT"
                     message: "street_address is required and must be a string"
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization or API key denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 noOrganization:
                   value:
@@ -3100,23 +3100,23 @@ paths:
                   value:
                     error: "GOOGLE_MAPS_API_ERROR"
                     message: "Google Maps API key is invalid or request was denied"
-        '404':
+        "404":
           description: Zone not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 notFound:
                   value:
                     error: "ZONE_NOT_FOUND"
                     message: "Zone not found or doesn't belong to your organization"
-        '500':
+        "500":
           description: Internal server error or Google Maps API error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getAllAddresses:
     get:
@@ -3143,7 +3143,7 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: Addresses retrieved successfully
           content:
             application/json:
@@ -3202,7 +3202,7 @@ paths:
                     type: array
                     items:
                       allOf:
-                        - $ref: '#/components/schemas/AddressObject'
+                        - $ref: "#/components/schemas/AddressObject"
                         - type: object
                           properties:
                             zone_id:
@@ -3239,24 +3239,24 @@ paths:
                         Opt-out: 2
                       processingTimeMs: 150
                     addresses: []
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
     post:
       tags:
         - Address Management
@@ -3295,7 +3295,7 @@ paths:
             example:
               showOnlyExclusions: true
       responses:
-        '200':
+        "200":
           description: Addresses retrieved successfully
           content:
             application/json:
@@ -3354,7 +3354,7 @@ paths:
                     type: array
                     items:
                       allOf:
-                        - $ref: '#/components/schemas/AddressObject'
+                        - $ref: "#/components/schemas/AddressObject"
                         - type: object
                           properties:
                             zone_id:
@@ -3391,24 +3391,24 @@ paths:
                         Opt-out: 2
                       processingTimeMs: 120
                     addresses: []
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /excludeAddress:
     post:
@@ -3450,7 +3450,7 @@ paths:
               properties:
                 address:
                   allOf:
-                    - $ref: '#/components/schemas/AddressObject'
+                    - $ref: "#/components/schemas/AddressObject"
                     - type: object
                       description: "Complete address object to be excluded"
             example:
@@ -3473,7 +3473,7 @@ paths:
                 zone_name: "Zone at 37.4225, -122.0842"
                 campaign_id: "1c650d6f-a29c-4667-9f17-5709765ba34f"
       responses:
-        '200':
+        "200":
           description: Address successfully excluded
           content:
             application/json:
@@ -3585,12 +3585,12 @@ paths:
                     zonesUpdated: []
                     addressesUpdated: 0
                     processingTimeMs: 320
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingAddress:
                   summary: Missing address in request body
@@ -3602,33 +3602,33 @@ paths:
                   value:
                     error: "INVALID_INPUT"
                     message: "Address must have valid 'lat' and 'long' coordinates"
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '405':
+                $ref: "#/components/schemas/Error"
+        "405":
           description: Method not allowed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: "METHOD_NOT_ALLOWED"
                 message: "Only POST method is allowed"
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /createReferral:
     post:
@@ -3677,7 +3677,7 @@ paths:
                   description: Optional signature ID to link to this referral
                   example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
       responses:
-        '201':
+        "201":
           description: Referral created successfully
           content:
             application/json:
@@ -3691,19 +3691,19 @@ paths:
                     type: string
                     example: Referral created successfully
                   data:
-                    $ref: '#/components/schemas/Referral'
-        '401':
+                    $ref: "#/components/schemas/Referral"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /createNewTemplate:
     post:
@@ -3765,7 +3765,7 @@ paths:
                   description: "Postcard size"
                   example: "4x6"
       responses:
-        '201':
+        "201":
           description: Template created successfully
           content:
             application/json:
@@ -3808,7 +3808,7 @@ paths:
                           type: string
                         example: []
                       createdBy:
-                        $ref: '#/components/schemas/CreatedByInfo'
+                        $ref: "#/components/schemas/CreatedByInfo"
                       live:
                         type: boolean
                         example: false
@@ -3826,30 +3826,30 @@ paths:
                   processingTimeMs:
                     type: integer
                     example: 1523
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '401':
+                $ref: "#/components/schemas/Error"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: PostGrid API or database error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /createNewUniversalTemplate:
     post:
@@ -3919,7 +3919,7 @@ paths:
                   description: "Postcard size"
                   example: "4x6"
       responses:
-        '201':
+        "201":
           description: Universal template created successfully
           content:
             application/json:
@@ -3965,7 +3965,7 @@ paths:
                           type: string
                         example: []
                       createdBy:
-                        $ref: '#/components/schemas/CreatedByInfo'
+                        $ref: "#/components/schemas/CreatedByInfo"
                       live:
                         type: boolean
                         example: false
@@ -3983,33 +3983,33 @@ paths:
                   processingTimeMs:
                     type: integer
                     example: 1523
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '401':
+                $ref: "#/components/schemas/Error"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: Only ADMIN users can create universal templates
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: FORBIDDEN
                 message: Only ADMIN users can create universal templates
-        '500':
+        "500":
           description: PostGrid API or database error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getAllTemplates:
     get:
@@ -4052,7 +4052,7 @@ paths:
             enum: ["4x6", "6x9", "6x11"]
           description: "Filter by postcard size"
       responses:
-        '200':
+        "200":
           description: Templates retrieved successfully
           content:
             application/json:
@@ -4116,7 +4116,7 @@ paths:
                           items:
                             type: string
                         createdBy:
-                          $ref: '#/components/schemas/CreatedByInfo'
+                          $ref: "#/components/schemas/CreatedByInfo"
                         live:
                           type: boolean
                         deleted:
@@ -4125,30 +4125,30 @@ paths:
                           type: string
                           format: date-time
                         created_at_tz:
-                          $ref: '#/components/schemas/TimezoneEnrichment'
+                          $ref: "#/components/schemas/TimezoneEnrichment"
                         updated_at:
                           type: string
                           format: date-time
                         updated_at_tz:
-                          $ref: '#/components/schemas/TimezoneEnrichment'
-        '401':
+                          $ref: "#/components/schemas/TimezoneEnrichment"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Database error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getTemplateById:
     post:
@@ -4195,7 +4195,7 @@ paths:
                 value:
                   templateId: "template_tBnVEzz878mXLbHQaz86j8"
       responses:
-        '200':
+        "200":
           description: Template retrieved successfully
           content:
             application/json:
@@ -4234,7 +4234,7 @@ paths:
                         items:
                           type: string
                       createdBy:
-                        $ref: '#/components/schemas/CreatedByInfo'
+                        $ref: "#/components/schemas/CreatedByInfo"
                       live:
                         type: boolean
                       deleted:
@@ -4243,54 +4243,54 @@ paths:
                         type: string
                         format: date-time
                       created_at_tz:
-                        $ref: '#/components/schemas/TimezoneEnrichment'
+                        $ref: "#/components/schemas/TimezoneEnrichment"
                       updated_at:
                         type: string
                         format: date-time
                       updated_at_tz:
-                        $ref: '#/components/schemas/TimezoneEnrichment'
+                        $ref: "#/components/schemas/TimezoneEnrichment"
                   processingTimeMs:
                     type: integer
                     example: 145
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '401':
+                $ref: "#/components/schemas/Error"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '404':
+                $ref: "#/components/schemas/Error"
+        "404":
           description: Template not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '410':
+                $ref: "#/components/schemas/Error"
+        "410":
           description: Template has been deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: "TEMPLATE_DELETED"
                 message: "This template has been deleted"
-        '500':
+        "500":
           description: Database error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /updateTemplate:
     post:
@@ -4347,7 +4347,7 @@ paths:
               html: "<b>Hello</b> updated world!"
               description: "Updated template description"
       responses:
-        '200':
+        "200":
           description: Template updated successfully
           content:
             application/json:
@@ -4386,7 +4386,7 @@ paths:
                         items:
                           type: string
                       createdBy:
-                        $ref: '#/components/schemas/CreatedByInfo'
+                        $ref: "#/components/schemas/CreatedByInfo"
                       live:
                         type: boolean
                       deleted:
@@ -4400,57 +4400,57 @@ paths:
                   processingTimeMs:
                     type: integer
                     example: 892
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingField:
                   value:
                     error: "INVALID_INPUT"
                     message: "At least one field (html or description) must be provided for update"
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '404':
+                $ref: "#/components/schemas/Error"
+        "404":
           description: Template not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 notFound:
                   value:
                     error: "TEMPLATE_NOT_FOUND"
                     message: "Template not found or doesn't belong to your organization"
-        '410':
+        "410":
           description: Template is deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 deleted:
                   value:
                     error: "TEMPLATE_DELETED"
                     message: "Cannot update a deleted template"
-        '500':
+        "500":
           description: PostGrid API or database error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /deleteTemplate:
     post:
@@ -4488,7 +4488,7 @@ paths:
                   description: "PostGrid API key"
                   example: "live_sk_..."
       responses:
-        '200':
+        "200":
           description: Template deleted successfully
           content:
             application/json:
@@ -4514,36 +4514,36 @@ paths:
                   processingTimeMs:
                     type: integer
                     example: 892
-        '400':
+        "400":
           description: Invalid input or template already deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '401':
+                $ref: "#/components/schemas/Error"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '404':
+                $ref: "#/components/schemas/Error"
+        "404":
           description: Template not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: PostGrid API or database error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /createPostCardFromTemplate:
     post:
@@ -4724,7 +4724,7 @@ paths:
                 before_image_id: "https://example.com/before.jpg"
                 after_image_id: "https://example.com/after.jpg"
       responses:
-        '201':
+        "201":
           description: Postcard created successfully
           content:
             application/json:
@@ -4743,57 +4743,57 @@ paths:
                   processingTimeMs:
                     type: integer
                     example: 1523
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingField:
                   value:
                     error: "INVALID_INPUT"
                     message: "postgridApiKey is required and must be a string"
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '404':
+                $ref: "#/components/schemas/Error"
+        "404":
           description: Template not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 templateNotFound:
                   value:
                     error: "TEMPLATE_NOT_FOUND"
                     message: "Front template not found or doesn't belong to your organization"
-        '410':
+        "410":
           description: Template has been deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 templateDeleted:
                   value:
                     error: "TEMPLATE_DELETED"
                     message: "Front template has been deleted"
-        '500':
+        "500":
           description: PostGrid API error or internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 postgridError:
                   value:
@@ -4839,7 +4839,7 @@ paths:
               postgridApiKey: "test_sk_7oVoDY45m5aPpjKmMZJxz3"
               postcardId: "postcard_dfHxSciyRyyAZkRsuWSrNn"
       responses:
-        '200':
+        "200":
           description: Postcard retrieved successfully
           content:
             application/json:
@@ -4893,46 +4893,46 @@ paths:
                   processingTimeMs:
                     type: integer
                     example: 245
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingField:
                   value:
                     error: "INVALID_INPUT"
                     message: "postcardId is required and must be a string"
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '404':
+                $ref: "#/components/schemas/Error"
+        "404":
           description: Postcard not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 notFound:
                   value:
                     error: "POSTGRID_API_ERROR"
                     message: "PostGrid API returned error: 404 - Postcard not found"
-        '500':
+        "500":
           description: PostGrid API error or internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 postgridError:
                   value:
@@ -4974,7 +4974,7 @@ paths:
             example:
               id: "550e8400-e29b-41d4-a716-446655440000"
       responses:
-        '200':
+        "200":
           description: Template history retrieved successfully
           content:
             application/json:
@@ -5017,50 +5017,50 @@ paths:
                               type: string
                               format: date-time
                             created_at_tz:
-                              $ref: '#/components/schemas/TimezoneEnrichment'
+                              $ref: "#/components/schemas/TimezoneEnrichment"
                       count:
                         type: integer
                         example: 5
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingId:
                   value:
                     error: "INVALID_INPUT"
                     message: "Template ID is required"
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '404':
+                $ref: "#/components/schemas/Error"
+        "404":
           description: Template not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 notFound:
                   value:
                     error: "TEMPLATE_NOT_FOUND"
                     message: "Template not found in your organization"
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getReferralById:
     post:
@@ -5093,7 +5093,7 @@ paths:
                   description: Referral ID
                   example: 550e8400-e29b-41d4-a716-446655440000
       responses:
-        '200':
+        "200":
           description: Referral retrieved successfully
           content:
             application/json:
@@ -5104,31 +5104,31 @@ paths:
                     type: string
                     example: success
                   data:
-                    $ref: '#/components/schemas/Referral'
-        '400':
+                    $ref: "#/components/schemas/Referral"
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '401':
+                $ref: "#/components/schemas/Error"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '404':
+                $ref: "#/components/schemas/Error"
+        "404":
           description: Referral not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getAllReferrals:
     get:
@@ -5177,7 +5177,7 @@ paths:
             default: 10
             example: 10
       responses:
-        '200':
+        "200":
           description: Referrals retrieved successfully
           content:
             application/json:
@@ -5187,7 +5187,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Referral'
+                      $ref: "#/components/schemas/Referral"
                   pagination:
                     type: object
                     properties:
@@ -5215,18 +5215,18 @@ paths:
                         type: boolean
                         example: false
                         description: Whether there is a previous page
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
     post:
       tags:
         - Referral Management
@@ -5294,7 +5294,7 @@ paths:
                 value:
                   showOnlyActive: true
       responses:
-        '200':
+        "200":
           description: Referrals retrieved successfully
           content:
             application/json:
@@ -5304,7 +5304,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Referral'
+                      $ref: "#/components/schemas/Referral"
                   pagination:
                     type: object
                     properties:
@@ -5332,18 +5332,18 @@ paths:
                         type: boolean
                         example: false
                         description: Whether there is a previous page
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /updateReferralById:
     patch:
@@ -5452,7 +5452,7 @@ paths:
                   city: San Francisco
                   value: 3500
       responses:
-        '200':
+        "200":
           description: Referral updated successfully
           content:
             application/json:
@@ -5466,31 +5466,31 @@ paths:
                     type: string
                     example: Referral updated successfully
                   data:
-                    $ref: '#/components/schemas/Referral'
-        '400':
+                    $ref: "#/components/schemas/Referral"
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '401':
+                $ref: "#/components/schemas/Error"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '404':
+                $ref: "#/components/schemas/Error"
+        "404":
           description: Referral not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /searchReferral:
     post:
@@ -5616,7 +5616,7 @@ paths:
                   page: 2
                   limit: 20
       responses:
-        '200':
+        "200":
           description: Search results returned successfully
           content:
             application/json:
@@ -5632,7 +5632,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Referral'
+                      $ref: "#/components/schemas/Referral"
                   pagination:
                     type: object
                     properties:
@@ -5712,12 +5712,12 @@ paths:
                       total_pages: 0
                       has_next_page: false
                       has_previous_page: false
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingBoth:
                   summary: Neither query nor filters provided
@@ -5744,18 +5744,18 @@ paths:
                   value:
                     error: INVALID_INPUT
                     message: value must be a number
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /uploadImage:
     post:
@@ -5800,7 +5800,7 @@ paths:
                     format: binary
                   description: "One or more image files to upload (max 4MB each, JPEG/PNG/WebP/HEIC/HEIF)"
       responses:
-        '201':
+        "201":
           description: Image(s) uploaded successfully
           content:
             application/json:
@@ -5817,7 +5817,7 @@ paths:
                     type: object
                     properties:
                       gallery:
-                        $ref: '#/components/schemas/Gallery'
+                        $ref: "#/components/schemas/Gallery"
                       uploaded_images:
                         type: array
                         items:
@@ -5854,12 +5854,12 @@ paths:
                           failed:
                             type: integer
                             example: 0
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingReferralId:
                   summary: Missing referral_id
@@ -5881,27 +5881,27 @@ paths:
                   value:
                     error: INVALID_INPUT
                     message: 'File "large-image.jpg" exceeds 4MB size limit'
-        '404':
+        "404":
           description: Referral not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: REFERRAL_NOT_FOUND
                 message: Referral not found
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /uploadSignature:
     post:
@@ -5964,7 +5964,7 @@ paths:
                   proof: "[binary file data]"
                   referral_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
       responses:
-        '201':
+        "201":
           description: Signature uploaded successfully
           content:
             application/json:
@@ -6011,12 +6011,12 @@ paths:
                         type: string
                         format: date-time
                         example: "2025-02-19T10:00:00.000Z"
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingBoth:
                   summary: Missing both signature and proof
@@ -6033,33 +6033,33 @@ paths:
                   value:
                     error: INVALID_INPUT
                     message: 'File "large-document.pdf" exceeds 10MB size limit'
-        '404':
+        "404":
           description: Referral not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: REFERRAL_NOT_FOUND
                 message: Referral not found in your organization
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getSignatureById:
     post:
@@ -6093,7 +6093,7 @@ paths:
                   description: Signature ID to retrieve
                   example: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
       responses:
-        '200':
+        "200":
           description: Signature retrieved successfully
           content:
             application/json:
@@ -6134,47 +6134,47 @@ paths:
                         format: date-time
                         example: "2025-02-19T10:00:00.000Z"
                       created_at_tz:
-                        $ref: '#/components/schemas/TimezoneEnrichment'
+                        $ref: "#/components/schemas/TimezoneEnrichment"
                       updated_at:
                         type: string
                         format: date-time
                         example: "2025-02-19T10:00:00.000Z"
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: INVALID_INPUT
                 message: id is required and must be a string
-        '404':
+        "404":
           description: Signature not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: SIGNATURE_NOT_FOUND
                 message: Signature not found
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /deleteSignatureById:
     delete:
@@ -6210,7 +6210,7 @@ paths:
                   description: Signature ID to delete
                   example: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
       responses:
-        '200':
+        "200":
           description: Signature deleted successfully
           content:
             application/json:
@@ -6230,42 +6230,42 @@ paths:
                         type: string
                         format: uuid
                         example: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: INVALID_INPUT
                 message: id is required and must be a string
-        '404':
+        "404":
           description: Signature not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: SIGNATURE_NOT_FOUND
                 message: Signature not found
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getPhotoGallery:
     post:
@@ -6300,7 +6300,7 @@ paths:
             example:
               referral_id: 550e8400-e29b-41d4-a716-446655440000
       responses:
-        '200':
+        "200":
           description: Gallery retrieved successfully
           content:
             application/json:
@@ -6314,7 +6314,7 @@ paths:
                     type: string
                     example: Gallery retrieved successfully
                   data:
-                    $ref: '#/components/schemas/Gallery'
+                    $ref: "#/components/schemas/Gallery"
               examples:
                 withImages:
                   summary: Gallery with images
@@ -6347,36 +6347,36 @@ paths:
                       images: []
                       created_at: null
                       updated_at: null
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: INVALID_INPUT
                 message: referral_id is required
-        '404':
+        "404":
           description: Referral not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: REFERRAL_NOT_FOUND
                 message: Referral not found
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /changePhotoTypeById:
     patch:
@@ -6432,7 +6432,7 @@ paths:
                   id: 990e8400-e29b-41d4-a716-446655440004
                   type: none
       responses:
-        '200':
+        "200":
           description: Photo type updated successfully
           content:
             application/json:
@@ -6449,7 +6449,7 @@ paths:
                     type: object
                     properties:
                       gallery:
-                        $ref: '#/components/schemas/Gallery'
+                        $ref: "#/components/schemas/Gallery"
                       updated_photo:
                         type: object
                         properties:
@@ -6462,12 +6462,12 @@ paths:
                           type:
                             type: string
                             enum: [before, after, none]
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingId:
                   summary: Missing photo ID
@@ -6484,27 +6484,27 @@ paths:
                   value:
                     error: INVALID_INPUT
                     message: "Invalid type. Must be one of: before, after, none"
-        '404':
+        "404":
           description: Photo not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: PHOTO_NOT_FOUND
                 message: Photo not found in any gallery
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /deleteImage:
     delete:
@@ -6540,7 +6540,7 @@ paths:
             example:
               id: 770e8400-e29b-41d4-a716-446655440002
       responses:
-        '200':
+        "200":
           description: Image deleted successfully
           content:
             application/json:
@@ -6557,41 +6557,41 @@ paths:
                     type: object
                     properties:
                       gallery:
-                        $ref: '#/components/schemas/Gallery'
+                        $ref: "#/components/schemas/Gallery"
                       deleted_image_id:
                         type: string
                         format: uuid
                         example: 770e8400-e29b-41d4-a716-446655440002
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: INVALID_INPUT
                 message: Image ID is required
-        '404':
+        "404":
           description: Image not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: IMAGE_NOT_FOUND
                 message: Image not found in any gallery
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /deleteReferral:
     delete:
@@ -6627,7 +6627,7 @@ paths:
             example:
               id: 550e8400-e29b-41d4-a716-446655440000
       responses:
-        '200':
+        "200":
           description: Referral deleted successfully
           content:
             application/json:
@@ -6647,36 +6647,36 @@ paths:
                         type: string
                         format: uuid
                         example: 550e8400-e29b-41d4-a716-446655440000
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: INVALID_INPUT
                 message: Referral ID is required
-        '404':
+        "404":
           description: Referral not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: REFERRAL_NOT_FOUND
                 message: Referral not found
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getReferralHistory:
     post:
@@ -6712,7 +6712,7 @@ paths:
             example:
               id: 550e8400-e29b-41d4-a716-446655440000
       responses:
-        '200':
+        "200":
           description: Referral history retrieved successfully
           content:
             application/json:
@@ -6756,7 +6756,7 @@ paths:
                               type: string
                               format: date-time
                             created_at_tz:
-                              $ref: '#/components/schemas/TimezoneEnrichment'
+                              $ref: "#/components/schemas/TimezoneEnrichment"
                         example:
                           - id: 123e4567-e89b-12d3-a456-426614174000
                             referral_id: 550e8400-e29b-41d4-a716-446655440000
@@ -6779,36 +6779,36 @@ paths:
                       count:
                         type: integer
                         example: 3
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: INVALID_INPUT
                 message: Referral ID is required
-        '404':
+        "404":
           description: Referral not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               example:
                 error: REFERRAL_NOT_FOUND
                 message: Referral not found
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getAllCampaignStatus:
     get:
@@ -6826,7 +6826,7 @@ paths:
         **Returns:** List of all campaign status types
       operationId: getAllCampaignStatus
       responses:
-        '200':
+        "200":
           description: Campaign status types retrieved successfully
           content:
             application/json:
@@ -6850,12 +6850,12 @@ paths:
                         created_at:
                           type: string
                           format: date-time
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getAllConsents:
     get:
@@ -6880,7 +6880,7 @@ paths:
         - SupabaseAuth: []
           BearerAuth: []
       responses:
-        '200':
+        "200":
           description: Consents retrieved successfully
           content:
             application/json:
@@ -6909,13 +6909,12 @@ paths:
                           type: string
                           format: date-time
                           example: "2025-01-26T12:00:00Z"
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-
+                $ref: "#/components/schemas/Error"
 
   /createCampaign:
     post:
@@ -7187,7 +7186,7 @@ paths:
                     "223e4567-e89b-12d3-a456-426614174001": true
                     "323e4567-e89b-12d3-a456-426614174002": true
       responses:
-        '200':
+        "200":
           description: Campaign updated successfully (steps 2-4)
           content:
             application/json:
@@ -7271,7 +7270,7 @@ paths:
                       updated_at:
                         type: string
                         format: date-time
-        '201':
+        "201":
           description: Campaign created successfully (step 1)
           content:
             application/json:
@@ -7286,42 +7285,42 @@ paths:
                     example: "Campaign created successfully (Step 1 complete)"
                   data:
                     type: object
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '401':
+                $ref: "#/components/schemas/Error"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '404':
+                $ref: "#/components/schemas/Error"
+        "404":
           description: Referral or campaign not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '501':
+                $ref: "#/components/schemas/Error"
+        "501":
           description: Step not yet implemented
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getCampaignStep:
     post:
@@ -7359,7 +7358,7 @@ paths:
             example:
               campaign_id: 660e8400-e29b-41d4-a716-446655440001
       responses:
-        '200':
+        "200":
           description: Campaign step retrieved successfully
           content:
             application/json:
@@ -7403,42 +7402,42 @@ paths:
                         type: string
                         format: date-time
                       created_at_tz:
-                        $ref: '#/components/schemas/TimezoneEnrichment'
+                        $ref: "#/components/schemas/TimezoneEnrichment"
                       updated_at:
                         type: string
                         format: date-time
                       updated_at_tz:
-                        $ref: '#/components/schemas/TimezoneEnrichment'
-        '400':
+                        $ref: "#/components/schemas/TimezoneEnrichment"
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '401':
+                $ref: "#/components/schemas/Error"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '404':
+                $ref: "#/components/schemas/Error"
+        "404":
           description: Campaign not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getCampaignById:
     post:
@@ -7466,7 +7465,7 @@ paths:
             example:
               id: "123e4567-e89b-12d3-a456-426614174000"
       responses:
-        '200':
+        "200":
           description: Campaign retrieved successfully
           content:
             application/json:
@@ -7479,14 +7478,14 @@ paths:
                   message:
                     type: string
                   data:
-                    $ref: '#/components/schemas/Campaign'
-        '401':
+                    $ref: "#/components/schemas/Campaign"
+        "401":
           description: Unauthorized
-        '403':
+        "403":
           description: User not in organization
-        '404':
+        "404":
           description: Campaign not found
-        '500':
+        "500":
           description: Internal server error
 
   /getCampaignInformationByReferralId:
@@ -7515,7 +7514,7 @@ paths:
             example:
               id: "123e4567-e89b-12d3-a456-426614174000"
       responses:
-        '200':
+        "200":
           description: Campaign retrieved successfully
           content:
             application/json:
@@ -7528,14 +7527,14 @@ paths:
                   message:
                     type: string
                   data:
-                    $ref: '#/components/schemas/Campaign'
-        '401':
+                    $ref: "#/components/schemas/Campaign"
+        "401":
           description: Unauthorized
-        '403':
+        "403":
           description: User not in organization
-        '404':
+        "404":
           description: Referral not found or not associated with any campaign
-        '500':
+        "500":
           description: Internal server error
 
   /getAllCampaigns:
@@ -7565,7 +7564,7 @@ paths:
             maximum: 100
             default: 10
       responses:
-        '200':
+        "200":
           description: Campaigns retrieved successfully
           content:
             application/json:
@@ -7575,14 +7574,14 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Campaign'
+                      $ref: "#/components/schemas/Campaign"
                   pagination:
-                    $ref: '#/components/schemas/Pagination'
-        '401':
+                    $ref: "#/components/schemas/Pagination"
+        "401":
           description: Unauthorized
-        '403':
+        "403":
           description: User not in organization
-        '500':
+        "500":
           description: Internal server error
 
   /searchCampaign:
@@ -7681,7 +7680,7 @@ paths:
                   page: 1
                   limit: 10
       responses:
-        '200':
+        "200":
           description: Search results
           content:
             application/json:
@@ -7696,16 +7695,16 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Campaign'
+                      $ref: "#/components/schemas/Campaign"
                   pagination:
-                    $ref: '#/components/schemas/Pagination'
-        '400':
+                    $ref: "#/components/schemas/Pagination"
+        "400":
           description: Invalid input (query or filters required)
-        '401':
+        "401":
           description: Unauthorized
-        '403':
+        "403":
           description: User not in organization
-        '500':
+        "500":
           description: Internal server error
 
   /getCampaignHistory:
@@ -7746,7 +7745,7 @@ paths:
             example:
               id: "123e4567-e89b-12d3-a456-426614174000"
       responses:
-        '200':
+        "200":
           description: Campaign history retrieved successfully
           content:
             application/json:
@@ -7767,16 +7766,16 @@ paths:
                       history:
                         type: array
                         items:
-                          $ref: '#/components/schemas/CampaignHistoryEntry'
+                          $ref: "#/components/schemas/CampaignHistoryEntry"
                       count:
                         type: integer
-        '401':
+        "401":
           description: Unauthorized
-        '403':
+        "403":
           description: User not in organization
-        '404':
+        "404":
           description: Campaign not found
-        '500':
+        "500":
           description: Internal server error
 
   /updateCampaignById:
@@ -7888,7 +7887,7 @@ paths:
                   total_spent: 750.00
                   roi: 250.00
       responses:
-        '200':
+        "200":
           description: Campaign updated successfully
           content:
             application/json:
@@ -7901,16 +7900,16 @@ paths:
                   message:
                     type: string
                   data:
-                    $ref: '#/components/schemas/Campaign'
-        '400':
+                    $ref: "#/components/schemas/Campaign"
+        "400":
           description: Invalid input
-        '401':
+        "401":
           description: Unauthorized
-        '403':
+        "403":
           description: User not in organization
-        '404':
+        "404":
           description: Campaign not found
-        '500':
+        "500":
           description: Internal server error
 
   /deleteCampaign:
@@ -7950,7 +7949,7 @@ paths:
             example:
               id: "123e4567-e89b-12d3-a456-426614174000"
       responses:
-        '200':
+        "200":
           description: Campaign deleted successfully
           content:
             application/json:
@@ -7974,18 +7973,16 @@ paths:
                 message: Campaign deleted successfully
                 data:
                   deleted_campaign_id: "123e4567-e89b-12d3-a456-426614174000"
-        '400':
+        "400":
           description: Invalid input (missing campaign ID)
-        '401':
+        "401":
           description: Unauthorized
-        '403':
+        "403":
           description: User not in organization
-        '404':
+        "404":
           description: Campaign not found in user's organization
-        '500':
+        "500":
           description: Internal server error
-
-
 
   /getOrganization:
     get:
@@ -8010,12 +8007,12 @@ paths:
         - SupabaseAuth: []
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: Organization retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetOrganizationResponse'
+                $ref: "#/components/schemas/GetOrganizationResponse"
               examples:
                 adminView:
                   summary: Admin viewing their organization
@@ -8036,8 +8033,8 @@ paths:
                           member_role: MARKETER
                         - member_uid: 660e8400-e29b-41d4-a716-446655440002
                           member_role: TECHNICIAN
-                      created_at: '2025-01-18T10:00:00.000Z'
-                      updated_at: '2025-01-18T15:30:00.000Z'
+                      created_at: "2025-01-18T10:00:00.000Z"
+                      updated_at: "2025-01-18T15:30:00.000Z"
                 memberView:
                   summary: MARKETER/TECHNICIAN viewing their organization
                   value:
@@ -8057,14 +8054,14 @@ paths:
                           member_role: MARKETER
                         - member_uid: 660e8400-e29b-41d4-a716-446655440002
                           member_role: TECHNICIAN
-                      created_at: '2025-01-18T10:00:00.000Z'
-                      updated_at: '2025-01-18T15:30:00.000Z'
-        '401':
+                      created_at: "2025-01-18T10:00:00.000Z"
+                      updated_at: "2025-01-18T15:30:00.000Z"
+        "401":
           description: Unauthorized - Missing or invalid token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingAuth:
                   summary: Missing authorization header
@@ -8076,12 +8073,12 @@ paths:
                   value:
                     error: INVALID_TOKEN
                     message: Invalid or expired token
-        '404':
+        "404":
           description: Organization not found or user not associated with any organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 notFound:
                   summary: Organization not found
@@ -8093,12 +8090,12 @@ paths:
                   value:
                     error: ORGANIZATION_NOT_FOUND
                     message: You are not associated with any organization
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getAllFonts:
     get:
@@ -8118,7 +8115,7 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: Fonts retrieved successfully
           content:
             application/json:
@@ -8155,24 +8152,24 @@ paths:
                   processingTimeMs:
                     type: integer
                     example: 245
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /updateBrandingSettings:
     post:
@@ -8257,7 +8254,7 @@ paths:
                   body:
                     name: "Poppins"
       responses:
-        '200':
+        "200":
           description: Branding settings updated successfully
           content:
             application/json:
@@ -8275,35 +8272,35 @@ paths:
                   processingTimeMs:
                     type: integer
                     example: 128
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 invalidColor:
                   value:
                     error: "INVALID_INPUT"
                     message: "primary color must be a valid hex color (e.g., #E36A00)"
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getAnalytics:
     post:
@@ -8347,7 +8344,15 @@ paths:
               properties:
                 type:
                   type: string
-                  enum: ["REFERRALS", "TEMPLATES", "CAMPAIGNS", "DASHBOARD", "TARGETING_ZONES", "ADDRESS_COLLECTION", "GLOBAL_EXCLUSIONS"]
+                  enum: [
+                    "REFERRALS",
+                    "TEMPLATES",
+                    "CAMPAIGNS",
+                    "DASHBOARD",
+                    "TARGETING_ZONES",
+                    "ADDRESS_COLLECTION",
+                    "GLOBAL_EXCLUSIONS",
+                  ]
                   description: "Type of analytics to retrieve"
                   example: "REFERRALS"
             examples:
@@ -8380,7 +8385,7 @@ paths:
                 value:
                   type: "GLOBAL_EXCLUSIONS"
       responses:
-        '200':
+        "200":
           description: Analytics retrieved successfully
           content:
             application/json:
@@ -8399,13 +8404,13 @@ paths:
                     example: true
                   data:
                     oneOf:
-                      - $ref: '#/components/schemas/ReferralsAnalytics'
-                      - $ref: '#/components/schemas/TemplatesAnalytics'
-                      - $ref: '#/components/schemas/CampaignsAnalytics'
-                      - $ref: '#/components/schemas/DashboardAnalytics'
-                      - $ref: '#/components/schemas/TargetingZonesAnalytics'
-                      - $ref: '#/components/schemas/AddressCollectionAnalytics'
-                      - $ref: '#/components/schemas/GlobalExclusionsAnalytics'
+                      - $ref: "#/components/schemas/ReferralsAnalytics"
+                      - $ref: "#/components/schemas/TemplatesAnalytics"
+                      - $ref: "#/components/schemas/CampaignsAnalytics"
+                      - $ref: "#/components/schemas/DashboardAnalytics"
+                      - $ref: "#/components/schemas/TargetingZonesAnalytics"
+                      - $ref: "#/components/schemas/AddressCollectionAnalytics"
+                      - $ref: "#/components/schemas/GlobalExclusionsAnalytics"
               examples:
                 referralsCached:
                   summary: Referrals analytics (from cache)
@@ -8517,12 +8522,12 @@ paths:
                       total_excluded: 425
                       opt_outs: 87
                       manual_entries: 156
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 invalidType:
                   value:
@@ -8532,29 +8537,29 @@ paths:
                   value:
                     error: "INVALID_INPUT"
                     message: "type is required and must be a string"
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 noOrganization:
                   value:
                     error: "NO_ORGANIZATION"
                     message: "User is not associated with any organization"
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getAnalyticsPageData:
     post:
@@ -8654,7 +8659,7 @@ paths:
                 value:
                   type: "ROI"
       responses:
-        '200':
+        "200":
           description: Analytics data retrieved successfully
           content:
             application/json:
@@ -8676,9 +8681,9 @@ paths:
                     properties:
                       analytics_data:
                         oneOf:
-                          - $ref: '#/components/schemas/OverviewAnalyticsData'
-                          - $ref: '#/components/schemas/CampaignPerformanceAnalyticsData'
-                          - $ref: '#/components/schemas/ROIAnalyticsData'
+                          - $ref: "#/components/schemas/OverviewAnalyticsData"
+                          - $ref: "#/components/schemas/CampaignPerformanceAnalyticsData"
+                          - $ref: "#/components/schemas/ROIAnalyticsData"
               examples:
                 organizationAnalytics:
                   summary: Organization-wide analytics response
@@ -8718,12 +8723,12 @@ paths:
                           monthly:
                             total: 342
                             overview: "342 This month"
-        '400':
+        "400":
           description: Bad request - Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 invalidType:
                   value:
@@ -8737,24 +8742,24 @@ paths:
                   value:
                     error: "MISSING_CREDENTIALS"
                     message: "Linkly credentials required in headers: x-linkly-api-key, x-linkly-workspace-id"
-        '401':
+        "401":
           description: Unauthorized - Invalid or missing authentication
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getNotifications:
     get:
@@ -8798,7 +8803,7 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: Notifications retrieved successfully
           content:
             application/json:
@@ -8828,7 +8833,7 @@ paths:
                           description: "When the notification was created (ISO 8601 format)"
                           example: "2025-02-10T12:34:56.789Z"
                         timestamp_tz:
-                          $ref: '#/components/schemas/TimezoneEnrichment'
+                          $ref: "#/components/schemas/TimezoneEnrichment"
                   processingTimeMs:
                     type: number
                     description: "Processing time in milliseconds"
@@ -8844,18 +8849,18 @@ paths:
                     isUnread: false
                     timestamp: "2025-02-09T10:20:30.456Z"
                 processingTimeMs: 45
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: User not in organization or invalid role
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 noOrganization:
                   value:
@@ -8865,23 +8870,23 @@ paths:
                   value:
                     error: "INVALID_ROLE"
                     message: "Invalid user role"
-        '404':
+        "404":
           description: User profile not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 profileNotFound:
                   value:
                     error: "PROFILE_NOT_FOUND"
                     message: "User profile not found"
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /addPaymentMethod:
     post:
@@ -8936,7 +8941,7 @@ paths:
                   example: true
                   default: false
       responses:
-        '201':
+        "201":
           description: Payment method added successfully
           content:
             application/json:
@@ -8979,12 +8984,12 @@ paths:
                   processingTimeMs:
                     type: integer
                     example: 245
-        '400':
+        "400":
           description: Invalid input or card error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 invalidInput:
                   value:
@@ -8994,29 +8999,29 @@ paths:
                   value:
                     error: "CARD_ERROR"
                     message: "Your card was declined"
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: Forbidden - not ADMIN
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 notAdmin:
                   value:
                     error: "FORBIDDEN"
                     message: "Only ADMIN users can manage payment methods"
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getPaymentMethods:
     post:
@@ -9059,7 +9064,7 @@ paths:
                   example: true
                   default: false
       responses:
-        '200':
+        "200":
           description: Payment methods retrieved successfully
           content:
             application/json:
@@ -9103,7 +9108,7 @@ paths:
                           format: date-time
                           example: "2025-02-11T10:30:00.000Z"
                         created_tz:
-                          $ref: '#/components/schemas/TimezoneEnrichment'
+                          $ref: "#/components/schemas/TimezoneEnrichment"
                   processingTimeMs:
                     type: integer
                     example: 142
@@ -9127,29 +9132,29 @@ paths:
                     status: "success"
                     payment_methods: []
                     processingTimeMs: 45
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: Forbidden - not ADMIN
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 notAdmin:
                   value:
                     error: "FORBIDDEN"
                     message: "Only ADMIN users can view payment methods"
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /setDefaultPaymentMethod:
     post:
@@ -9196,7 +9201,7 @@ paths:
                   example: true
                   default: false
       responses:
-        '200':
+        "200":
           description: Default payment method updated successfully
           content:
             application/json:
@@ -9239,12 +9244,12 @@ paths:
                   processingTimeMs:
                     type: integer
                     example: 189
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 invalidInput:
                   value:
@@ -9254,40 +9259,40 @@ paths:
                   value:
                     error: "INVALID_REQUEST"
                     message: "No such payment method: pm_invalid"
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: Forbidden - not ADMIN
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 notAdmin:
                   value:
                     error: "FORBIDDEN"
                     message: "Only ADMIN users can manage payment methods"
-        '404':
+        "404":
           description: No Stripe customer
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 noCustomer:
                   value:
                     error: "NO_CUSTOMER"
                     message: "Organization does not have a Stripe customer. Please add a payment method first."
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /updatePaymentMethod:
     post:
@@ -9347,7 +9352,7 @@ paths:
                   example: true
                   default: false
       responses:
-        '200':
+        "200":
           description: Payment method updated successfully
           content:
             application/json:
@@ -9387,12 +9392,12 @@ paths:
                   processingTimeMs:
                     type: integer
                     example: 156
-        '400':
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 invalidInput:
                   value:
@@ -9402,40 +9407,40 @@ paths:
                   value:
                     error: "INVALID_REQUEST"
                     message: "No such payment method: pm_invalid"
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: Forbidden - not ADMIN
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 notAdmin:
                   value:
                     error: "FORBIDDEN"
                     message: "Only ADMIN users can manage payment methods"
-        '404':
+        "404":
           description: No Stripe customer
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 noCustomer:
                   value:
                     error: "NO_CUSTOMER"
                     message: "Organization does not have a Stripe customer. Please add a payment method first."
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /deletePaymentMethod:
     post:
@@ -9485,7 +9490,7 @@ paths:
                   example: true
                   default: false
       responses:
-        '200':
+        "200":
           description: Payment method deleted successfully
           content:
             application/json:
@@ -9501,12 +9506,12 @@ paths:
                   processingTimeMs:
                     type: integer
                     example: 134
-        '400':
+        "400":
           description: Invalid input or cannot delete default
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 invalidInput:
                   value:
@@ -9520,40 +9525,40 @@ paths:
                   value:
                     error: "INVALID_REQUEST"
                     message: "No such payment method: pm_invalid"
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: Forbidden - not ADMIN
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 notAdmin:
                   value:
                     error: "FORBIDDEN"
                     message: "Only ADMIN users can manage payment methods"
-        '404':
+        "404":
           description: No Stripe customer
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 noCustomer:
                   value:
                     error: "NO_CUSTOMER"
                     message: "Organization does not have a Stripe customer. Please add a payment method first."
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /chargePaymentMethod:
     post:
@@ -9629,7 +9634,7 @@ paths:
                   example: true
                   default: false
       responses:
-        '201':
+        "201":
           description: Payment succeeded
           content:
             application/json:
@@ -9657,9 +9662,9 @@ paths:
                         type: string
                         example: "usd"
                       amount_display:
-                        $ref: '#/components/schemas/CurrencyEnrichment'
+                        $ref: "#/components/schemas/CurrencyEnrichment"
                       created_tz:
-                        $ref: '#/components/schemas/TimezoneEnrichment'
+                        $ref: "#/components/schemas/TimezoneEnrichment"
                       status:
                         type: string
                         example: "succeeded"
@@ -9702,12 +9707,12 @@ paths:
                   processingTimeMs:
                     type: integer
                     example: 389
-        '400':
+        "400":
           description: Invalid input or payment failed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 invalidInput:
                   value:
@@ -9733,40 +9738,40 @@ paths:
                   value:
                     error: "REQUIRES_ACTION"
                     message: "Payment requires additional authentication. Please use Stripe.js on the frontend for 3D Secure."
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: Forbidden - not ADMIN
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 notAdmin:
                   value:
                     error: "FORBIDDEN"
                     message: "Only ADMIN users can charge payment methods"
-        '404':
+        "404":
           description: No Stripe customer
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 noCustomer:
                   value:
                     error: "NO_CUSTOMER"
                     message: "Organization does not have a Stripe customer. Please add a payment method first."
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getBillingHistory:
     post:
@@ -9827,7 +9832,7 @@ paths:
                   description: "Charge ID to start after (for pagination)"
                   example: "ch_1234567890abcdefghijklmn"
       responses:
-        '200':
+        "200":
           description: Billing history retrieved successfully
           content:
             application/json:
@@ -9864,9 +9869,9 @@ paths:
                           format: date-time
                           example: "2025-02-11T10:30:00.000Z"
                         created_tz:
-                          $ref: '#/components/schemas/TimezoneEnrichment'
+                          $ref: "#/components/schemas/TimezoneEnrichment"
                         amount_display:
-                          $ref: '#/components/schemas/CurrencyEnrichment'
+                          $ref: "#/components/schemas/CurrencyEnrichment"
                         receipt_url:
                           type: string
                           format: uri
@@ -9920,29 +9925,29 @@ paths:
                     transactions: []
                     has_more: false
                     processingTimeMs: 45
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '403':
+                $ref: "#/components/schemas/Error"
+        "403":
           description: Forbidden - not ADMIN
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 notAdmin:
                   value:
                     error: "FORBIDDEN"
                     message: "Only ADMIN users can view billing history"
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getAllTimeZones:
     get:
@@ -9959,7 +9964,7 @@ paths:
         - Array of timezone objects with id, symbol, and name
       operationId: getAllTimeZones
       responses:
-        '200':
+        "200":
           description: Successfully retrieved timezones
           content:
             application/json:
@@ -9989,12 +9994,12 @@ paths:
                     - id: "123e4567-e89b-12d3-a456-426614174001"
                       symbol: "UTC-8"
                       name: "Pacific Time (US)"
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /getAllCurrencies:
     get:
@@ -10011,7 +10016,7 @@ paths:
         - Array of currency objects with id, symbol, name, and abbreviation
       operationId: getAllCurrencies
       responses:
-        '200':
+        "200":
           description: Successfully retrieved currencies
           content:
             application/json:
@@ -10047,12 +10052,12 @@ paths:
                       symbol: "€"
                       name: "Euro"
                       abbreviation: "EUR"
-        '500':
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /saveUserPreferences:
     post:
@@ -10098,7 +10103,7 @@ paths:
                   selected_timezone_id: "123e4567-e89b-12d3-a456-426614174000"
                   selected_currency_id: "223e4567-e89b-12d3-a456-426614174000"
       responses:
-        '200':
+        "200":
           description: Preferences saved successfully
           content:
             application/json:
@@ -10139,12 +10144,12 @@ paths:
                       selected_currency_id: "223e4567-e89b-12d3-a456-426614174000"
                       created_at: "2025-01-15T10:30:00Z"
                       updated_at: "2025-01-15T10:30:00Z"
-        '400':
+        "400":
           description: Bad request - validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 missingFields:
                   value:
@@ -10158,18 +10163,18 @@ paths:
                   value:
                     error: "INVALID_CURRENCY"
                     message: "Invalid currency ID"
-        '401':
+        "401":
           description: Unauthorized - authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '500':
+                $ref: "#/components/schemas/Error"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
 components:
   schemas:
@@ -10402,9 +10407,9 @@ components:
               type: string
               format: date-time
               description: Account creation timestamp
-              example: '2025-01-13T10:00:00.000Z'
+              example: "2025-01-13T10:00:00.000Z"
             created_at_tz:
-              $ref: '#/components/schemas/TimezoneEnrichment'
+              $ref: "#/components/schemas/TimezoneEnrichment"
 
     MenuItem:
       type: object
@@ -10445,7 +10450,7 @@ components:
           type: array
           description: Array of sub-menu items if extended is true
           items:
-            $ref: '#/components/schemas/MenuItem'
+            $ref: "#/components/schemas/MenuItem"
 
     MessageResponse:
       type: object
@@ -10537,18 +10542,18 @@ components:
         organization_members:
           type: array
           items:
-            $ref: '#/components/schemas/OrganizationMember'
+            $ref: "#/components/schemas/OrganizationMember"
           description: "List of organization members (MARKETER and TECHNICIAN users)"
         created_at:
           type: string
           format: date-time
           description: Organization creation timestamp
-          example: '2025-01-18T10:00:00.000Z'
+          example: "2025-01-18T10:00:00.000Z"
         updated_at:
           type: string
           format: date-time
           description: Organization last update timestamp
-          example: '2025-01-18T15:30:00.000Z'
+          example: "2025-01-18T15:30:00.000Z"
 
     SaveOrganizationRequest:
       type: object
@@ -10595,7 +10600,7 @@ components:
           type: string
           example: success
         data:
-          $ref: '#/components/schemas/Organization'
+          $ref: "#/components/schemas/Organization"
 
     Referral:
       type: object
@@ -10637,7 +10642,7 @@ components:
                 zip:
                   type: string
                   description: ZIP code
-                  example: '90210'
+                  example: "90210"
             phone:
               type: string
               description: Phone number
@@ -10671,7 +10676,7 @@ components:
               description: Currency code
               example: USD
             value_display:
-              $ref: '#/components/schemas/CurrencyEnrichment'
+              $ref: "#/components/schemas/CurrencyEnrichment"
             referral_percentage:
               type: number
               description: Referral percentage
@@ -10700,14 +10705,14 @@ components:
           type: string
           format: date-time
           description: Creation timestamp
-          example: '2025-01-19T10:00:00.000Z'
+          example: "2025-01-19T10:00:00.000Z"
         created_at_tz:
-          $ref: '#/components/schemas/TimezoneEnrichment'
+          $ref: "#/components/schemas/TimezoneEnrichment"
         updated_at:
           type: string
           format: date-time
           description: Last update timestamp
-          example: '2025-01-19T10:00:00.000Z'
+          example: "2025-01-19T10:00:00.000Z"
         image_url:
           type: string
           format: uri
@@ -10752,16 +10757,16 @@ components:
           type: string
           format: date-time
           description: Gallery creation timestamp
-          example: '2025-01-19T10:00:00.000Z'
+          example: "2025-01-19T10:00:00.000Z"
         updated_at:
           type: string
           format: date-time
           description: Gallery last update timestamp
-          example: '2025-01-19T11:30:00.000Z'
+          example: "2025-01-19T11:30:00.000Z"
         created_at_tz:
-          $ref: '#/components/schemas/TimezoneEnrichment'
+          $ref: "#/components/schemas/TimezoneEnrichment"
         updated_at_tz:
-          $ref: '#/components/schemas/TimezoneEnrichment'
+          $ref: "#/components/schemas/TimezoneEnrichment"
 
     Campaign:
       type: object
@@ -10848,9 +10853,9 @@ components:
           format: date-time
           description: Campaign last update timestamp
         created_at_tz:
-          $ref: '#/components/schemas/TimezoneEnrichment'
+          $ref: "#/components/schemas/TimezoneEnrichment"
         updated_at_tz:
-          $ref: '#/components/schemas/TimezoneEnrichment'
+          $ref: "#/components/schemas/TimezoneEnrichment"
 
     CampaignHistoryEntry:
       type: object
@@ -10878,7 +10883,7 @@ components:
           format: date-time
           description: When the action was performed
         created_at_tz:
-          $ref: '#/components/schemas/TimezoneEnrichment'
+          $ref: "#/components/schemas/TimezoneEnrichment"
 
     LocationZone:
       type: object
@@ -11066,7 +11071,7 @@ components:
           description: Zone last update timestamp
           example: "2025-01-18T15:30:00.000Z"
         created_at_tz:
-          $ref: '#/components/schemas/TimezoneEnrichment'
+          $ref: "#/components/schemas/TimezoneEnrichment"
 
     AddressObject:
       type: object
@@ -11191,16 +11196,14 @@ components:
               description: "When the user profile was created"
               example: "2025-01-13T10:00:00.000Z"
             created_at_tz:
-              $ref: '#/components/schemas/TimezoneEnrichment'
+              $ref: "#/components/schemas/TimezoneEnrichment"
             updated_at:
               type: string
               format: date-time
               description: "When the user profile was last updated"
               example: "2025-01-13T10:00:00.000Z"
-            created_at_tz:
-              $ref: '#/components/schemas/TimezoneEnrichment'
             updated_at_tz:
-              $ref: '#/components/schemas/TimezoneEnrichment'
+              $ref: "#/components/schemas/TimezoneEnrichment"
 
     CreatedByInfo:
       type: object
@@ -11232,9 +11235,9 @@ components:
           description: "When the user profile was last updated"
           example: "2025-01-13T10:00:00.000Z"
         created_at_tz:
-          $ref: '#/components/schemas/TimezoneEnrichment'
+          $ref: "#/components/schemas/TimezoneEnrichment"
         updated_at_tz:
-          $ref: '#/components/schemas/TimezoneEnrichment'
+          $ref: "#/components/schemas/TimezoneEnrichment"
 
     ReferralsAnalytics:
       type: object
@@ -11258,7 +11261,7 @@ components:
           description: "Average value from job_details.value"
           example: 5250.75
         avg_referrals_value_display:
-          $ref: '#/components/schemas/CurrencyEnrichment'
+          $ref: "#/components/schemas/CurrencyEnrichment"
         overview:
           type: object
           properties:
@@ -11318,7 +11321,7 @@ components:
           description: "Total amount spent on campaigns"
           example: 12500.50
         total_spent_display:
-          $ref: '#/components/schemas/CurrencyEnrichment'
+          $ref: "#/components/schemas/CurrencyEnrichment"
         total_leads_generated:
           type: integer
           description: "Sum of all campaigns' leads_gen field"
@@ -11690,7 +11693,7 @@ components:
                     description: "Estimated value of the job"
                     example: 5000.00
                   value_display:
-                    $ref: '#/components/schemas/CurrencyEnrichment'
+                    $ref: "#/components/schemas/CurrencyEnrichment"
                   status:
                     type: string
                     description: "Status of the job (e.g., 'Pending', 'Completed')"
@@ -11730,7 +11733,7 @@ components:
           description: "Total spent (sum of all postcards_sent × 3)"
           example: 16260
         total_spent_display:
-          $ref: '#/components/schemas/CurrencyEnrichment'
+          $ref: "#/components/schemas/CurrencyEnrichment"
         total_leads_gen:
           type: integer
           description: "Total leads generated (sum of all leads_gen)"
@@ -11745,7 +11748,7 @@ components:
           description: "Estimated revenue (leads_gen × assumed $1000 per lead)"
           example: 4750
         estimated_revenue_generated_display:
-          $ref: '#/components/schemas/CurrencyEnrichment'
+          $ref: "#/components/schemas/CurrencyEnrichment"
         estimated_cost_recovery_ratio:
           type: number
           format: float
