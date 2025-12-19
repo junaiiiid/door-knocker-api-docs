@@ -2537,6 +2537,20 @@ paths:
                       updated_at:
                         type: string
                         format: date-time
+                      created_at_tz:
+                        $ref: '#/components/schemas/TimezoneEnrichment'
+                      updated_at_tz:
+                        $ref: '#/components/schemas/TimezoneEnrichment'
+                      cost_display:
+                        type: object
+                        properties:
+                          final_cost:
+                            $ref: '#/components/schemas/CurrencyEnrichment'
+                          per_postcard:
+                            $ref: '#/components/schemas/CurrencyEnrichment'
+                          currency_code:
+                            type: string
+                            example: "USD"
                   campaign_templates:
                     type: object
                     description: PostGrid template IDs and sizes for the campaign
@@ -6150,6 +6164,97 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /deleteSignatureById:
+    delete:
+      tags:
+        - Referral Management
+      summary: Delete signature by ID
+      description: |
+        Deletes a specific signature record and its associated proof file from storage.
+
+        **Business Rules:**
+        - Requires signature ID in request body
+        - Deletes signature record from database
+        - Deletes associated proof file from Supabase Storage (if it exists)
+        - Organization-based authentication
+        - Operation is idempotent (returns success even if proof file doesn't exist)
+
+        **Returns:** Success confirmation with deleted signature ID
+      operationId: deleteSignatureById
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: Signature ID to delete
+                  example: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+      responses:
+        '200':
+          description: Signature deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: "Signature deleted successfully"
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        example: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: INVALID_INPUT
+                message: id is required and must be a string
+        '404':
+          description: Signature not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: SIGNATURE_NOT_FOUND
+                message: Signature not found
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /getPhotoGallery:
     post:
       tags:
@@ -9528,6 +9633,10 @@ paths:
                       currency:
                         type: string
                         example: "usd"
+                      amount_display:
+                        $ref: '#/components/schemas/CurrencyEnrichment'
+                      created_tz:
+                        $ref: '#/components/schemas/TimezoneEnrichment'
                       status:
                         type: string
                         example: "succeeded"
@@ -9731,6 +9840,10 @@ paths:
                           type: string
                           format: date-time
                           example: "2025-02-11T10:30:00.000Z"
+                        created_tz:
+                          $ref: '#/components/schemas/TimezoneEnrichment'
+                        amount_display:
+                          $ref: '#/components/schemas/CurrencyEnrichment'
                         receipt_url:
                           type: string
                           format: uri
@@ -10198,6 +10311,41 @@ components:
             - At least one special character (!@#$%^&* etc.)
           example: NewSecurePass123!
 
+    TimezoneEnrichment:
+      type: object
+      properties:
+        utc:
+          type: string
+          example: "2023-10-27T10:00:00Z"
+        local:
+          type: string
+          example: "2023-10-27T06:00:00-04:00"
+        timezone:
+          type: string
+          example: "America/New_York"
+        offset:
+          type: string
+          example: "-04:00"
+        is_default_timezone:
+          type: boolean
+          example: false
+
+    CurrencyEnrichment:
+      type: object
+      properties:
+        value:
+          type: number
+          example: 1234.56
+        currency_code:
+          type: string
+          example: "USD"
+        symbol:
+          type: string
+          example: "$"
+        formatted:
+          type: string
+          example: "$1,234.56"
+
     GetUserResponse:
       type: object
       properties:
@@ -10232,6 +10380,8 @@ components:
               format: date-time
               description: Account creation timestamp
               example: '2025-01-13T10:00:00.000Z'
+            created_at_tz:
+              $ref: '#/components/schemas/TimezoneEnrichment'
 
     MenuItem:
       type: object
@@ -11001,6 +11151,8 @@ components:
               format: date-time
               description: "When the user profile was created"
               example: "2025-01-13T10:00:00.000Z"
+            created_at_tz:
+              $ref: '#/components/schemas/TimezoneEnrichment'
             updated_at:
               type: string
               format: date-time
@@ -11058,6 +11210,8 @@ components:
           format: float
           description: "Average value from job_details.value"
           example: 5250.75
+        avg_referrals_value_display:
+          $ref: '#/components/schemas/CurrencyEnrichment'
         overview:
           type: object
           properties:
@@ -11114,8 +11268,10 @@ components:
         total_spent:
           type: number
           format: float
-          description: "Total spent (postcards_sent × 3)"
-          example: 16260
+          description: "Total amount spent on campaigns"
+          example: 12500.50
+        total_spent_display:
+          $ref: '#/components/schemas/CurrencyEnrichment'
         total_leads_generated:
           type: integer
           description: "Sum of all campaigns' leads_gen field"
@@ -11215,7 +11371,6 @@ components:
             symbol:
               type: string
               description: "Symbol for unit (always mi)"
-              example: "mi"
 
     AddressCollectionAnalytics:
       type: object
@@ -11346,7 +11501,6 @@ components:
                   example: 342
                 overview:
                   type: string
-                  description: "Monthly overview"
                   example: "342 This month"
             custom_range:
               type: object
@@ -11484,6 +11638,16 @@ components:
               estimated_roi_breakdown:
                 type: object
                 properties:
+                  value:
+                    type: number
+                    description: "Estimated value of the job"
+                    example: 5000.00
+                  value_display:
+                    $ref: '#/components/schemas/CurrencyEnrichment'
+                  status:
+                    type: string
+                    description: "Status of the job (e.g., 'Pending', 'Completed')"
+                    example: "Completed"
                   total_cost:
                     type: number
                     description: "Total cost (postcards sent × 3)"
