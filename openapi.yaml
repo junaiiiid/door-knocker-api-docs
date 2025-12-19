@@ -7923,6 +7923,7 @@ paths:
 
         **Cascade Behavior:**
         - Automatically deletes all campaign_history entries (ON DELETE CASCADE)
+        - Removes campaign_id from campaigns_used array in all templates belonging to the organization
         - Sets campaign_id to NULL in associated referrals (ON DELETE SET NULL)
         - Logs deletion action before removing the campaign
 
