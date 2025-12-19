@@ -99,6 +99,8 @@ tags:
     description: PostGrid template creation, retrieval, and deletion operations
   - name: Settings Management
     description: User settings, branding, and font management operations
+  - name: System Preferences
+    description: User system preferences including timezone and currency settings
   - name: Address Discovery
     description: Address discovery and verification operations
   - name: Analytics
@@ -9799,6 +9801,233 @@ paths:
                   value:
                     error: "FORBIDDEN"
                     message: "Only ADMIN users can view billing history"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /getAllTimeZones:
+    get:
+      tags:
+        - System Preferences
+      summary: Get all available timezones
+      description: |
+        Returns a list of all available timezones for user selection.
+
+        **Access:**
+        - Public (no authentication required)
+
+        **Response:**
+        - Array of timezone objects with id, symbol, and name
+      operationId: getAllTimeZones
+      responses:
+        '200':
+          description: Successfully retrieved timezones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                      description: Unique timezone ID
+                    symbol:
+                      type: string
+                      description: UTC offset symbol
+                      example: "UTC-5"
+                    name:
+                      type: string
+                      description: Timezone name
+                      example: "Eastern Time (US)"
+              examples:
+                success:
+                  value:
+                    - id: "123e4567-e89b-12d3-a456-426614174000"
+                      symbol: "UTC-5"
+                      name: "Eastern Time (US)"
+                    - id: "123e4567-e89b-12d3-a456-426614174001"
+                      symbol: "UTC-8"
+                      name: "Pacific Time (US)"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /getAllCurrencies:
+    get:
+      tags:
+        - System Preferences
+      summary: Get all available currencies
+      description: |
+        Returns a list of all available currencies for user selection.
+
+        **Access:**
+        - Public (no authentication required)
+
+        **Response:**
+        - Array of currency objects with id, symbol, name, and abbreviation
+      operationId: getAllCurrencies
+      responses:
+        '200':
+          description: Successfully retrieved currencies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                      description: Unique currency ID
+                    symbol:
+                      type: string
+                      description: Currency symbol
+                      example: "$"
+                    name:
+                      type: string
+                      description: Currency name
+                      example: "United States Dollar"
+                    abbreviation:
+                      type: string
+                      description: Currency abbreviation/code
+                      example: "USD"
+              examples:
+                success:
+                  value:
+                    - id: "223e4567-e89b-12d3-a456-426614174000"
+                      symbol: "$"
+                      name: "United States Dollar"
+                      abbreviation: "USD"
+                    - id: "223e4567-e89b-12d3-a456-426614174001"
+                      symbol: "€"
+                      name: "Euro"
+                      abbreviation: "EUR"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /saveUserPreferences:
+    post:
+      tags:
+        - System Preferences
+      summary: Save user's system preferences
+      description: |
+        Saves or updates user's system preferences including timezone and currency.
+
+        **Business Rules:**
+        - Requires authentication
+        - Preferences are user-specific (not organization-based)
+        - Updates existing preferences or creates new ones
+        - Validates timezone and currency IDs exist
+
+        **Default Values:**
+        - Default timezone: UTC-5 (Eastern Time)
+        - Default currency: USD
+      operationId: saveUserPreferences
+      security:
+        - SupabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - selected_timezone_id
+                - selected_currency_id
+              properties:
+                selected_timezone_id:
+                  type: string
+                  format: uuid
+                  description: ID of the selected timezone
+                selected_currency_id:
+                  type: string
+                  format: uuid
+                  description: ID of the selected currency
+            examples:
+              updatePreferences:
+                value:
+                  selected_timezone_id: "123e4567-e89b-12d3-a456-426614174000"
+                  selected_currency_id: "223e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Preferences saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  preferences:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      user_id:
+                        type: string
+                        format: uuid
+                      selected_timezone_id:
+                        type: string
+                        format: uuid
+                      selected_currency_id:
+                        type: string
+                        format: uuid
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+              examples:
+                success:
+                  value:
+                    message: "Preferences saved successfully"
+                    preferences:
+                      id: "323e4567-e89b-12d3-a456-426614174000"
+                      user_id: "98a88548-47d3-470d-ac40-ba10c9881d98"
+                      selected_timezone_id: "123e4567-e89b-12d3-a456-426614174000"
+                      selected_currency_id: "223e4567-e89b-12d3-a456-426614174000"
+                      created_at: "2025-01-15T10:30:00Z"
+                      updated_at: "2025-01-15T10:30:00Z"
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingFields:
+                  value:
+                    error: "MISSING_FIELDS"
+                    message: "Both selected_timezone_id and selected_currency_id are required"
+                invalidTimezone:
+                  value:
+                    error: "INVALID_TIMEZONE"
+                    message: "Invalid timezone ID"
+                invalidCurrency:
+                  value:
+                    error: "INVALID_CURRENCY"
+                    message: "Invalid currency ID"
+        '401':
+          description: Unauthorized - authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
           content:
