@@ -1829,6 +1829,7 @@ paths:
         - Filters by building type (ALL, RESIDENTIAL, OTHER)
         - Returns full address details with coordinates
         - Saves zone to location_zones table and returns zone_id
+        - **Campaign Linking**: When campaign_id is provided, automatically unlinks ALL existing zones from that campaign before creating the new zone (ensures only the newest search zone is linked to the campaign)
 
         **Building Type Classifications:**
         - **RESIDENTIAL**: apartments, barracks, bungalow, cabin, detached, annexe, dormitory, farm, ger, hotel, house, houseboat, residential, semidetached_house, static_caravan, stilt_house, terrace, tree_house, trullo
@@ -2800,10 +2801,25 @@ paths:
         - Organization-based (returns only zones from user's organization)
         - Ordered by most recent first
         - Includes all zone data and addresses
+        - **Filtering by campaign_id:**
+          - Default (no parameter): Returns only zones with `campaign_id` (linked to campaigns)
+          - `showAll=true`: Returns all zones including those without `campaign_id`
+
+        **Query Parameters:**
+        - `showAll` (optional): Set to "true" to show all zones. Omit to show only zones linked to campaigns.
       operationId: getAllAddressZones
       security:
         - SupabaseAuth: []
           BearerAuth: []
+      parameters:
+        - name: showAll
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["true", "false"]
+          description: Set to "true" to retrieve all zones. Omit or set to "false" to retrieve only zones linked to campaigns (campaign_id is not null).
+          example: "true"
       responses:
         "200":
           description: Zones retrieved successfully
@@ -2977,7 +2993,7 @@ paths:
         - Validates address using Google Maps Geocoding API
         - Formats address to match zone's address structure
         - Zone must belong to user's organization
-        - Automatically marks new address as "UnVerified"
+        - Automatically marks new address as "Opt-out" status by default
         - Checks for duplicate addresses (same lat/lng)
         - Calculates distance from zone center
         - Requires Google Maps API key
@@ -3128,20 +3144,33 @@ paths:
 
         **Business Rules:**
         - Returns addresses from all zones in the organization
-        - Optional filtering to show only non-Valid addresses (exclusions)
+        - **NEVER returns "Unverified" addresses** - they are always excluded
+        - Optional filtering to show only exclusion addresses (Duplicate and Opt-out)
         - Automatic deduplication based on lat/lng coordinates
         - Includes zone metadata for each address
+        - **Zone Filtering:**
+          - Default (no `showAll` parameter): Returns addresses only from zones with `campaign_id` (linked to campaigns)
+          - `showAll=true`: Returns addresses from all zones including those without `campaign_id`
 
         **Request Methods:**
-        - GET: Returns all addresses (showOnlyExclusions = false)
+        - GET: Returns Valid, Duplicate, and Opt-out addresses (excludes Unverified)
         - POST: Supports filtering with request body
 
         **Filtering Logic:**
-        - showOnlyExclusions = false (default): Returns all addresses
-        - showOnlyExclusions = true: Returns only UnVerified, Duplicate, and Opt-out addresses (excludes Valid)
+        - showOnlyExclusions = false (default): Returns Valid, Duplicate, and Opt-out addresses (excludes Unverified)
+        - showOnlyExclusions = true: Returns only Duplicate and Opt-out addresses (excludes Valid and Unverified)
       operationId: getAllAddressesGet
       security:
         - BearerAuth: []
+      parameters:
+        - name: showAll
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["true", "false"]
+          description: Set to "true" to retrieve addresses from all zones. Omit or set to "false" to retrieve only addresses from zones linked to campaigns (campaign_id is not null).
+          example: "true"
       responses:
         "200":
           description: Addresses retrieved successfully
@@ -3266,20 +3295,33 @@ paths:
 
         **Business Rules:**
         - Returns addresses from all zones in the organization
-        - Optional filtering to show only non-Valid addresses (exclusions)
+        - **NEVER returns "Unverified" addresses** - they are always excluded
+        - Optional filtering to show only exclusion addresses (Duplicate and Opt-out)
         - Automatic deduplication based on lat/lng coordinates
         - Includes zone metadata for each address
+        - **Zone Filtering:**
+          - Default (no `showAll` parameter): Returns addresses only from zones with `campaign_id` (linked to campaigns)
+          - `showAll=true`: Returns addresses from all zones including those without `campaign_id`
 
         **Request Methods:**
-        - GET: Returns all addresses (showOnlyExclusions = false)
+        - GET: Returns Valid, Duplicate, and Opt-out addresses (excludes Unverified)
         - POST: Supports filtering with request body
 
         **Filtering Logic:**
-        - showOnlyExclusions = false (default): Returns all addresses
-        - showOnlyExclusions = true: Returns only UnVerified, Duplicate, and Opt-out addresses (excludes Valid)
+        - showOnlyExclusions = false (default): Returns Valid, Duplicate, and Opt-out addresses (excludes Unverified)
+        - showOnlyExclusions = true: Returns only Duplicate and Opt-out addresses (excludes Valid and Unverified)
       operationId: getAllAddressesPost
       security:
         - BearerAuth: []
+      parameters:
+        - name: showAll
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["true", "false"]
+          description: Set to "true" to retrieve addresses from all zones. Omit or set to "false" to retrieve only addresses from zones linked to campaigns (campaign_id is not null).
+          example: "true"
       requestBody:
         required: false
         content:
@@ -3290,7 +3332,7 @@ paths:
                 showOnlyExclusions:
                   type: boolean
                   default: false
-                  description: "If true, returns only addresses with status other than 'Valid'"
+                  description: "If true, returns only Duplicate and Opt-out addresses (excludes Valid and Unverified). If false, returns Valid, Duplicate, and Opt-out addresses (excludes Unverified)"
                   example: true
             example:
               showOnlyExclusions: true
