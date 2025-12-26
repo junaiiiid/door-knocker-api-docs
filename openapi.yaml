@@ -2457,7 +2457,7 @@ paths:
         - Public access (no authentication required)
         - Returns launch_ready_campaign_data for the specified campaign
         - Includes campaign PostGrid template IDs (front and back) with postcard sizes
-        - Includes campaign business_data from step 6 and offer_data from step 5
+        - Includes campaign business_data from step 4 and offer_data from step 3
         - Useful for socket connections and public integrations
         - Returns most recent launch data if multiple exist
 
@@ -2471,8 +2471,8 @@ paths:
         **Response Data:**
         - **launch_data**: Verified addresses, costs, and validation results
         - **campaign_templates**: PostGrid template IDs and sizes (e.g., "6x4", "4x6")
-        - **business_data**: Campaign's business data from step 6
-        - **offer_data**: Campaign's offer data from step 5
+        - **business_data**: Campaign's business data from step 4 (includes up to 6 optional images)
+        - **offer_data**: Campaign's offer data from step 3
 
         **Authentication:** None required (public endpoint)
       operationId: getCampaignLaunchData
@@ -4731,8 +4731,8 @@ paths:
                     phone: "+1-555-123-4567"
                     website: "https://abchome.com"
                     qr_url: "https://abchome.com/spring-promo"
-                    before_image_id: "https://example.com/before.jpg"
-                    after_image_id: "https://example.com/after.jpg"
+                    image_1_url: "https://example.com/image1.jpg"
+                    image_2_url: "https://example.com/image2.jpg"
             example:
               postgridApiKey: "test_sk_7oVoDY45m5aPpjKmMZJxz3"
               to:
@@ -4763,8 +4763,8 @@ paths:
                 phone: "+1-555-123-4567"
                 website: "https://abchome.com"
                 qr_url: "https://abchome.com/spring-promo"
-                before_image_id: "https://example.com/before.jpg"
-                after_image_id: "https://example.com/after.jpg"
+                image_1_url: "https://example.com/image1.jpg"
+                image_2_url: "https://example.com/image2.jpg"
       responses:
         "201":
           description: Postcard created successfully
@@ -5803,13 +5803,15 @@ paths:
     post:
       tags:
         - Gallery Management
-      summary: Upload single or multiple images to referral gallery
+      summary: Upload single or multiple images to gallery
       description: |
-        Uploads one or more images to a referral's photo gallery.
+        Uploads one or more images to a photo gallery (referral or organization).
 
         **Business Rules:**
-        - Requires referral_id and image file(s) in multipart/form-data
-        - If no gallery exists for the referral, creates one automatically
+        - referral_id is OPTIONAL in multipart/form-data
+        - If referral_id provided: uploads to referral's gallery
+        - If referral_id NOT provided: uploads to organization's standalone gallery
+        - If no gallery exists, creates one automatically
         - Uploads images to Supabase Storage in folder: gallery/{gallery_id}
         - Default image type is "none" for all images (can be changed later with changePhotoTypeById)
         - Supported formats: JPEG, PNG, WebP, HEIC, HEIF
@@ -5828,13 +5830,12 @@ paths:
             schema:
               type: object
               required:
-                - referral_id
                 - image
               properties:
                 referral_id:
                   type: string
                   format: uuid
-                  description: Referral ID to upload images for
+                  description: "Optional - Referral ID to upload images for. If not provided, uploads to organization's standalone gallery."
                 image:
                   type: array
                   items:
@@ -6313,16 +6314,19 @@ paths:
     post:
       tags:
         - Gallery Management
-      summary: Get photo gallery for referral
+      summary: Get photo gallery (referral or organization)
       description: |
-        Retrieves the photo gallery for a specific referral.
+        Retrieves the photo gallery for a referral or organization.
 
         **Business Rules:**
-        - Requires referral_id in request body
+        - referral_id is OPTIONAL in request body
+        - If referral_id provided: returns referral's gallery
+        - If referral_id NOT provided (empty body {}): returns organization's standalone gallery
         - Returns gallery with all images (before/after/none types)
-        - Returns empty gallery structure if no gallery exists for the referral
+        - Returns empty gallery structure if no gallery exists
+        - Response includes gallery_type field ("referral" or "organization")
 
-        **Returns:** Gallery object with images array
+        **Returns:** Gallery object with images array and gallery_type
       operationId: getPhotoGallery
       security:
         - BearerAuth: []
@@ -6332,15 +6336,19 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - referral_id
               properties:
                 referral_id:
                   type: string
                   format: uuid
-                  description: Referral ID to get gallery for
-            example:
-              referral_id: 550e8400-e29b-41d4-a716-446655440000
+                  description: "Optional - Referral ID to get gallery for. If not provided, returns organization's gallery."
+            examples:
+              referralGallery:
+                summary: Get referral's gallery
+                value:
+                  referral_id: 550e8400-e29b-41d4-a716-446655440000
+              organizationGallery:
+                summary: Get organization's gallery
+                value: {}
       responses:
         "200":
           description: Gallery retrieved successfully
@@ -6358,14 +6366,16 @@ paths:
                   data:
                     $ref: "#/components/schemas/Gallery"
               examples:
-                withImages:
-                  summary: Gallery with images
+                referralGalleryWithImages:
+                  summary: Referral gallery with images
                   value:
                     status: success
-                    message: Gallery retrieved successfully
+                    message: Referral gallery retrieved successfully
                     data:
                       id: 660e8400-e29b-41d4-a716-446655440001
                       referral_id: 550e8400-e29b-41d4-a716-446655440000
+                      organization_id: null
+                      gallery_type: referral
                       images:
                         - id: 770e8400-e29b-41d4-a716-446655440002
                           url: https://example.supabase.co/storage/v1/object/public/images/gallery/660e8400/image1.jpg
@@ -6373,33 +6383,52 @@ paths:
                         - id: 880e8400-e29b-41d4-a716-446655440003
                           url: https://example.supabase.co/storage/v1/object/public/images/gallery/660e8400/image2.jpg
                           type: after
-                        - id: 990e8400-e29b-41d4-a716-446655440004
-                          url: https://example.supabase.co/storage/v1/object/public/images/gallery/660e8400/image3.jpg
-                          type: none
                       created_at: "2025-01-19T10:00:00.000Z"
                       updated_at: "2025-01-19T11:30:00.000Z"
-                emptyGallery:
-                  summary: No gallery found
+                organizationGalleryWithImages:
+                  summary: Organization gallery with images
+                  value:
+                    status: success
+                    message: Organization gallery retrieved successfully
+                    data:
+                      id: 770e8400-e29b-41d4-a716-446655440005
+                      referral_id: null
+                      organization_id: 123e4567-e89b-12d3-a456-426614174000
+                      gallery_type: organization
+                      images:
+                        - id: 990e8400-e29b-41d4-a716-446655440004
+                          url: https://example.supabase.co/storage/v1/object/public/images/gallery/770e8400/image1.jpg
+                          type: none
+                      created_at: "2025-01-20T10:00:00.000Z"
+                      updated_at: "2025-01-20T11:30:00.000Z"
+                emptyReferralGallery:
+                  summary: No referral gallery found
                   value:
                     status: success
                     message: No gallery found for this referral
                     data:
                       id: null
                       referral_id: 550e8400-e29b-41d4-a716-446655440000
+                      organization_id: null
+                      gallery_type: referral
                       images: []
                       created_at: null
                       updated_at: null
-        "400":
-          description: Invalid input
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-              example:
-                error: INVALID_INPUT
-                message: referral_id is required
+                emptyOrganizationGallery:
+                  summary: No organization gallery found
+                  value:
+                    status: success
+                    message: No gallery found for this organization
+                    data:
+                      id: null
+                      referral_id: null
+                      organization_id: 123e4567-e89b-12d3-a456-426614174000
+                      gallery_type: organization
+                      images: []
+                      created_at: null
+                      updated_at: null
         "404":
-          description: Referral not found
+          description: Referral not found (only when referral_id is provided)
           content:
             application/json:
               schema:
@@ -6966,8 +6995,8 @@ paths:
       description: |
         Multi-step campaign creation process. Each step updates the campaign.
 
-        **Step 1: Link Referral and Set Campaign Name**
-        Creates a draft campaign linked to a referral with a campaign name.
+        **Step 1: Create Campaign with Optional Referral**
+        Creates a draft campaign with a campaign name. Referral link is optional.
 
         **Step 2: Select Templates**
         Selects templates for front and back of the postcard. Accepts both database UUIDs and PostGrid template IDs. Supports organization templates and universal templates (is_universal=true). Updates templates' campaigns_used array with campaign name.
@@ -6976,7 +7005,9 @@ paths:
         Adds offer headline, description, dates, CTA, and disclaimer.
 
         **Step 4: Add Business Details**
-        Adds business name, phone, website, QR URL, and before/after images.
+        Adds business name, phone, website, QR URL, and up to 6 optional images (image_1_id through image_6_id).
+        Image IDs must exist in gallery (uploaded via /uploadImage). URLs are fetched automatically from gallery.
+        Gallery lookup priority: referral's gallery first, then organization's gallery.
         Automatically creates a shortened tracking link via Linkly API for the QR URL.
         Requires Linkly credentials in request headers (x-linkly-api-key, x-linkly-workspace-id).
 
@@ -7022,7 +7053,6 @@ paths:
                   title: Step 1
                   required:
                     - step
-                    - referral_id
                     - campaign_name
                   properties:
                     step:
@@ -7031,6 +7061,7 @@ paths:
                     referral_id:
                       type: string
                       format: uuid
+                      description: Optional - ID of referral to link to campaign
                     campaign_name:
                       type: string
                       description: Name of the campaign
@@ -7113,8 +7144,6 @@ paths:
                         - phone
                         - website
                         - qr_url
-                        - before_image_id
-                        - after_image_id
                       properties:
                         business_name:
                           type: string
@@ -7125,14 +7154,30 @@ paths:
                         qr_url:
                           type: string
                           description: The URL to be shortened and tracked via Linkly API (will be replaced with shortened link)
-                        before_image_id:
+                        image_1_id:
                           type: string
                           format: uuid
-                          description: ID of before image from referral's gallery
-                        after_image_id:
+                          description: Optional - ID of first image from referral's gallery
+                        image_2_id:
                           type: string
                           format: uuid
-                          description: ID of after image from referral's gallery
+                          description: Optional - ID of second image from referral's gallery
+                        image_3_id:
+                          type: string
+                          format: uuid
+                          description: Optional - ID of third image from referral's gallery
+                        image_4_id:
+                          type: string
+                          format: uuid
+                          description: Optional - ID of fourth image from referral's gallery
+                        image_5_id:
+                          type: string
+                          format: uuid
+                          description: Optional - ID of fifth image from referral's gallery
+                        image_6_id:
+                          type: string
+                          format: uuid
+                          description: Optional - ID of sixth image from referral's gallery
                 - type: object
                   title: Step 5
                   required:
@@ -7175,12 +7220,17 @@ paths:
                         "223e4567-e89b-12d3-a456-426614174001": true
                         "323e4567-e89b-12d3-a456-426614174002": true
             examples:
-              step1:
-                summary: Step 1 - Link Referral and Set Campaign Name
+              step1WithReferral:
+                summary: Step 1 - Create Campaign with Referral
                 value:
                   step: 1
                   referral_id: 550e8400-e29b-41d4-a716-446655440000
                   campaign_name: Summer Promotion 2025
+              step1NoReferral:
+                summary: Step 1 - Create Campaign without Referral
+                value:
+                  step: 1
+                  campaign_name: Spring Direct Mail Campaign
               step2:
                 summary: Step 2 - Select Templates (accepts database UUID or PostGrid template ID)
                 value:
@@ -7201,7 +7251,7 @@ paths:
                     cta_text: "Call Now to Redeem"
                     disclaimer_text: "Offer valid for new customers only"
               step4:
-                summary: Step 4 - Add Business Details and Images
+                summary: Step 4 - Add Business Details and Images (up to 6 optional images)
                 value:
                   step: 4
                   campaign_id: 660e8400-e29b-41d4-a716-446655440001
@@ -7210,8 +7260,9 @@ paths:
                     phone: "+1-555-123-4567"
                     website: "https://abchome.com"
                     qr_url: "https://abchome.com/spring-promo"
-                    before_image_id: "770e8400-e29b-41d4-a716-446655440002"
-                    after_image_id: "880e8400-e29b-41d4-a716-446655440003"
+                    image_1_id: "770e8400-e29b-41d4-a716-446655440002"
+                    image_2_id: "880e8400-e29b-41d4-a716-446655440003"
+                    image_3_id: "990e8400-e29b-41d4-a716-446655440004"
               step5:
                 summary: Step 5 - Link Zone to Campaign
                 value:
@@ -7838,7 +7889,7 @@ paths:
         - back_template_id: Change PostGrid template for back of postcard
         - zone_id: Change linked location zone
         - offer_data: Update offer details (merged with existing)
-        - business_data: Update business details (merged with existing)
+        - business_data: Update business details including up to 6 optional images (image_1_id through image_6_id) - merged with existing, validates against gallery and fetches URLs automatically
         - additional_data: Update additional data (merged with existing)
         - postcards_sent: Update number of postcards sent
         - scan_rate: Update scan rate percentage
@@ -7919,6 +7970,16 @@ paths:
                 value:
                   id: "123e4567-e89b-12d3-a456-426614174000"
                   status: "Active"
+              updateBusinessData:
+                summary: Update business data with images
+                value:
+                  id: "123e4567-e89b-12d3-a456-426614174000"
+                  business_data:
+                    business_name: "Updated Business Name"
+                    phone: "+1-555-999-8888"
+                    image_1_id: "770e8400-e29b-41d4-a716-446655440002"
+                    image_2_id: "880e8400-e29b-41d4-a716-446655440003"
+                    image_4_id: "aa0e8400-e29b-41d4-a716-446655440005"
               updateMetrics:
                 summary: Update campaign metrics
                 value:
@@ -10859,7 +10920,7 @@ components:
           description: Offer details (offer_headline, offer_description, start_date, end_date, cta_text, disclaimer_text)
         business_data:
           type: object
-          description: Business details (business_name, phone, website, qr_url, before_image_url, after_image_url)
+          description: Business details (business_name, phone, website, qr_url, image_1_id through image_6_id, image_1_url through image_6_url)
         additional_data:
           type: object
           description: Additional campaign data
