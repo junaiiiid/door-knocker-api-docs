@@ -1507,6 +1507,13 @@ paths:
         3. System validates new password meets requirements
         4. System ensures new password is different from old password
         5. Password is updated in Supabase Auth
+        6. All existing sessions are invalidated (signs out from all devices)
+        7. New access_token and refresh_token are generated and returned
+
+        **Important:**
+        - Old tokens become invalid immediately after password update
+        - Frontend must replace old token with new access_token from response
+        - User is signed out from all other devices for security
       operationId: updatePassword
       security:
         - SupabaseAuth: []
@@ -1538,10 +1545,49 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MessageResponse"
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Password updated successfully
+                  access_token:
+                    type: string
+                    description: New JWT access token (use this for subsequent requests)
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  refresh_token:
+                    type: string
+                    description: New refresh token for renewing access_token
+                    example: v1.MRjHYMvE-example-refresh-token
+                  expires_in:
+                    type: number
+                    description: Seconds until access_token expires
+                    example: 3600
+                  expires_at:
+                    type: number
+                    description: Unix timestamp when access_token expires
+                    example: 1736885487
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+                        format: email
               example:
                 status: success
                 message: Password updated successfully
+                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJleHAiOjE3MzY4ODU0ODd9.example
+                refresh_token: v1.MRjHYMvE-example-refresh-token-xyz123
+                expires_in: 3600
+                expires_at: 1736885487
+                user:
+                  id: 550e8400-e29b-41d4-a716-446655440000
+                  email: user@example.com
         "400":
           description: Invalid input or weak password
           content:
@@ -1622,6 +1668,11 @@ paths:
                   value:
                     error: PASSWORD_UPDATE_FAILED
                     message: Failed to update password. Please try again.
+                tokenGenerationFailed:
+                  summary: Token generation failed
+                  value:
+                    error: TOKEN_GENERATION_FAILED
+                    message: Password updated but failed to generate new token. Please login again.
                 internalError:
                   summary: Internal error
                   value:
