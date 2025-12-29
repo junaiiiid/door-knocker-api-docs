@@ -857,6 +857,153 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /updateUser:
+    post:
+      tags:
+        - User Management
+      summary: Update user profile
+      description: |
+        Allows authenticated users to update their own profile information.
+
+        **Access Control:**
+        - Users can only update their own profile
+        - Requires valid JWT authentication
+
+        **Updatable Fields:**
+        - full_name: User's display name
+
+        **Returns:**
+        - Updated user profile with enriched timezone information
+      operationId: updateUser
+      security:
+        - SupabaseAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - full_name
+              properties:
+                full_name:
+                  type: string
+                  description: User's full name
+                  minLength: 1
+            example:
+              full_name: John Doe
+      responses:
+        "200":
+          description: User profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: User profile updated successfully
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+                        format: email
+                      role:
+                        type: string
+                        enum: [ADMIN, MARKETER, TECHNICIAN]
+                      full_name:
+                        type: string
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+                      created_at_tz:
+                        type: string
+                      updated_at_tz:
+                        type: string
+              example:
+                status: success
+                message: User profile updated successfully
+                data:
+                  id: 550e8400-e29b-41d4-a716-446655440000
+                  email: john@example.com
+                  role: MARKETER
+                  full_name: John Doe
+                  created_at: "2025-01-13T10:00:00.000Z"
+                  updated_at: "2025-01-15T14:30:00.000Z"
+                  created_at_tz: "2025-01-13 05:00:00 EST (UTC-5)"
+                  updated_at_tz: "2025-01-15 09:30:00 EST (UTC-5)"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                missingField:
+                  summary: Missing full_name
+                  value:
+                    error: INVALID_INPUT
+                    message: full_name is required
+                emptyString:
+                  summary: Empty full_name
+                  value:
+                    error: INVALID_INPUT
+                    message: full_name must be a non-empty string
+        "401":
+          description: Unauthorized - Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                missingAuth:
+                  summary: Missing authorization
+                  value:
+                    error: UNAUTHORIZED
+                    message: Unable to authenticate user
+                invalidToken:
+                  summary: Invalid token
+                  value:
+                    error: INVALID_TOKEN
+                    message: Invalid or expired token
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: USER_NOT_FOUND
+                message: User not found
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                updateFailed:
+                  summary: Update failed
+                  value:
+                    error: UPDATE_FAILED
+                    message: Failed to update user profile
+                internalError:
+                  summary: Internal error
+                  value:
+                    error: INTERNAL_ERROR
+                    message: An unexpected error occurred. Please try again later.
+
   /getAppContent:
     get:
       tags:
@@ -1332,6 +1479,154 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+
+  /updatePassword:
+    post:
+      tags:
+        - Password Management
+      summary: Update password for authenticated user
+      description: |
+        Allows authenticated users to change their password.
+
+        **Security:**
+        - Requires verification of old password
+        - New password must meet all password requirements
+        - New password cannot be the same as old password
+        - User must be authenticated with valid JWT token
+
+        **Password Requirements:**
+        - At least 8 characters long
+        - At least one uppercase letter
+        - At least one lowercase letter
+        - At least one number
+        - At least one special character (!@#$%^&* etc.)
+
+        **Flow:**
+        1. User provides old password and new password
+        2. System verifies old password is correct
+        3. System validates new password meets requirements
+        4. System ensures new password is different from old password
+        5. Password is updated in Supabase Auth
+      operationId: updatePassword
+      security:
+        - SupabaseAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - old_password
+                - new_password
+              properties:
+                old_password:
+                  type: string
+                  description: Current password
+                  minLength: 8
+                new_password:
+                  type: string
+                  description: New password (must meet password requirements)
+                  minLength: 8
+            example:
+              old_password: OldPassword123!
+              new_password: NewSecurePass456!
+      responses:
+        "200":
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                status: success
+                message: Password updated successfully
+        "400":
+          description: Invalid input or weak password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                missingFields:
+                  summary: Missing required fields
+                  value:
+                    error: INVALID_INPUT
+                    message: old_password and new_password are required
+                weakPasswordLength:
+                  summary: Password too short
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must be at least 8 characters long
+                weakPasswordUppercase:
+                  summary: Missing uppercase letter
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must contain at least one uppercase letter
+                weakPasswordLowercase:
+                  summary: Missing lowercase letter
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must contain at least one lowercase letter
+                weakPasswordNumber:
+                  summary: Missing number
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must contain at least one number
+                weakPasswordSpecial:
+                  summary: Missing special character
+                  value:
+                    error: WEAK_PASSWORD
+                    message: Password must contain at least one special character (!@#$%^&* etc.)
+                samePassword:
+                  summary: New password same as old password
+                  value:
+                    error: SAME_PASSWORD
+                    message: New password cannot be the same as your current password
+        "401":
+          description: Unauthorized - Missing/invalid token or incorrect old password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                unauthorized:
+                  summary: Missing or invalid authentication
+                  value:
+                    error: UNAUTHORIZED
+                    message: Unable to authenticate user
+                invalidPassword:
+                  summary: Old password is incorrect
+                  value:
+                    error: INVALID_PASSWORD
+                    message: Old password is incorrect
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: USER_NOT_FOUND
+                message: User not found
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                updateFailed:
+                  summary: Password update failed
+                  value:
+                    error: PASSWORD_UPDATE_FAILED
+                    message: Failed to update password. Please try again.
+                internalError:
+                  summary: Internal error
+                  value:
+                    error: INTERNAL_ERROR
+                    message: An unexpected error occurred. Please try again later.
 
   /saveOrganization:
     post:
