@@ -11213,8 +11213,15 @@ components:
         referral_id:
           type: string
           format: uuid
-          description: Referral ID linked to this gallery
+          nullable: true
+          description: Referral ID linked to this gallery (mutually exclusive with organization_id)
           example: 550e8400-e29b-41d4-a716-446655440000
+        organization_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Organization ID for organization-level gallery (mutually exclusive with referral_id)
+          example: 770e8400-e29b-41d4-a716-446655440003
         images:
           type: array
           description: Array of images in the gallery
