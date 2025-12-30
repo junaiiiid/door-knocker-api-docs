@@ -2211,7 +2211,6 @@ paths:
               required:
                 - address
                 - data
-                - campaign_id
               properties:
                 address:
                   type: string
@@ -2237,10 +2236,10 @@ paths:
                 campaign_id:
                   type: string
                   format: uuid
-                  description: Campaign ID (required)
+                  description: Campaign ID (optional). If not provided, the zone is marked as manual_search=true. If provided, manual_search=false
             examples:
               radiusMode:
-                summary: Radius-based search
+                summary: Radius-based search with campaign
                 value:
                   address: "37.4224764,-122.0842499"
                   data:
@@ -2248,13 +2247,20 @@ paths:
                     searchType: "RESIDENTIAL"
                   campaign_id: "660e8400-e29b-41d4-a716-446655440001"
               countMode:
-                summary: Count-based search
+                summary: Count-based search with campaign
                 value:
                   address: "1600 Amphitheatre Parkway, Mountain View, CA"
                   data:
                     count: 50
                     searchType: "ALL"
                   campaign_id: "660e8400-e29b-41d4-a716-446655440001"
+              manualSearchMode:
+                summary: Manual search (no campaign_id = manual_search:true)
+                value:
+                  address: "37.4224764,-122.0842499"
+                  data:
+                    radius: 1000
+                    searchType: "RESIDENTIAL"
       responses:
         "200":
           description: Addresses retrieved successfully
@@ -3147,12 +3153,12 @@ paths:
         - Organization-based (returns only zones from user's organization)
         - Ordered by most recent first
         - Includes all zone data and addresses
-        - **Filtering by campaign_id:**
-          - Default (no parameter): Returns only zones with `campaign_id` (linked to campaigns)
-          - `showAll=true`: Returns all zones including those without `campaign_id`
+        - **Filtering:**
+          - Default (no parameter): Returns zones with `campaign_id` (linked to campaigns) OR `manual_search=true` (manually created zones)
+          - `showAll=true`: Returns all zones including those without `campaign_id` or manual search flag
 
         **Query Parameters:**
-        - `showAll` (optional): Set to "true" to show all zones. Omit to show only zones linked to campaigns.
+        - `showAll` (optional): Set to "true" to show all zones. Omit to show only zones linked to campaigns or manually created zones.
       operationId: getAllAddressZones
       security:
         - SupabaseAuth: []
@@ -3164,7 +3170,7 @@ paths:
           schema:
             type: string
             enum: ["true", "false"]
-          description: Set to "true" to retrieve all zones. Omit or set to "false" to retrieve only zones linked to campaigns (campaign_id is not null).
+          description: Set to "true" to retrieve all zones. Omit or set to "false" to retrieve only zones linked to campaigns (campaign_id is not null) OR manually created zones (manual_search is true).
           example: "true"
       responses:
         "200":
@@ -11381,6 +11387,10 @@ components:
           nullable: true
           description: Campaign ID this zone is associated with
           example: "660e8400-e29b-41d4-a716-446655440001"
+        manual_search:
+          type: boolean
+          description: Indicates if zone was created through manual search (true) or automated/campaign process (false). Auto-determined based on campaign_id presence.
+          example: false
         center:
           type: object
           properties:
