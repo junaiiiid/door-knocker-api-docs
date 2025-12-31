@@ -9371,6 +9371,98 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /getNotificationStatus:
+    get:
+      tags:
+        - Notifications
+      summary: Get notification unread status
+      description: |
+        Returns whether the authenticated user has any unread notifications.
+
+        **Features:**
+        - ✅ Role-based filtering (ADMIN, MARKETER, TECHNICIAN)
+        - ✅ Organization-scoped notifications
+        - ✅ Lightweight endpoint for checking notification status
+        - ✅ Used by /getAppContent to show unread notification badge
+
+        **Business Rules:**
+        - Returns only unread status for user's organization
+        - Only checks notifications that target the user's role
+        - Does NOT mark notifications as read (use /getNotifications for that)
+
+        **Response Format:**
+        ```json
+        {
+          "status": "success",
+          "data": {
+            "isUnread": true
+          }
+        }
+        ```
+
+        **Authentication:** Required (JWT token)
+
+        **Authorization:** Organization-based (ADMIN, MARKETER, TECHNICIAN)
+      operationId: getNotificationStatus
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Notification status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      isUnread:
+                        type: boolean
+                        description: "Whether the user has any unread notifications"
+                        example: true
+              example:
+                status: "success"
+                data:
+                  isUnread: true
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: User not in organization
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                noOrganization:
+                  value:
+                    error: "NO_ORGANIZATION"
+                    message: "User is not associated with any organization"
+        "404":
+          description: User profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                profileNotFound:
+                  value:
+                    error: "PROFILE_NOT_FOUND"
+                    message: "User profile not found"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /addPaymentMethod:
     post:
       tags:
