@@ -4703,13 +4703,17 @@ paths:
         **Business Rules:**
         - Template ID can be either database UUID or PostGrid template ID
         - Template must belong to user's organization
-        - Updates PostGrid template first, then updates database
+        - Updates PostGrid template first (html, description), then updates database
         - Cannot update deleted templates
         - Supports partial updates (provide only fields to update)
+        - Can update templateType and postcardSize (database-only, not synced to PostGrid)
+        - At least one field (html, description, templateType, or postcardSize) must be provided
 
         **Template ID Flexibility:**
         - Accepts either database UUID or PostGrid template ID
         - Automatically detects ID type and looks up template
+
+        **Note:** PostGrid does not support changing template type or size after creation. The templateType and postcardSize parameters only update the database metadata.
 
         **Returns:** Updated template information
       operationId: updateTemplate
@@ -4741,11 +4745,40 @@ paths:
                   type: string
                   description: "Updated description (optional)"
                   example: "Updated Summer Campaign Front Template"
-            example:
-              postgridApiKey: "live_sk_..."
-              templateId: "template_tBnVEzz878mXLbHQaz86j8"
-              html: "<b>Hello</b> updated world!"
-              description: "Updated template description"
+                templateType:
+                  type: string
+                  enum: ["Front", "Back"]
+                  description: "Template type - Front or Back side of postcard (optional, database-only)"
+                  example: "Front"
+                postcardSize:
+                  type: string
+                  enum: ["4x6", "6x9", "6x11"]
+                  description: "Postcard size (optional, database-only)"
+                  example: "4x6"
+            examples:
+              updateHtmlAndDescription:
+                summary: Update HTML and description
+                value:
+                  postgridApiKey: "live_sk_..."
+                  templateId: "template_tBnVEzz878mXLbHQaz86j8"
+                  html: "<b>Hello</b> updated world!"
+                  description: "Updated template description"
+              updateTemplateType:
+                summary: Update template type and size
+                value:
+                  postgridApiKey: "live_sk_..."
+                  templateId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  templateType: "Back"
+                  postcardSize: "6x9"
+              updateAll:
+                summary: Update all fields
+                value:
+                  postgridApiKey: "live_sk_..."
+                  templateId: "template_tBnVEzz878mXLbHQaz86j8"
+                  html: "<b>Hello</b> updated world!"
+                  description: "Updated template"
+                  templateType: "Front"
+                  postcardSize: "4x6"
       responses:
         "200":
           description: Template updated successfully
@@ -4810,7 +4843,15 @@ paths:
                 missingField:
                   value:
                     error: "INVALID_INPUT"
-                    message: "At least one field (html or description) must be provided for update"
+                    message: "At least one field (html, description, templateType, or postcardSize) must be provided for update"
+                invalidTemplateType:
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "templateType must be either 'Front' or 'Back'"
+                invalidPostcardSize:
+                  value:
+                    error: "INVALID_INPUT"
+                    message: "postcardSize must be either '4x6', '6x9', or '6x11'"
         "401":
           description: Unauthorized
           content:
