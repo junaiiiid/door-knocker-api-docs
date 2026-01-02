@@ -2676,6 +2676,7 @@ paths:
         - Only verifies new/unverified addresses via PostGrid API
         - Calculates final cost based on verified addresses
         - Stores/updates launch data in launch_ready_campaign_data table (upserts based on campaign_id)
+        - Extracts and stores merge_variable from campaign's business_data
         - Updates campaign with launch_ready_id reference
         - Organization-scoped
         - Prevents duplicates: If called multiple times for the same campaign, it updates the existing entry
@@ -2826,9 +2827,9 @@ paths:
         - Returns campaign's business_data and offer_data fields
 
         **Response Data:**
-        - **launch_data**: Verified addresses, costs, and validation results
+        - **launch_data**: Verified addresses, costs, validation results, and merge_variable (if provided)
         - **campaign_templates**: PostGrid template IDs and sizes (e.g., "6x4", "4x6")
-        - **business_data**: Campaign's business data from step 4 (includes up to 6 optional images)
+        - **business_data**: Campaign's business data from step 4 (includes optional merge_variable)
         - **offer_data**: Campaign's offer data from step 3
 
         **Authentication:** None required (public endpoint)
@@ -2889,6 +2890,14 @@ paths:
                         description: Array of verified address objects
                         items:
                           type: object
+                      merge_variable:
+                        type: object
+                        nullable: true
+                        description: Custom merge variables for mail merge operations
+                        additionalProperties: true
+                        example:
+                          customer_name: "John Doe"
+                          special_offer: "20% off"
                       created_at:
                         type: string
                         format: date-time
@@ -7441,11 +7450,10 @@ paths:
         Adds offer headline, description, dates, CTA, and disclaimer.
 
         **Step 4: Add Business Details**
-        Adds business name, phone, website, QR URL, and up to 6 optional images (image_1_id through image_6_id).
-        Image IDs must exist in gallery (uploaded via /uploadImage). URLs are fetched automatically from gallery.
-        Gallery lookup priority: referral's gallery first, then organization's gallery.
+        Adds business name, phone, website, QR URL, and optional merge variables (JSON).
         Automatically creates a shortened tracking link via Linkly API for the QR URL.
         Requires Linkly credentials in request headers (x-linkly-api-key, x-linkly-workspace-id).
+        merge_variable is optional and accepts any JSON object for mail merge operations.
 
         **Step 5: Link Zone to Campaign**
         Links a location zone (from getAddressesFromZone) to the campaign by saving zone_id.
@@ -7599,30 +7607,14 @@ paths:
                         qr_url:
                           type: string
                           description: The URL to be shortened and tracked via Linkly API (will be replaced with shortened link)
-                        image_1_id:
-                          type: string
-                          format: uuid
-                          description: Optional - ID of first image from referral's gallery
-                        image_2_id:
-                          type: string
-                          format: uuid
-                          description: Optional - ID of second image from referral's gallery
-                        image_3_id:
-                          type: string
-                          format: uuid
-                          description: Optional - ID of third image from referral's gallery
-                        image_4_id:
-                          type: string
-                          format: uuid
-                          description: Optional - ID of fourth image from referral's gallery
-                        image_5_id:
-                          type: string
-                          format: uuid
-                          description: Optional - ID of fifth image from referral's gallery
-                        image_6_id:
-                          type: string
-                          format: uuid
-                          description: Optional - ID of sixth image from referral's gallery
+                        merge_variable:
+                          type: object
+                          description: Optional - Custom merge variables as JSON object for mail merge operations
+                          additionalProperties: true
+                          example:
+                            customer_name: "John Doe"
+                            special_offer: "20% off"
+                            promo_code: "SPRING2025"
                 - type: object
                   title: Step 5
                   required:
@@ -7696,7 +7688,7 @@ paths:
                     cta_text: "Call Now to Redeem"
                     disclaimer_text: "Offer valid for new customers only"
               step4:
-                summary: Step 4 - Add Business Details and Images (up to 6 optional images)
+                summary: Step 4 - Add Business Details with Optional Merge Variables
                 value:
                   step: 4
                   campaign_id: 660e8400-e29b-41d4-a716-446655440001
@@ -7705,9 +7697,10 @@ paths:
                     phone: "+1-555-123-4567"
                     website: "https://abchome.com"
                     qr_url: "https://abchome.com/spring-promo"
-                    image_1_id: "770e8400-e29b-41d4-a716-446655440002"
-                    image_2_id: "880e8400-e29b-41d4-a716-446655440003"
-                    image_3_id: "990e8400-e29b-41d4-a716-446655440004"
+                    merge_variable:
+                      customer_name: "John Doe"
+                      special_offer: "20% off"
+                      promo_code: "SPRING2025"
               step5:
                 summary: Step 5 - Link Zone to Campaign
                 value:
