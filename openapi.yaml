@@ -8327,7 +8327,7 @@ paths:
         - back_template_id: Change PostGrid template for back of postcard
         - zone_id: Change linked location zone
         - offer_data: Update offer details (merged with existing)
-        - business_data: Update business details including up to 6 optional images (image_1_id through image_6_id) - merged with existing, validates against gallery and fetches URLs automatically
+        - business_data: Update business details including optional merge_variable (JSON object) - merged with existing
         - additional_data: Update additional data (merged with existing)
         - postcards_sent: Update number of postcards sent
         - scan_rate: Update scan rate percentage
@@ -8409,15 +8409,15 @@ paths:
                   id: "123e4567-e89b-12d3-a456-426614174000"
                   status: "Active"
               updateBusinessData:
-                summary: Update business data with images
+                summary: Update business data with merge variables
                 value:
                   id: "123e4567-e89b-12d3-a456-426614174000"
                   business_data:
                     business_name: "Updated Business Name"
                     phone: "+1-555-999-8888"
-                    image_1_id: "770e8400-e29b-41d4-a716-446655440002"
-                    image_2_id: "880e8400-e29b-41d4-a716-446655440003"
-                    image_4_id: "aa0e8400-e29b-41d4-a716-446655440005"
+                    merge_variable:
+                      customer_name: "Jane Smith"
+                      discount_code: "WINTER2025"
               updateMetrics:
                 summary: Update campaign metrics
                 value:
