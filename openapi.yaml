@@ -2664,16 +2664,16 @@ paths:
     post:
       tags:
         - Campaign Launch
-      summary: Prepare campaign for launch with address verification (ADMIN/MARKETER only)
+      summary: Prepare campaign for launch using verified addresses (ADMIN/MARKETER only)
       description: |
-        Verifies all addresses in a campaign's zone and calculates launch costs.
+        Prepares launch data by filtering and using addresses that have already been verified.
 
         **Features:**
         - ADMIN and MARKETER only
         - Campaign must have zone_id set
-        - Smart verification: Reuses already verified addresses from zone
-        - Skips addresses with status="Opt-out" (similar to actual launch)
-        - Only verifies new/unverified addresses via PostGrid API
+        - filters: Uses only addresses with verified=true
+        - Skips addresses with status="Opt-out"
+        - DOES NOT verify new addresses (verification must be done beforehand)
         - Calculates final cost based on verified addresses
         - Stores/updates launch data in launch_ready_campaign_data table (upserts based on campaign_id)
         - Extracts and stores merge_variable from campaign's business_data
@@ -2685,26 +2685,18 @@ paths:
         - Only ADMIN and MARKETER users can launch campaigns
         - Campaign must be linked to a location zone (zone_id not null)
         - Maximum 10,000 addresses per zone
-        - Addresses with status="Opt-out" are excluded (not verified, not counted)
-        - Addresses already verified (verified=true) are reused (not re-verified)
-        - Only unverified addresses are sent to PostGrid for verification
-        - Only verified addresses (verified=true) are counted in final cost
+        - Addresses with status="Opt-out" are excluded
+        - Only addresses with verified=true are included
         - Final cost = validated_addresses × amount_per_postcard
         - Default amount_per_postcard is $3.00
 
-        **Authentication:** Required (JWT token) and PostGrid API key in header
+        **Authentication:** Required (JWT token)
 
         **Authorization:** ADMIN and MARKETER only
       operationId: launchReadyCampaign
       security:
         - BearerAuth: []
-      parameters:
-        - name: x-postgrid-api-key
-          in: header
-          required: true
-          schema:
-            type: string
-          description: PostGrid API key for address verification
+
       requestBody:
         required: true
         content:
@@ -4127,7 +4119,9 @@ paths:
         - Saves template metadata to database
         - Template is organization-scoped
         - Tracks creator via createdBy field
-        - Initializes empty campaigns_used array
+        - Initializes empty campaigns_used array (or with campaign_id if provided)
+        - Supports manual edit flag for campaign-specific templates
+        - If isManualEdit is true, campaign_id is required and will be added to campaigns_used array
 
         **Required Fields:**
         - postgridApiKey: PostGrid API key for authentication
@@ -4135,6 +4129,10 @@ paths:
         - html: HTML content for the template
         - templateType: Front or Back
         - postcardSize: 4x6, 6x9, or 6x11
+
+        **Optional Fields:**
+        - isManualEdit: Boolean flag (default: false). If true, template is only shown when querying with specific campaign_id
+        - campaign_id: String (required if isManualEdit is true). Campaign ID to add to campaigns_used array
       operationId: createNewTemplate
       security:
         - BearerAuth: []
@@ -4173,6 +4171,15 @@ paths:
                   enum: ["4x6", "6x9", "6x11"]
                   description: "Postcard size"
                   example: "4x6"
+                isManualEdit:
+                  type: boolean
+                  description: "Optional flag (default: false). If true, template is only shown when querying with specific campaign_id. When true, campaign_id is required"
+                  example: false
+                campaign_id:
+                  type: string
+                  format: uuid
+                  description: "Optional campaign ID. Required if isManualEdit is true. Will be added to campaigns_used array"
+                  example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
       responses:
         "201":
           description: Template created successfully
@@ -4215,6 +4222,7 @@ paths:
                         type: array
                         items:
                           type: string
+                        description: "Array of campaign IDs where this template is used. Contains campaign_id if isManualEdit was true during creation"
                         example: []
                       createdBy:
                         $ref: "#/components/schemas/CreatedByInfo"
@@ -4223,6 +4231,10 @@ paths:
                         example: false
                       deleted:
                         type: boolean
+                        example: false
+                      is_manual_edit:
+                        type: boolean
+                        description: "True if template was manually created/edited for a specific campaign"
                         example: false
                       created_at:
                         type: string
@@ -4431,10 +4443,12 @@ paths:
         **Business Rules:**
         - Returns templates from user's organization AND universal templates (is_universal=true)
         - Universal templates are visible to all organizations
+        - Excludes manual edit templates (is_manual_edit=true) by default
+        - When campaign_id is provided, also includes manual edit templates that contain the campaign_id in campaigns_used array
         - Excludes deleted templates by default
         - Supports filtering by templateType and postcardSize
         - Returns templates ordered by created_at (newest first)
-        - Each template includes isUniversal flag to identify universal templates
+        - Each template includes isUniversal and isManualEdit flags
       operationId: getAllTemplates
       security:
         - BearerAuth: []
@@ -4460,6 +4474,13 @@ paths:
             type: string
             enum: ["4x6", "6x9", "6x11"]
           description: "Filter by postcard size"
+        - name: campaign_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: "When provided, also includes manual edit templates that contain this campaign_id in their campaigns_used array"
       responses:
         "200":
           description: Templates retrieved successfully
@@ -4494,6 +4515,11 @@ paths:
                             type: string
                             nullable: true
                             example: null
+                          campaign_id:
+                            type: string
+                            nullable: true
+                            example: null
+                            description: "Campaign ID filter for manual edit templates"
                       processingTimeMs:
                         type: integer
                         example: 245
@@ -4520,6 +4546,9 @@ paths:
                         isUniversal:
                           type: boolean
                           description: "True if template is universal (visible to all organizations), false if organization-scoped"
+                        isManualEdit:
+                          type: boolean
+                          description: "True if template was manually created/edited for a specific campaign. Manual edit templates are only shown when querying with specific campaign_id"
                         campaigns_used:
                           type: array
                           items:
@@ -4573,7 +4602,7 @@ paths:
         - Universal templates (is_universal=true) are accessible to all organizations
         - Returns error if template is deleted
         - User must be authenticated
-        - Response includes isUniversal flag
+        - Response includes isUniversal and isManualEdit flags
 
         **ID Detection:**
         - UUID format (8-4-4-4-12): Treated as database ID
@@ -4638,6 +4667,9 @@ paths:
                       isUniversal:
                         type: boolean
                         description: "True if template is universal (visible to all organizations), false if organization-scoped"
+                      isManualEdit:
+                        type: boolean
+                        description: "True if template was manually created/edited for a specific campaign"
                       campaigns_used:
                         type: array
                         items:
@@ -4823,6 +4855,9 @@ paths:
                       isUniversal:
                         type: boolean
                         description: "True if template is universal (visible to all organizations), false if organization-scoped"
+                      isManualEdit:
+                        type: boolean
+                        description: "True if template was manually created/edited for a specific campaign"
                       campaigns_used:
                         type: array
                         items:
